@@ -61,7 +61,7 @@ module VirtualMonkey
         project_path = File.join(VirtualMonkey::COLLATERAL_TEST_DIR, project_name)
         error "FATAL: #{project_path} already exists!" if File.exists?(project_path)
         FileUtils.mkdir_p(VirtualMonkey::COLLATERAL_TEST_DIR)
-        Git.clone(repo_path, project_path, git_options)
+        puts Git.clone(repo_path, project_path, git_options)
         # Hook up git_hooks dir
         if File.directory?(File.join(project_path, "git_hooks"))
           FileUtils.rm_rf(File.join(project_path, ".git", "hooks"))
@@ -81,7 +81,7 @@ module VirtualMonkey
         error "FATAL: #{project_path} already exists!" if File.exists?(project_path)
         FileUtils.mkdir_p(VirtualMonkey::COLLATERAL_TEST_DIR)
         # Init git dir
-        Git.init(project_path)
+        puts Git.init(project_path)
         # Build project folders
         VirtualMonkey::Manager::Collateral::DIRECTORIES.each do |dir|
           FileUtils.mkdir_p(File.join(project_path, dir))
@@ -114,7 +114,7 @@ module VirtualMonkey
         project_path = File.join(VirtualMonkey::COLLATERAL_TEST_DIR, project_name)
         error "FATAL: #{project_path} doesn't exist!" unless File.exists?(project_path)
         FileUtils.mkdir_p(VirtualMonkey::COLLATERAL_TEST_DIR)
-        git_objs[project_name].checkout(refspec)
+        puts git_objs[project_name].checkout(refspec)
 
         # Refresh Projects index
         VirtualMonkey::Manager::Collateral.refresh()
@@ -130,7 +130,7 @@ module VirtualMonkey
         remote ||= 'origin'
         branch ||= 'master'
         FileUtils.mkdir_p(VirtualMonkey::COLLATERAL_TEST_DIR)
-        git_objs[project_name].pull(remote, branch)
+        puts git_objs[project_name].pull(remote, "#{remote}/#{branch}", nil)
 
         # Refresh Projects index
         VirtualMonkey::Manager::Collateral.refresh()
