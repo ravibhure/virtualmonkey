@@ -48,7 +48,7 @@ module VirtualMonkey
         pp config['server_template_ids'].zip(@@options[:revisions]).map { |stid, rev|
           {ServerTemplate.find(stid.to_i).nickname => "[rev #{rev}]"}
         }.to_h
-        unless @@options[:yes]
+        if not @@options[:yes] and tty?
           unless ask("Are these the correct revisions that should be used?", lambda { |ans| ans =~ /^[yY]/ })
             error "Aborting on user input."
           end
@@ -92,7 +92,7 @@ module VirtualMonkey
       else
         pp @@do_these.map { |d| d.nickname }
       end
-      unless @@options[:yes] or @@command == "troop"
+      if not @@options[:yes] and not @@command == "troop" and tty?
         unless ask("#{message} these #{@@do_these.size} deployments (y/n)?", lambda { |ans| ans =~ /^[yY]/ })
           error "Aborting on user input."
         end
@@ -444,6 +444,7 @@ module VirtualMonkey
     end
 
     def self.build_scenario_names(underscore_name = " ")
+      assert_tty
       if underscore_name != " "
         if ask("Is \"#{underscore_name.gsub(/ |\./,"_")}\" an acceptable name for this scenario (y/n)?", lambda { |ans| ans =~ /^[yY]/ })
           underscore_name.gsub!(/ |\./,"_")
@@ -478,6 +479,8 @@ module VirtualMonkey
     end
 
     def self.build_troop_config(deployment = nil)
+      assert_tty
+
       @@troop_config = {}
       @@troop_config[:prefix] = "#{@@underscore_name.upcase}_TROOP"
       @@st_table = []

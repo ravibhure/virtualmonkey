@@ -1,6 +1,7 @@
 module VirtualMonkey
   module Command
-  add_command("import_deployment", [:deployment, :project], [], :flagless) do
+    add_command("import_deployment", [:deployment, :project], [], :flagless) do
+      assert_tty
       self.interactive_select_project_logic()
 
       # Find Model Deployment

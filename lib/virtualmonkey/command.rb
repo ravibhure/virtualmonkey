@@ -8,28 +8,28 @@ require 'pp'
 module VirtualMonkey
   module Command
     AvailableCommands = {
-      :api_check                  => "Verify API version connectivity",
-      :clone                      => "Clone a deployment n times and run though feature tests",
-      :collateral                 => "Manage test collateral repositories using git",
-      :config                     => "Get and set advanced variables that control VirtualMonkey behavior",
-      :create                     => "Create MCI and Cloud permutation Deployments for a set of ServerTemplates",
-      :destroy                    => "Destroy a set of Deployments",
-      :destroy_ssh_keys           => "Destroy VirtualMonkey-generated SSH Keys",
-      :environment                => "Sets the monkey config variables to presets for certain usage patterns",
-      :generate_ssh_keys          => "Generate SSH Key files per Cloud and stores their hrefs in ssh_keys.json",
-      :import_deployment          => "Import an existing Deployment and create a new testing scenario for it",
-      :list                       => "List the full Deployment nicknames and Server statuses for a set of Deployments",
-      :new_troop_config           => "Interactively create a new Troop Config JSON File",
-      :new_runner                 => "Interactively create a new testing scenario and all necessary files",
-      :populate_all_cloud_vars    => "Populates ssh_keys.json, datacenters.json, instance_types.json, and security_groups.json for all clouds",
-      :populate_datacenters       => "Populates datacenters.json with API 1.5 hrefs per Cloud",
-      :populate_instance_types    => "Populates instance_types.json with API 1.5 hrefs per Cloud",
-      :populate_security_groups   => "Populates security_groups.json with appropriate hrefs per Cloud",
-      :run                        => "Execute a set of feature tests across a set of Deployments in parallel",
-      :troop                      => "Calls \"create\", \"run\", and \"destroy\" for a given troop config file",
-      :update_inputs              => "Updates the inputs and editable server parameters for a set of Deployments",
-      :version                    => "Displays version and exits",
-      :help                       => "Displays usage information"
+      :api_check                  => %q{Verify API version connectivity},
+      :clone                      => %q{Clone a deployment n times and run though feature tests},
+      :collateral                 => %q{Manage test collateral repositories using git},
+      :config                     => %q{Get and set advanced variables that control VirtualMonkey behavior},
+      :create                     => %q{Create MCI and Cloud permutation Deployments for a set of ServerTemplates},
+      :destroy                    => %q{Destroy a set of Deployments},
+      :destroy_ssh_keys           => %q{Destroy VirtualMonkey-generated SSH Keys},
+      :environment                => %q{Sets the monkey config variables to presets for certain usage patterns},
+      :generate_ssh_keys          => %q{Generate SSH Key files per Cloud and stores their hrefs in ssh_keys.json},
+      :import_deployment          => %q{Import an existing Deployment and create a new testing scenario for it},
+      :list                       => %q{List the full Deployment nicknames and Server statuses for a set of Deployments},
+      :new_troop_config           => %q{Interactively create a new Troop Config JSON File},
+      :new_runner                 => %q{Interactively create a new testing scenario and all necessary files},
+      :populate_all_cloud_vars    => %q{Populates ssh_keys.json, datacenters.json, instance_types.json, and security_groups.json for all clouds},
+      :populate_datacenters       => %q{Populates datacenters.json with API 1.5 hrefs per Cloud},
+      :populate_instance_types    => %q{Populates instance_types.json with API 1.5 hrefs per Cloud},
+      :populate_security_groups   => %q{Populates security_groups.json with appropriate hrefs per Cloud},
+      :run                        => %q{Execute a set of feature tests across a set of Deployments in parallel},
+      :troop                      => %q{Calls "create", "run", and "destroy" for a given troop config file},
+      :update_inputs              => %q{Updates the inputs and editable server parameters for a set of Deployments},
+      :version                    => %q{Displays version and exits},
+      :help                       => %q{Displays usage information}
     }
 
     NonInteractiveCommands = AvailableCommands.reject { |cmd,desc|
@@ -47,34 +47,34 @@ module VirtualMonkey
     }
 
     Flags = {
-      :terminate       => "opt :terminate, 'Terminate if tests successfully complete. (No destroy)',            :short => '-a',   :type => :boolean",
-      :common_inputs   => "opt :common_inputs, 'Input JSON files to be set at Deployment AND Server levels',    :short => '-c',   :type => :strings",
-      :deployment      => "opt :deployment, 'regex string to use for matching deployment',                      :short => '-d',   :type => :string",
-      :exclude_tests   => "opt :exclude_tests, 'List of test names to exclude from running across Deployments', :short => '-e',   :type => :strings",
-      :config_file     => "opt :config_file, 'Troop Config JSON File',                                          :short => '-f',   :type => :string",
-      :clouds          => "opt :clouds, 'Space-separated list of cloud_ids to use',                             :short => '-i',   :type => :integers",
-      :keep            => "opt :keep, 'Do not delete servers or deployments after terminating',                 :short => '-k',   :type => :boolean",
-      :use_mci         => "opt :use_mci, 'List of MCI hrefs to substitute for the ST-attached MCIs',            :short => '-m',   :type => :string, :multi => true",
-      :n_copies        => "opt :n_copies, 'Number of clones to make',                                           :short => '-n',   :type => :integer, :default => 1",
-      :only            => "opt :only, 'Regex string to use for subselection matching on MCIs',                  :short => '-o',   :type => :string",
-      :no_spot         => "opt :no_spot, 'do not use spot instances',                                           :short => :none,  :type => :boolean, :default => true",
-      :no_resume       => "opt :no_resume, 'Do not use trace info to resume a previous test',                   :short => '-r',   :type => :boolean",
-      :tests           => "opt :tests, 'List of test names to run across Deployments (default is all)',         :short => '-t',   :type => :strings",
-      :verbose         => "opt :verbose, 'Print all output to STDOUT as well as the log files',                 :short => '-v',   :type => :boolean",
-      :revisions       => "opt :revisions, 'Specify a list of revision numbers for templates (0 = HEAD)',       :short => '-w',   :type => :integers",
-      :prefix          => "opt :prefix, 'Prefix of the Deployments',                                            :short => '-x',   :type => :string",
-      :yes             => "opt :yes, 'Turn off confirmation',                                                   :short => '-y',   :type => :boolean",
-      :one_deploy      => "opt :one_deploy, 'Load all variations of a single ST into one Deployment',           :short => '-z',   :type => :boolean",
+      :terminate       => %q{opt :terminate, 'Terminate if tests successfully complete. (No destroy)',            :short => '-a',   :type => :boolean},
+      :common_inputs   => %q{opt :common_inputs, 'Input JSON files to be set at Deployment AND Server levels',    :short => '-c',   :type => :strings},
+      :deployment      => %q{opt :deployment, 'regex string to use for matching deployment',                      :short => '-d',   :type => :string},
+      :exclude_tests   => %q{opt :exclude_tests, 'List of test names to exclude from running across Deployments', :short => '-e',   :type => :strings},
+      :config_file     => %q{opt :config_file, 'Troop Config JSON File',                                          :short => '-f',   :type => :string},
+      :clouds          => %q{opt :clouds, 'Space-separated list of cloud_ids to use',                             :short => '-i',   :type => :integers},
+      :keep            => %q{opt :keep, 'Do not delete servers or deployments after terminating',                 :short => '-k',   :type => :boolean},
+      :use_mci         => %q{opt :use_mci, 'List of MCI hrefs to substitute for the ST-attached MCIs',            :short => '-m',   :type => :string, :multi => true},
+      :n_copies        => %q{opt :n_copies, 'Number of clones to make',                                           :short => '-n',   :type => :integer, :default => 1},
+      :only            => %q{opt :only, 'Regex string to use for subselection matching on MCIs',                  :short => '-o',   :type => :string},
+      :no_spot         => %q{opt :no_spot, 'do not use spot instances',                                           :short => :none,  :type => :boolean, :default => true},
+      :no_resume       => %q{opt :no_resume, 'Do not use trace info to resume a previous test',                   :short => '-r',   :type => :boolean},
+      :tests           => %q{opt :tests, 'List of test names to run across Deployments (default is all)',         :short => '-t',   :type => :strings},
+      :verbose         => %q{opt :verbose, 'Print all output to STDOUT as well as the log files',                 :short => '-v',   :type => :boolean},
+      :revisions       => %q{opt :revisions, 'Specify a list of revision numbers for templates (0 = HEAD)',       :short => '-w',   :type => :integers},
+      :prefix          => %q{opt :prefix, 'Prefix of the Deployments',                                            :short => '-x',   :type => :string},
+      :yes             => %q{opt :yes, 'Turn off confirmation',                                                   :short => '-y',   :type => :boolean},
+      :one_deploy      => %q{opt :one_deploy, 'Load all variations of a single ST into one Deployment',           :short => '-z',   :type => :boolean},
 
-      :force           => "opt :force, 'Forces command to attempt to continue even if an exception is raised',  :short => '-F', :type => :boolean",
-      :overwrite       => "opt :overwrite, 'Replace existing resources with fresh ones',                        :short => '-O', :type => :boolean",
-      :report_metadata => "opt :report_metadata, 'Report metadata to SimpleDB',                                 :short => '-R', :type => :boolean",
-      :report_tags     => "opt :report_tags, 'Additional tags to help database sorting (e.g. -T sprint28)',     :short => '-T', :type => :strings",
-      :project         => "opt :project, 'Specify which collateral project to use',                             :short => '-P', :type => :string",
+      :force           => %q{opt :force, 'Forces command to attempt to continue even if an exception is raised',  :short => '-F', :type => :boolean},
+      :overwrite       => %q{opt :overwrite, 'Replace existing resources with fresh ones',                        :short => '-O', :type => :boolean},
+      :report_metadata => %q{opt :report_metadata, 'Report metadata to SimpleDB',                                 :short => '-R', :type => :boolean},
+      :report_tags     => %q{opt :report_tags, 'Additional tags to help database sorting (e.g. -T sprint28)',     :short => '-T', :type => :strings},
+      :project         => %q{opt :project, 'Specify which collateral project to use',                             :short => '-P', :type => :string},
 
-      :security_group_name  => "opt :security_group_name, 'Populate the file with this security group',                                 :short => :none,  :type => :string",
-      :ssh_keys             => "opt :ssh_keys, 'Takes a JSON object of cloud ids mapped to ssh_key ids. (e.g. {1: 123456, 2: 789012})', :short => :none,  :type => :string",
-      :api_version          => "opt :api_version, 'Check to see if the monkey has RightScale API access',                               :short => '-a',   :type => :float"
+      :security_group_name  => %q{opt :security_group_name, 'Populate the file with this security group',                                 :short => :none,  :type => :string},
+      :ssh_keys             => %q{opt :ssh_keys, 'Takes a JSON object of cloud ids mapped to ssh_key ids. (e.g. {1: 123456, 2: 789012})', :short => :none,  :type => :string},
+      :api_version          => %q{opt :api_version, 'Check to see if the monkey has RightScale API access',                               :short => '-a',   :type => :float}
     }
 
     ConfigOptions = {
@@ -102,27 +102,39 @@ module VirtualMonkey
 
     ConfigVariables = {
       "test_permutation"    => {"description" => "Controls how individual test cases in a feature file get assigned per deployment",
+                                "default"     => "exhaustive",
                                 "values"      => ["distributive", "exhaustive"]},
 
       "test_ordering"       => {"description" => "Controls how individual test cases in a feature file are ordered for execution",
+                                "default"     => "strict",
                                 "values"      => ["random", "strict"]},
 
       "feature_mixins"      => {"description" => "Controls how multiple features are distributed amongst available deployments",
+                                "default"     => "spanning",
                                 "values"      => ["spanning", "parallel"]},
 
       "load_progress"       => {"description" => "Turns on/off the display of load progress info for 'monkey' commands",
+                                "default"     => "show",
                                 "values"      => ["show", "hide"]},
 
       "colorized_text"      => {"description" => "Turns on/off colorized console text",
+                                "default"     => "show",
                                 "values"      => ["show", "hide"]},
 
+      "max_jobs"            => {"description" => "Controls how many simultaneous jobs can be started through the SpiderMonkey Web App",
+                                "default"     => 2,
+                                "values"      => Integer},
+
       "max_retries"         => {"description" => "Controls how many retries to attempt in a scope stack before giving up",
+                                "default"     => 10,
                                 "values"      => Integer},
 
       "enable_log_auditor"  => {"description" => "Enables log auditing for logfiles defined in lists/*.json",
+                                "default"     => "false",
                                 "values"      => [false, true]},
 
       "grinder_subprocess"  => {"description" => "Turns on/off the ability of Grinder to load into the current process",
+                                "default"     => "force_subprocess",
                                 "values"      => ["allow_same_process", "force_subprocess"]}
     }
 
@@ -291,7 +303,7 @@ module VirtualMonkey
           @@last_command_line = VirtualMonkey::Command::reconstruct_command_line()
           if @@last_command_line == "#{command_name}"
             ans = "y"
-            if #{flagless && true}
+            if #{flagless && true} && tty?
               ans = ask("Do you want to print help for 'monkey #{command_name}' (y/n)?")
             end
             #{command_name}("--help") if ans =~ /^[yY]/
@@ -386,7 +398,7 @@ EOS
       else
         message = sorted_content_ary.map do |k,v|
           ret = ""
-          v = v.inspect
+          v = v.inspect unless String === v
           if v.size <= remaining_width
             ret = base_format_string % [k,v]
           else
@@ -451,6 +463,7 @@ EOS
         end
 
       when "edit", "-e", "--edit"
+        assert_tty
         error improper_argument_error if ARGV.length != 1
         editor = `git config --get core.editor`.chomp
         editor = "vim" if editor.empty?

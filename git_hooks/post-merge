@@ -1,0 +1,5 @@
+#!/bin/bash -ex
+
+bundle install --system
+#rake build
+#gem install pkg/virtualmonkey*.gem --no-rdoc --no-ri

@@ -218,7 +218,7 @@ module VirtualMonkey
           error msg.word_wrap
         end
 
-        unless options[:yes]
+        if not options[:yes] and tty?
           unless ask("Are these the correct deployments that should be created?", lambda { |ans| ans =~ /^[yY]/ })
             error "Aborting on user input."
           end

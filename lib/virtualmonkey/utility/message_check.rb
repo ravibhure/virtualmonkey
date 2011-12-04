@@ -178,7 +178,7 @@ class MessageCheck
       print_msg << "Whitelist Matches:    #{white_matches.size}\n\n" if white_matches
 
       # Interactive training for the matches
-      if interactive
+      if interactive && tty?
         case ask("Review (U)nmatched, (B)lacklisted, (W)hitelisted, or (A)ll entries?")
         when /^[uU]/
           messages_reference = []

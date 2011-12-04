@@ -48,8 +48,11 @@ module VirtualMonkey
   end
 end
 
+require 'colorize'
+require 'patches.rb'
+
 def progress_require(file, progress=nil)
-  if VirtualMonkey::config[:load_progress] != "hide"
+  if VirtualMonkey::config[:load_progress] != "hide" && tty?
     @current_progress ||= nil
     if ENV['ENTRY_COMMAND'] == "monkey" && progress && progress != @current_progress
       STDOUT.print "\nloading #{progress}"
@@ -60,7 +63,7 @@ def progress_require(file, progress=nil)
 
   ret = require file
 
-  if VirtualMonkey::config[:load_progress] != "hide"
+  if VirtualMonkey::config[:load_progress] != "hide" && tty?
     if ENV['ENTRY_COMMAND'] == "monkey" && ret
       STDOUT.print "."
     end
@@ -107,10 +110,8 @@ progress_require('fileutils')
 progress_require('parse_tree')
 progress_require('parse_tree_extensions')
 progress_require('ruby2ruby')
-progress_require('colorize')
 
-progress_require('virtualmonkey/patches', 'virtualmonkey')
-progress_require('virtualmonkey/runner_core')
+progress_require('virtualmonkey/runner_core', 'virtualmonkey')
 progress_require('virtualmonkey/test_case_dsl')
 
 progress_require('virtualmonkey/manager', 'managers')

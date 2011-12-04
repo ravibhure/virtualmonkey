@@ -26,6 +26,8 @@ begin
     gem.add_dependency "daemons"
     gem.add_dependency "sinatra"
     gem.add_dependency "bundler"
+    gem.add_dependency "cronedit"
+    gem.add_dependency "algorithms"
     # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
   end
   Jeweler::GemcutterTasks.new

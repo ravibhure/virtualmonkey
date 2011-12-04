@@ -2,9 +2,11 @@ GEM
   remote: http://rubygems.org/
   specs:
     activesupport (2.3.10)
+    algorithms (0.3.0)
     builder (3.0.0)
     colorize (0.5.8)
     columnize (0.3.2)
+    cronedit (0.3.0)
     daemons (1.1.4)
     eventmachine (0.12.10)
     excon (0.7.6)
@@ -63,8 +65,10 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  algorithms
   bundler
   colorize
+  cronedit
   daemons
   eventmachine (= 0.12.10)
   fog (>= 1.0)

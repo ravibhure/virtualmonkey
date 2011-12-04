@@ -165,13 +165,13 @@ module VirtualMonkey
       @lists = Dir.glob(File.join(@paths["lists"], "**", "*.json"))
       @troops = Dir.glob(File.join(@paths["troops"], "**", "*.json"))
 
-      @mixins = self.class::VirtualMonkey::Mixin.constants.map { |const| const }
-      @mixins += self.class::VirtualMonkey::Mixin.constants.map { |const| "Mixin::#{const}" }
-      @mixins += self.class::VirtualMonkey::Mixin.constants.map { |const| "VirtualMonkey::Mixin::#{const}" }
+      @mixins = self.class::VirtualMonkey::Mixin.constants.map { |const|
+        [const, "Mixin::#{const}", "VirtualMonkey::Mixin::#{const}"]
+      }.flatten
 
-      @runners = self.class::VirtualMonkey::Runner.constants.map { |const| const }
-      @runners += self.class::VirtualMonkey::Runner.constants.map { |const| "Runner::#{const}" }
-      @runners += self.class::VirtualMonkey::Runner.constants.map { |const| "VirtualMonkey::Runner::#{const}" }
+      @runners = self.class::VirtualMonkey::Runner.constants.map { |const|
+        [const, "Runner::#{const}", "VirtualMonkey::Runner::#{const}"]
+      }.flatten
 
       @all_files = Dir.glob(File.join(@root_path, "**", "*.*")).map { |file| File.expand_path(file) }
       self

@@ -139,7 +139,7 @@ module VirtualMonkey
         test_ary.each { |test| cmd += " \"#{test}\" " }
         cmd += " -r " if @options[:no_resume]
 
-        if @options[:report_metadata] && false # TODO: Remove false after WebUI is finished
+        if @options[:report_metadata]
           # Build Job Metadata
           puts "\nBuilding Job Metadata...\n\n"
           data = {}
@@ -254,29 +254,27 @@ module VirtualMonkey
           data["troop"] = [@options[:config_file]]
 
           # Run Tags Data
-          data["tag"] = @options[:report_tags] || []
-
-          # Date Data
-          data["date"] = @started_at.strftime("%Y_%m_%d")
+          data["tags"] = @options[:report_tags] || []
 
           #####################
           # Extra Report Data #
           #####################
 
           # Feature File Data
-          data["status"] = "running" # status => "pending|running|failed|passed" (or, manually, "blocked" or "willnotdo")
+          data["status"] = "pending" # status => "pending|running|failed|passed" (or, manually, "blocked" or "willnotdo")
           data["report_page"] = nil # nil until first upload
-          data["time"] = @started_at.strftime("%H:%M:%S")
+          data["started_at"] = @started_at.utc.strftime("%Y/%m/%d %H:%M:%S +0000")
           data["feature"] = [feature] # TODO: Gather runner info and runner option info?
-          data["command_create"] = deployment.get_info_tags["self"]["command"]
+          data["command_create"] = Base64.decode64(deployment.get_info_tags["self"]["command"])
           data.delete("command_create") unless data["command_create"]
           data["command_run"] = VirtualMonkey::Command::last_command_line
 
           # Unique JobID
-          data["job_id"] = "#{@started_at.strftime("%Y_%m_%d_%H_%M_%S")}_#{deployment.rs_id}"
+          data["uid"] = @started_at.strftime("%Y%m%d%H%M%S#{deployment.rs_id}")
 
           new_job.metadata = data
         end
+        new_job.metadata ||= {}
 
         [new_job, cmd]
       end
@@ -291,7 +289,7 @@ module VirtualMonkey
       end
 
       def exec_test(deployment, feature, test_ary, other_logs = [])
-        if VirtualMonkey::config[:grinder_subprocess] == "allow_same_process"
+        if VirtualMonkey::config[:grinder_subprocess] == "allow_same_process" && tty?
           new_job, cmd = build_job(deployment, feature, test_ary, other_logs)
           warn "\n========== Loading Grinder into current process! =========="
           warn "\nSince you only have one deployment, it would probably be of more use to run the developer tool"
@@ -381,14 +379,11 @@ module VirtualMonkey
 
       # Print status of jobs. Also watches for jobs that had exit statuses other than 0 or 1
       def watch_and_report
-        old_passed = @passed
-        old_failed = @failed
-        old_running = @running
-        old_sum = old_passed.size + old_failed.size + old_running.size
-        @passed = @jobs.select { |s| s.status == 0 }
-        @failed = @jobs.select { |s| s.status != 0 && s.status != nil }
-        @running = @jobs.select { |s| s.status == nil }
-        new_sum = @passed.size + @failed.size + @running.size
+        old_passed,  @passed  = @passed,  @jobs.select { |s| s.status == 0 }
+        old_failed,  @failed  = @failed,  @jobs.select { |s| s.status != 0 && s.status != nil }
+        old_running, @running = @running, @jobs.select { |s| s.status == nil }
+#        old_sum = old_passed.size + old_failed.size + old_running.size
+#        new_sum = @passed.size + @failed.size + @running.size
 
         passed_string = " #{@passed.size} features passed. "
         passed_string = passed_string.apply_color(:green) if @passed.size > 0
@@ -401,15 +396,13 @@ module VirtualMonkey
         running_string += "for #{Time.duration(Time.now - @started_at)}"
 
         puts(passed_string + failed_string + running_string)
-        if new_sum < old_sum and new_sum < @jobs.size
-          warn "WARNING: Jobs Lost! Finding...".apply_color(:yellow)
-          report_lost_deployments({ :old_passed => old_passed, :passed => @passed,
-                                    :old_failed => old_failed, :failed => @failed,
-                                    :old_running => old_running, :running => @running })
-        end
-        if old_passed != @passed || old_failed != @failed
-          status_change_hook
-        end
+#        if new_sum < old_sum and new_sum < @jobs.size
+#          warn "WARNING: Jobs Lost! Finding...".apply_color(:yellow)
+#          report_lost_deployments({ :old_passed => old_passed, :passed => @passed,
+#                                    :old_failed => old_failed, :failed => @failed,
+#                                    :old_running => old_running, :running => @running })
+#        end
+        status_change_hook if old_passed != @passed || old_failed != @failed
       end
 
       def status_change_hook
@@ -433,21 +426,21 @@ module VirtualMonkey
 
       # Generates monkey reports and uploads to S3
       def generate_reports
-        report_url = VirtualMonkey::Report.update_s3(@jobs, @log_started)
-        puts "    new results available at #{report_url}"
-=begin
-        TODO: Uncomment after WebUI is finished
-        if @options[:report_metadata]
-          @jobs.each { |job|
-            job.metadata["report_page"] = report_url
-            job.metadata["status"] = (job.status == 0 ? "passed" : "failed") if job.status
-          }
-          VirtualMonkey::Report.update_sdb(@jobs)
-          puts "SimpleDB updated"
-        end
-=end
+        report_uid = VirtualMonkey::API::Report.create({
+          "jobs" => @jobs,
+          "log_started" => @log_started,
+          "report_metadata" => @options[:report_metadata],
+        }).first
+        report_url = VirtualMonkey::API::Report.get(report_uid)["report_page"]
+#        report_url = VirtualMonkey::API::Report.update_s3(@jobs, @log_started)
+        puts "\n    New results available at #{report_url}\n\n"
+#        if @options[:report_metadata]
+#          VirtualMonkey::API::Report.update_sdb(@jobs)
+#          puts "SimpleDB updated"
+#        end
       end
 
+=begin
       # Prints information on jobs that didn't have an exit code of 0 or 1
       def report_lost_deployments(jobs = {})
         running_change = jobs[:old_running] - jobs[:running]
@@ -464,6 +457,7 @@ module VirtualMonkey
           warn "-----------------------------------------"
         end
       end
+=end
 
       def describe_metadata_fields(type=nil)
          fields = {
@@ -476,9 +470,9 @@ module VirtualMonkey
           "datacenter" => ["name", "href"],
           "troop" => [],
           "report_page" => [],
+          "logs" => [],
           "tag" => [],
-          "time" => [],
-          "date" => [],
+          "started_at" => [],
           "command" => ["create", "run"],
           "status" => [],
         }

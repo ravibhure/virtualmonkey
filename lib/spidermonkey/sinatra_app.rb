@@ -20,22 +20,38 @@ require 'sinatra'
 set :environment, :development #:test, :production
 
 set :sessions, :domain => VirtualMonkey::PUBLIC_HOSTNAME # TODO Configure these cookies to work securely
-set :bind, VirtualMonkey::PUBLIC_HOSTNAME
+set :bind, '0.0.0.0'
 set :port, 443
 set :static, false
+set :dump_errors, true
 #set :public_folder, VirtualMonkey::WEB_APP_PUBLIC_DIR
 
+#set :ssl, lambda { !development? }
+#use Rack::SSL, :exclude => lambda { !ssl? }
+#use Rack::Session::Cookie, :expire_after => 1.week, :secret => ''
+
 use Rack::Auth::Basic, "Restricted Area" do |username, password|
+  headers = {'Authorization' => "Basic #{["#{username}:#{password}"].pack('m').delete("\r\n")}",
+             'X_API_VERSION' => '1.0'}
+  connection = Excon.new('https://my.rightscale.com', :headers => headers)
   settings = YAML::load(IO.read(VirtualMonkey::REST_YAML))
-  success = ([username, password] == [settings[:user], settings[:pass]])
+  success = false
+
+  begin
+    resp = connection.get(:path => "#{settings[:api_url]}/servers.js?")
+    success = (resp.status == 200)
+  rescue Exception => e
+  end
+
+  # TODO CACHING!!!!
+
   session[:virutalmonkey_id] = rand(1000000)
   success
 end
 
-# VirtualMonkey Commands
-VirtualMonkey::Command::NonInteractiveCommands.keys.each { |cmd|
-  post "#{VirtualMonkey::API_PATH}/#{cmd.to_s}" do
-    opts = params.map { |key,val|
+helpers do
+  def get_cmd_flags(cmd, parameters={})
+    opts = parameters.map { |key,val|
       ret = "--#{key}"
       val = val.join(" ") if val.is_a?(Array)
       if val.is_a?(TrueClass)
@@ -45,65 +61,193 @@ VirtualMonkey::Command::NonInteractiveCommands.keys.each { |cmd|
         ret += " #{val}"
       end
       ret
-    }.compact
-    opts << "--yes" unless opts.include?("--yes")
-    opts << "--report_metadata" if cmd == "run" || cmd == "troop"
+    }
+    opts.compact!
+    opts |= ["--yes"]
+  end
 
-    if VirtualMonkey::daemons.length < VirtualMonkey::max_daemons
-      app = Daemons.call(:multiple => true, :backtrace => true) do
-        VirtualMonkey::Command.__send__(cmd, *opts)
-      end
-      VirtualMonkey::daemons << {"daemon" => app,
-                                 "command" => cmd,
-                                 "options" => opts}
+  def standard_handlers(&block)
+    yield
+  rescue Excon::Errors::HTTPStatusError => e
+    status((e.message =~ /Actual\(([0-9]+)\)/; $1.to_i))
+    body(e.response)
+  rescue ArgumentError, TypeError => e
+    status 400
+    body(e.message)
+  rescue NotImplementedError => e
+    status 501
+    body(e.message)
+  rescue IndexError, NameError => e
+    status 404
+    body(e.message)
+  rescue Exception => e
+    status 500
+    body(e.message)
+  end
+end
 
-      status 202
-      body({"status" => "running"}.to_json)
-    else
-      VirtualMonkey::daemon_queue << {"command" => cmd, "options" => opts}
+# ==========================
+# VirtualMonkey Commands API
+# ==========================
+# Each command creates a new task resource. Tasks are temporary, and must
+# be explicitly saved to persist longer than the instance.
 
-      status 202
-      body({"status" => "queued"}.to_json)
+VirtualMonkey::Command::NonInteractiveCommands.keys.each do |cmd|
+  post "#{VirtualMonkey::API::ROOT}/#{cmd.to_s}" do
+    standard_handlers do
+      opts = get_cmd_flags(cmd, JSON.parse(request.body))
+      opts |= ["--report_metadata"] if cmd == "run" || cmd == "troop"
+      # TODO: Sanitize...
+
+      task_uid = VirtualMonkey::API::Task.create("command" => cmd, "options" => opts)
+
+      status 201
+      headers "Location" => "#{VirtualMonkey::API::Task.collection_path}/#{task_uid}"
     end
   end
-}
-
-# Other API calls
-get "#{VirtualMonkey::API_PATH}/get_data" do
-  req_params = JSON.parse(request.body)
-  VirtualMonkey::Report::get_data(req_params).to_json
 end
 
-get "#{VirtualMonkey::API_PATH}/queue" do
-  {
-    "max_daemons" => VirtualMonkey::max_daemons,
-    "running_daemons" => VirtualMonkey::daemons.map { |h| "#{h["command"]} #{h["options"].join(" ")}" },
-    "queued_daemons" => VirtualMonkey::daemon_queue.map { |h| "#{h["command"]} #{h["options"].join(" ")}" }
-  }.to_json
+# =========
+# Tasks API
+# =========
+
+# Index
+get VirtualMonkey::API::Task::PATH do
+  standard_handlers do
+    body VirtualMonkey::API::Task.index().to_json
+    status 200
+  end
 end
 
-post "#{VirtualMonkey::API_PATH}/queue" do
-  req_params = JSON.parse(request.body)
-
-  # Check Parameters
-  req_params.each { |key,val|
-    case key
-    when "max_daemons"
-      if val.is_a?(Integer)
-        VirtualMonkey::max_daemons = val
-      else
-        status 400
-        return "Parameter max_daemons takes an Integer value"
-      end
-    when "stop_daemons"
-      # TODO
-    end
-  }
-
-  status 202
+# Create
+post VirtualMonkey::API::Task::PATH do
+  standard_handlers do
+    task_uid = VirtualMonkey::API::Task.create(JSON.parse(request.body))
+    status 201
+    headers "Location" => "#{VirtualMonkey::API::Task.collection_path}/#{task_uid}"
+  end
 end
 
-# HTML, JS, and CSS
+# Read
+get "#{VirtualMonkey::API::Task::PATH}/:task_uid" do |task_uid|
+  standard_handlers do
+    body VirtualMonkey::API::Task.get(task_uid).to_json
+    status 200
+  end
+end
+
+# Update
+put "#{VirtualMonkey::API::Task::PATH}/:task_uid" do |task_uid|
+  standard_handlers do
+    VirtualMonkey::API::Task.put(task_uid, JSON.parse(request.body))
+    body ""
+    status 204
+  end
+end
+
+# Delete
+delete "#{VirtualMonkey::API::Task::PATH}/:task_uid" do |task_uid|
+  standard_handlers do
+    VirtualMonkey::API::Task.delete(task_uid)
+    body ""
+    status 204
+  end
+end
+
+# Save
+post "#{VirtualMonkey::API::Task::PATH}/:task_uid/save" do |task_uid|
+  standard_handlers do
+    VirtualMonkey::API::Task.save(task_uid)
+    body ""
+    status 204
+  end
+end
+
+# Schedule
+post "#{VirtualMonkey::API::Task::PATH}/:task_uid/schedule" do |task_uid|
+  standard_handlers do
+    VirtualMonkey::API::Task.schedule(task_uid, JSON.parse(request.body))
+    body ""
+    status 204
+  end
+end
+
+# Start
+post "#{VirtualMonkey::API::Task::PATH}/:task_uid/start" do |task_uid|
+  standard_handlers do
+    job_uid = VirtualMonkey::API::Task.start(task_uid)
+    status 201
+    headers "Location" => "#{VirtualMonkey::API::Job::PATH}/#{job_uid}"
+  end
+end
+
+# =============
+# Job Queue API
+# =============
+
+# Index
+get VirtualMonkey::API::Job::PATH do
+  standard_handlers do
+    body VirtualMonkey::API::Job.index()
+  end
+end
+
+# Create
+post VirtualMonkey::API::Job::PATH do
+  standard_handlers do
+    job_uid = VirtualMonkey::API::Job.create(JSON.parse(request.body))
+    status 201
+    headers "Location" => "#{VirtualMonkey::API::Job::PATH}/#{job_uid}"
+  end
+end
+
+# Read
+get "#{VirtualMonkey::API::Job::PATH}/:job_uid" do |job_uid|
+  standard_handlers do
+    body VirtualMonkey::API::Job.get(job_uid).to_json
+    status 200
+  end
+end
+
+# Delete
+delete "#{VirtualMonkey::API::Job::PATH}/:job_uid" do |job_uid|
+  standard_handlers do
+    VirtualMonkey::API::Job.delete(job_uid)
+    body ""
+    status 204
+  end
+end
+
+# ==========
+# Report API
+# ==========
+
+# Index
+get VirtualMonkey::API::Report::PATH do
+  standard_handlers do
+    body VirtualMonkey::API::Report::index(JSON.parse(request.body)).to_json
+    status 200
+  end
+end
+
+# Read
+get "#{VirtualMonkey::API::Report::PATH}/:report_uid" do |report_uid|
+  standard_handlers do
+    body VirtualMonkey::API::Report::get(report_uid).to_json
+    status 200
+  end
+end
+
+# Delete
+# TODO
+
+# Details
+# TODO
+
+# ============
+# Static Files
+# ============
+
 get "/*" do
   IO.read(File.join(VirtualMonkey::WEB_APP_PUBLIC_DIR, *(params[:splat].split(/\//))))
 end

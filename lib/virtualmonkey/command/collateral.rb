@@ -63,9 +63,11 @@ module VirtualMonkey
         FileUtils.mkdir_p(VirtualMonkey::COLLATERAL_TEST_DIR)
         puts Git.clone(repo_path, project_path, git_options)
         # Hook up git_hooks dir
-        if File.directory?(File.join(project_path, "git_hooks"))
-          FileUtils.rm_rf(File.join(project_path, ".git", "hooks"))
-          FileUtils.ln_s(File.join(project_path, "git_hooks"), File.join(project_path, ".git", "hooks"))
+        project_git_hooks = File.join(project_path, "git_hooks")
+        default_git_hooks = File.join(project_path, ".git", "hooks")
+        if File.directory?(project_git_hooks)
+          FileUtils.rm_rf(default_git_hooks) if File.directory?(default_git_hooks)
+          FileUtils.ln_s(project_git_hooks, File.join(default_git_hooks))
         end
 
         # Refresh Projects index
@@ -92,9 +94,11 @@ module VirtualMonkey
         end
         FileUtils.cp_r(proj_files, project_path)
         # Hook up git_hooks dir
-        if File.directory?(File.join(project_path, "git_hooks"))
-          FileUtils.rm_rf(File.join(project_path, ".git", "hooks"))
-          FileUtils.ln_s(File.join(project_path, "git_hooks"), File.join(project_path, ".git", "hooks"))
+        project_git_hooks = File.join(project_path, "git_hooks")
+        default_git_hooks = File.join(project_path, ".git", "hooks")
+        if File.directory?(project_git_hooks)
+          FileUtils.rm_rf(default_git_hooks) if File.directory?(default_git_hooks)
+          FileUtils.ln_s(project_git_hooks, File.join(default_git_hooks))
         end
 
         puts "\nTo generate new collateral, use 'monkey new_runner' or 'monkey import_deployment'\n\n".apply_color(:green)
@@ -156,7 +160,7 @@ module VirtualMonkey
         # Command
         project_path = File.join(VirtualMonkey::COLLATERAL_TEST_DIR, project_name)
         error "FATAL: #{project_path} doesn't exist!" unless File.exists?(project_path)
-        if ask("Are you sure you want to delete #{project_name}?", lambda { |ans| ans =~ /^[yY]/ })
+        if !tty? || ask("Are you sure you want to delete #{project_name}?", lambda { |ans| ans =~ /^[yY]/ })
           FileUtils.rm_rf(project_path)
         else
           error "Aborting on user input."

@@ -12,6 +12,18 @@ class Hash
     self
   end
   alias_method :to_hash, :to_h
+
+  def map_with_index(&block)
+    ret = []
+    each_with_index { |e,i| ret << block[e,i] }
+    ret
+  end
+
+  def &(other)
+    raise TypeError.new("can't convert #{other.class} into Array") unless Array === other || Hash === other
+    other = other.keys if Hash === other
+    self.reject { |key,val| !other.include?(key) }
+  end
 end
 
 # Array Patches
@@ -97,6 +109,12 @@ class Array
   def map_to_h(&block)
     [self, map(&block)].transpose.to_h
   end
+
+  def map_with_index(&block)
+    ret = []
+    each_with_index { |e,i| ret << block[e,i] }
+    ret
+  end
 end
 
 module Math
@@ -149,7 +167,7 @@ class String
 
   def apply_color(*color_symbols)
     ret = self
-    if ::VirtualMonkey::config[:colorized_text] != "hide"
+    if ::VirtualMonkey::config[:colorized_text] != "hide" && tty?
       color_symbols.each { |color| ret = ret.__send__(color) }
     end
     ret
@@ -258,6 +276,14 @@ module Kernel
   def tty_width
     (tty? ? (ENV["COLUMNS"] || `stty size`.chomp.split(/ /).last).to_i : nil)
   end
+
+  def assert_tty
+    raise "FATAL: This `#{calling_method}' requires an interactive tty" unless tty?
+  end
+
+  def not_implemented(message=nil)
+    raise NotImplementedError.new("Method `#{calling_method}' has not been implemented")
+  end
 end
 
 module Boolean
@@ -269,4 +295,28 @@ end
 
 class TrueClass
   include Boolean
+end
+
+module Containers
+  class PriorityQueue
+    def to_a
+      @heap.to_a
+    end
+
+    def each(*args, &block)
+      @heap.each(*args, &block)
+    end
+  end
+
+  class Heap
+    def to_a
+      @stored.to_a.sort { |a,b|
+        (@compare_fn[a[0],b[0]] ? -1 : 1)
+      }.map { |k,v| v.map { |f| f.value } }.flatten
+    end
+
+    def each(*args, &block)
+      to_a.each(*args, &block)
+    end
+  end
 end

@@ -1,6 +1,7 @@
 module VirtualMonkey
   module Command
     add_command("new_runner", [:project], [], :flagless) do
+      assert_tty
       interactive_select_project_logic()
 
       build_scenario_names()

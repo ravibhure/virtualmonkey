@@ -54,10 +54,10 @@ module VirtualMonkey
         orig_raise(*args)
       rescue Exception => e
         if not self.__send__(:__exception_handle__, e)
-          if ENV['MONKEY_NO_DEBUG'] != "true" && ENV['ENTRY_COMMAND'] == "grinder" && !Debugger.started?
-            puts "Got exception: #{e.message}" if e
-            puts "Backtrace: #{e.backtrace.join("\n")}" if e
-            puts "Pausing for inspection before continuing to raise Exception..."
+          if ENV['MONKEY_NO_DEBUG'] != "true" && ENV['ENTRY_COMMAND'] == "grinder" && !Debugger.started? && tty?
+            warn "Got exception: #{e.message}" if e
+            warn "Backtrace: #{e.backtrace.join("\n")}" if e
+            warn "Pausing for inspection before continuing to raise #{e.class}..."
 #           if block
 #              f, l = block.to_s.match(/@.*>/)[0].chop.reverse.chop.reverse.split(":")
 #              puts "(Note: There is a block provided from \"#{f}\" at line #{l} that will attempt to handle the exception)"
@@ -405,6 +405,7 @@ EOS
     # *           (e.g. app_servers, s_one)
     # * <~ServerInterface> will return a one-element Array with the ServerInterface
     def select_set(set = @servers)
+      passed_param = set
       if set.is_a?(String)
         if self.respond_to?(set.to_sym)
           set = set.to_sym
@@ -418,6 +419,7 @@ EOS
       set = match_servers_by_st(set) if set.is_a?(ServerTemplate)
       set = __send__(set) if set.is_a?(Symbol)
       set = [ set ] unless set.is_a?(Array)
+      raise "FATAL: No servers found for passed #{passed_param.class}: #{passed_param.inspect}" if set.empty?
       return set
     end
 
