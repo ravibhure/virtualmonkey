@@ -2,6 +2,8 @@ module VirtualMonkey
   module API
     class Task < VirtualMonkey::API::BaseResource
       PATH = "#{VirtualMonkey::API::ROOT}/tasks".freeze
+      ContentType = "application/vnd.rightscale.virtualmonkey.task"
+      CollectionContentType = ContentType + ";type=collection"
       TEMP_STORE = File.join("", "tmp", "spidermonkey_tasks.json").freeze
       SDB_STORE = "virtualmonkey_tasks".freeze
 

@@ -2,14 +2,9 @@ module VirtualMonkey
   module API
     class Job < VirtualMonkey::API::BaseResource
       PATH = "#{VirtualMonkey::API::ROOT}/jobs".freeze
+      ContentType = "application/vnd.rightscale.virtualmonkey.job"
+      CollectionContentType = ContentType + ";type=collection"
       TEMP_STORE = File.join("", "tmp", "spidermonkey_jobs.json").freeze
-      DAEMONS_OPTIONS = {
-        :backtrace => true,
-        :multiple => true,
-        :log_output => true,
-        :log_dir => File.join("", "tmp", "spidermonkey_jobs"),
-#        :stop_proc => nil,
-      }.freeze
 
       #
       # Helper Methods
@@ -36,6 +31,17 @@ module VirtualMonkey
         ]
       end
       private_class_method :fields
+
+      def self.daemon_child(&block)
+        pid = Process.fork do
+          $stdout = File.new("/dev/null", "w")
+          $stderr = File.new("/dev/null", "w")
+          yield
+        end
+        thread = Process.detach(pid)
+        [pid, thread]
+      end
+      private_class_method :daemon_child
 
       #
       # Constructor
@@ -99,11 +105,10 @@ module VirtualMonkey
 
         # Create record
         if VirtualMonkey::daemons.length < (VirtualMonkey::config[:max_jobs] || 2)
-          app = Daemons.call(DAEMONS_OPTIONS.merge(:app_name => "SpiderMonkey-#{new_record.uid}")) do
+          pid, app = daemon_child do
             VirtualMonkey::Command.__send__(parent_task["command"], *parent_task["options"])
           end
-          new_record["daemon"] = app
-          new_record["status"] = "running"
+          new_record.merge!("daemon" => app, "pid" => pid, "status" => "running")
           VirtualMonkey::daemons << new_record
         else
           new_record["status"] = "pending"
@@ -126,13 +131,17 @@ module VirtualMonkey
         # First try in running daemons
         record = VirtualMonkey::daemons.detect { |d| d.uid == uid }
         if record
-          if record["daemon"].running?
-            record["daemon"].stop
-            record["status"] = "failed"
+          if record["daemon"].alive?
+            record["daemon"].kill
+            record["status"] = "cancelled"
+            unless [0,1, $$].include?(record["pid"].to_i)
+              Process.kill("TERM", record["pid"].to_i)
+            end
           else
-            record["status"] = "finished" #TODO: Detect whether passed or failed
+            record["status"] = (record["daemon"].value.exitstatus == 0 ? "passed" : "failed")
           end
           record.delete("daemon")
+          record.delete("pid")
 
           cache = read_cache
           cache[record.uid] = record
@@ -147,8 +156,10 @@ module VirtualMonkey
         if record
           record["status"] = "cancelled"
           new_q = []
-          new_q << VirtualMonkey::daemon_queue.pop until VirtualMonkey::daemon_queue.size == 0
-          new_q.reject! { |h| h.uid == record.uid }
+          until VirtualMonkey::daemon_queue.size == 0
+            h = VirtualMonkey::daemon_queue.pop
+            new_q << h unless h.uid == record.uid
+          end
           new_q.each { |h| VirtualMonkey::daemon_queue.push(h, h["priority"]) }
 
           cache = read_cache
@@ -165,16 +176,26 @@ module VirtualMonkey
       end
 
       def self.garbage_collect
-        VirtualMonkey::daemons.reject! { |d| d["status"] !~ /^(pending|running)$/ }
+        cache = read_cache
+        VirtualMonkey::daemons.each do |record|
+          if record["daemon"].join(0.05)
+            record["status"] = (record["daemon"].value.exitstatus == 0 ? "passed" : "failed")
+            record.delete("daemon")
+            record.delete("pid")
+
+            cache[record.uid] = record
+          end
+        end
+        write_cache(cache)
+        VirtualMonkey::daemons.reject! { |d| d["status"] =~ /^(pending|running)$/ }
         ((VirtualMonkey::config[:max_jobs] || 2) - VirtualMonkey::daemons.size).times do |i|
           job = VirtualMonkey::daemon_queue.pop
           if job
             parent_task = VirtualMonkey::API::Task.get(job.links.to_h("rel", "href")["task"])
-            app = Daemons.call(DAEMONS_OPTIONS.merge(:app_name => "SpiderMonkey-#{job.uid}")) do
+            pid, thread = daemon_child do
               VirtualMonkey::Command.__send__(parent_task["command"], *parent_task["options"])
             end
-            job["daemon"] = app
-            job["status"] = "running"
+            job.merge!("daemon" => thread, "pid" => pid, "status" => "running")
             VirtualMonkey::daemons << job
           end
         end

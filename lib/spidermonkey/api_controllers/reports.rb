@@ -2,6 +2,8 @@ module VirtualMonkey
   module API
     class Report < VirtualMonkey::API::BaseResource
       PATH = "#{VirtualMonkey::API::ROOT}/reports".freeze
+      ContentType = "application/vnd.rightscale.virtualmonkey.report"
+      CollectionContentType = ContentType + ";type=collection"
       TEMP_STORE = File.join("", "tmp", "spidermonkey_reports.json").freeze
       BASE_DOMAIN = "virtualmonkey_report_metadata".freeze
 
@@ -86,7 +88,7 @@ module VirtualMonkey
         raise IndexError.new("#{self} #{uid} not found") unless record
 
         # Cache
-        if record["status"] =~ /^(finished|failed|passed)$/
+        if record["status"] =~ /^(cancelled|failed|passed)$/
           cache = read_cache
           cache[uid] = self.new.deep_merge(record)
           write_cache(cache)
@@ -135,7 +137,7 @@ module VirtualMonkey
         end
 
         # Cache
-        to_cache = records.reject { |record| record["status"] !~ /^(finished|failed|passed)$/ }
+        to_cache = records.reject { |record| record["status"] !~ /^(cancelled|failed|passed)$/ }
         unless to_cache.empty?
           cache = read_cache
           cache.deep_merge(to_cache.map { |record| [record.uid, self.new.deep_merge(record)] }.to_h)
@@ -218,7 +220,7 @@ module VirtualMonkey
         return [] if records.empty?
 
         # Cache
-        to_cache = records.reject { |record| record["status"] !~ /^(finished|failed|passed)$/ }
+        to_cache = records.reject { |record| record["status"] !~ /^(cancelled|failed|passed)$/ }
         unless to_cache.empty?
           cache = read_cache
           cache.deep_merge(to_cache.map { |record| [record.uid, self.new.deep_merge(record)] }.to_h)
@@ -273,7 +275,7 @@ var data = [{
         VirtualMonkey::API::Report.update_sdb(opts["jobs"]) if opts["report_metadata"]
 
         # Write to cache
-        to_cache = opts["jobs"].reject { |job| job.metadata["status"] !~ /^(finished|failed|passed)$/ }
+        to_cache = opts["jobs"].reject { |job| job.metadata["status"] !~ /^(cancelled|failed|passed)$/ }
         unless to_cache.empty?
           cache = read_cache
           cache.deep_merge(to_cache.map { |job| [job.metadata["uid"], self.new.deep_merge(job.metadata)] }.to_h)
