@@ -49,9 +49,9 @@ module VirtualMonkey
       data_ary = data.split("\n")
       data_ary.each_index do |i|
         data_ary[i] = timestamp + data_ary[i]
-        $stdout.syswrite("<#{deploy_id}>#{data_ary[i]}\n".apply_color(:uncolorize)) if @verbose
+        $stdout.syswrite("<#{deploy_id}>#{data_ary[i]}\n".uncolorize) if @verbose
       end
-      File.open(@logfile, "a") { |f| f.write("#{data_ary.join("\n")}\n".apply_color(:uncolorize)) }
+      File.open(@logfile, "a") { |f| f.write("#{data_ary.join("\n")}\n".uncolorize) }
     end
 
     # stderr hook for popen3
@@ -61,8 +61,8 @@ module VirtualMonkey
         data_ary[i] = timestamp + data_ary[i]
         $stdout.syswrite("<#{deploy_id}>#{data_ary[i]}\n".apply_color(:uncolorize, :yellow))
       end
-      File.open(@logfile, "a") { |f| f.write("#{data_ary.join("\n")}\n".apply_color(:uncolorize)) }
-      File.open(@err_log, "a") { |f| f.write("#{data_ary.join("\n")}\n".apply_color(:uncolorize)) }
+      File.open(@logfile, "a") { |f| f.write("#{data_ary.join("\n")}\n".uncolorize) }
+      File.open(@err_log, "a") { |f| f.write("#{data_ary.join("\n")}\n".uncolorize) }
     end
 
     def timestamp

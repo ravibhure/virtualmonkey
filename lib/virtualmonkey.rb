@@ -35,7 +35,11 @@ module VirtualMonkey
     @@virtual_monkey_config = {}
     [VirtualMonkey::SYS_CONFIG, VirtualMonkey::USER_CONFIG, VirtualMonkey::ROOT_CONFIG].each do |config_file|
       if File.exists?(config_file)
-        @@virtual_monkey_config.merge!(YAML::load(IO.read(config_file)) || {})
+        begin
+          @@virtual_monkey_config.merge!(YAML::load(IO.read(config_file)) || {})
+        rescue Errno::EBADF
+          retry
+        end
         if VirtualMonkey.const_defined?("Command")
           config_ok = @@virtual_monkey_config.reduce(true) do |bool,ary|
             bool && VirtualMonkey::Command::check_variable_value(ary[0], ary[1])
