@@ -17,6 +17,9 @@ module VirtualMonkey
       rescue Errno::ENOENT
         File.open(TEMP_STORE, "w") { |f| {}.to_json }
         return {}
+      rescue Errno::EBADF
+        sleep 0.1
+        retry
       end
       private_class_method :read_cache
 

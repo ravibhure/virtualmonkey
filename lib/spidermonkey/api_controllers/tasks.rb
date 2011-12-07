@@ -17,6 +17,9 @@ module VirtualMonkey
       rescue Errno::ENOENT
         File.open(TEMP_STORE, "w") { |f| {}.to_json }
         return {}
+      rescue Errno::EBADF
+        sleep 0.1
+        retry
       end
       private_class_method :read_cache
 
@@ -29,12 +32,19 @@ module VirtualMonkey
         [
           "command",
           "options",
-          "schedule",
+          "subtask_hrefs",
+#          "scheduled",
+          "affinity",
           "name",
           "uid",
         ]
       end
       private_class_method :fields
+
+      def self.valid_affinities
+        ["parallel", "continue", "stop"]
+      end
+      private_class_method :valid_affinities
 
       #
       # Constructor
@@ -69,16 +79,32 @@ module VirtualMonkey
 
       def self.create(opts={})
         # Check for required Arguments
-        raise ArgumentError.new("#{PATH} requires a command") unless opts["command"].is_a?(String)
+        unless opts["command"].is_a?(String) or opts["subtask_hrefs"].is_a?(Array)
+          raise ArgumentError.new("#{PATH} requires a 'command' String or a 'subtask_hrefs' Array")
+        end
+        if opts["subtask_hrefs"] and opts["command"]
+          raise ArgumentError.new("The 'command' String and 'subtask_hrefs' Array are mutually exclusive")
+        end
+        if opts["subtask_hrefs"] and not valid_affinities.include?(opts["affinity"])
+          msg = "#{PATH} requires an 'affinity' String when passing a 'subtask_hrefs' Array"
+          raise ArgumentError.new(msg)
+        end
 
         # Sanitize
         opts &= (fields | CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s })
 
+        # Check for Schedule options
+        schedule_opts = opts & CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s }
+        opts -= CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s }
+
         # Read, Create, and Write record
         cache = read_cache
-        new_record = self.new.deep_merge(opts)
+        new_record = self.new.deep_merge(opts.merge("scheduled" => false))
         cache[new_record.uid] = new_record
         write_cache(cache)
+
+        # Schedule?
+        self.schedule(new_record, schedule_opts) unless schedule_opts.empty?
 
         return new_record.uid
       end
@@ -92,14 +118,39 @@ module VirtualMonkey
 
       def self.update(uid, opts={})
         uid = normalize_uid(uid)
+
         # Sanitize
         opts &= (fields | CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s })
         opts["updated_at"] = Time.now.utc.strftime("%Y/%m/%d %H:%M:%S +0000")
 
-        # Read and update
+        # Check for Schedule options
+        schedule_opts = opts & CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s }
+        opts -= CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s }
+
+        # Read Cache
         cache = read_cache
+        raise IndexError.new("#{self} #{uid} not found") unless cache[uid]
         cache[uid].deep_merge!(opts)
+
+        # Check that the Update is valid
+        unless cache[uid]["command"].is_a?(String) or cache[uid]["subtask_hrefs"].is_a?(Array)
+          raise ArgumentError.new("#{PATH} requires a 'command' String or a 'subtask_hrefs' Array")
+        end
+        if cache[uid]["subtask_hrefs"] and cache[uid]["command"]
+          raise ArgumentError.new("The 'command' String and 'subtask_hrefs' Array are mutually exclusive")
+        end
+        if cache[uid]["subtask_hrefs"] and not valid_affinities.include?(cache[uid]["affinity"])
+          msg = "#{PATH} requires an 'affinity' String when using a 'subtask_hrefs' Array"
+          raise ArgumentError.new(msg)
+        end
+
+        # Update Cache
         write_cache(cache)
+
+        # Schedule?
+        self.schedule(new_record, schedule_opts) unless schedule_opts.empty?
+
+        return nil
       end
 
       def self.delete(uid)
@@ -131,8 +182,9 @@ module VirtualMonkey
         # Sanitize
         opts &= CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s }
         opts["updated_at"] = Time.now.utc.strftime("%Y/%m/%d %H:%M:%S +0000")
+        opts["scheduled"] = true
         opts.delete("command")
-        cronedit_opts = opts.map { |k,v| [k.to_sym, v] }.to_h
+        cronedit_opts = (opts.map { |k,v| [k.to_sym, v] }.to_h) & CronEdit::CronEntry::DEFAULTS.keys
 
         # Read rest_connection settings
         settings = YAML::load(IO.read(VirtualMonkey::REST_YAML))
@@ -145,12 +197,61 @@ module VirtualMonkey
         ct = CronEdit::FileCrontab.new(crontab, crontab)
         ct.add("#{uid}", cronedit_opts)
         ct.commit
+
+        cache[uid].deep_merge!(opts & ["updated_at", "scheduled"])
+        write_cache(cache)
+
         return nil
       end
 
       def self.start(uid)
         uid = normalize_uid(uid)
-        return VirtualMonkey::API::Job.create("task" => uid)
+        opts = {"parent_task" => uid}
+        parent_task = self.get(uid)
+
+        case parent_task["affinity"]
+        when "parallel"
+          return parent_task["subtask_hrefs"].map { |subtask_href|
+            # Get Subtask
+            ret = []
+            subtask = self.get(subtask_href)
+            opts.merge!("parent_task" => subtask.uid)
+
+            # Recurse & start
+            if subtask["affinity"]
+              ret += [self.start(subtask)]
+            else
+              ret += [VirtualMonkey::API::Job.create(opts)]
+            end
+
+            ret
+          }.flatten.compact
+        when "continue", "stop"
+          subtask = self.get(parent_task["subtask_hrefs"].first)
+          if subtask["affinity"]
+            msg = "Tasks with affinity=#{parent_task["affinity"]} cannot have grandchild subtasks"
+            raise VirtualMonkey::API::SemanticError.new(msg)
+          end
+          return VirtualMonkey::API::Job.create("parent_task" => subtask.uid, "callback_task" => uid)
+        when nil then return VirtualMonkey::API::Job.create(opts)
+        else
+          msg = "Invalid 'affinity': #{parent_task["affinity"]}. Valid values: #{valid_affinities.inspect}"
+          raise VirtualMonkey::API::SemanticError.new(msg)
+        end
+      end
+
+      #
+      # Unexposed API
+      #
+      def self.get_next_subtask_href(last_task_uid, managing_task_uid)
+        last_task, managing_task = self.get(last_task_uid), self.get(managing_task_uid)
+        if last_task && managing_task
+          next_index = managing_task["subtask_hrefs"].index(last_task.href) + 1
+          if next_index < managing_task["subtask_hrefs"].size
+            return managing_task["subtask_hrefs"][next_index]
+          end
+        end
+        return nil
       end
     end
   end

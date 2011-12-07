@@ -24,6 +24,12 @@ class Hash
     other = other.keys if Hash === other
     self.reject { |key,val| !other.include?(key) }
   end
+
+  def -(other)
+    raise TypeError.new("can't convert #{other.class} into Array") unless Array === other || Hash === other
+    other = other.keys if Hash === other
+    self.reject { |key,val| other.include?(key) }
+  end
 end
 
 # Array Patches
@@ -86,6 +92,7 @@ class Array
         elsif elem[name_key.to_sym] and elem[value_key.to_sym] and elem.length == 2
           ret[elem[name_key.to_sym]] = elem[value_key.to_sym]
         else
+          # TODO - Make arrays of values instead of throwing error
           changed = ((ret.keys - elem.keys) != ret.keys)
           raise "Collision detected in Array->Hash conversion" if changed
           ret.merge! elem

@@ -13,25 +13,20 @@ module VirtualMonkey
   end
 
   module API
+    class SemanticError < StandardError
+    end
+
+    class MethodNotAllowedError < StandardError
+    end
+
     class BaseResource < Hash
-      def self.index()
-        not_implemented
-      end
+      #
+      # Helper Methods
+      #
 
-      def self.create(params={})
-        not_implemented
-      end
-
-      def self.get(uid)
-        not_implemented
-      end
-
-      def self.update(uid, params={})
-        not_implemented
-      end
-
-      def self.delete(uid)
-        not_implemented
+      def self.not_allowed
+        msg = "Method `#{calling_method}' is not allowed on #{self}"
+        raise VirtualMonkey::API::MethodNotAllowedError.new(msg)
       end
 
       def self.from_json_file(filepath, record=nil)
@@ -47,6 +42,34 @@ module VirtualMonkey
           raise TypeError.new("can't convert #{uid.class} into UID")
         end
       end
+
+      #
+      # Standard CRUD REST APIs
+      #
+
+      def self.index()
+        not_allowed
+      end
+
+      def self.create(params={})
+        not_allowed
+      end
+
+      def self.get(uid)
+        not_allowed
+      end
+
+      def self.update(uid, params={})
+        not_allowed
+      end
+
+      def self.delete(uid)
+        not_allowed
+      end
+
+      #
+      # Instance Methods
+      #
 
       def initialize(*args, &block)
         super(*args, &block)

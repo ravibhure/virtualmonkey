@@ -16,6 +16,9 @@ module VirtualMonkey
       rescue Errno::ENOENT
         File.open(TEMP_STORE, "w") { |f| {}.to_json }
         return {}
+      rescue Errno::EBADF
+        sleep 0.1
+        retry
       end
       private_class_method :read_cache
 
@@ -25,9 +28,12 @@ module VirtualMonkey
       private_class_method :write_cache
 
       def self.fields
+        # These fields are commented because they are placed in the "links" field
+        # by the time they are sanitized
         [
-          "task",
+#          "parent_task",
           "priority",
+#          "callback_task",
         ]
       end
       private_class_method :fields
@@ -72,14 +78,21 @@ module VirtualMonkey
 
       def self.create(opts={})
         # Check for required Arguments
-        if opts["command"] and not opts["task"]
-          opts["task"] = VirtualMonkey::API::Task.create(opts.dup)
+        if opts["command"] and not opts["parent_task"]
+          opts["parent_task"] = VirtualMonkey::API::Task.create(opts.dup)
         end
-        raise ArgumentError.new("#{PATH} requires a parent task or a command") unless opts["task"]
-        parent_task = VirtualMonkey::API::Task.get(opts["task"])
-        task_uri = VirtualMonkey::API::Task::PATH + "/#{opts["task"]}"
+        raise ArgumentError.new("#{PATH} requires a parent task or a command") unless opts["parent_task"]
+        parent_task = VirtualMonkey::API::Task.get(opts["parent_task"])
+        task_uri = VirtualMonkey::API::Task::PATH + "/#{normalize_uid(opts["parent_task"])}"
         raise IndexError.new("#{task_uri} not found") unless parent_task
         parent_task["options"] ||= []
+
+        callback_task = nil
+        if opts["callback_task"]
+          callback_task = VirtualMonkey::API::Task.get(opts["callback_task"])
+          callback_uri = VirtualMonkey::API::Task::PATH + "/#{normalize_uid(opts["callback_task"])}"
+          raise IndexError.new("#{callback_uri} not found") unless callback_task
+        end
 
         # Sanitize
         opts &= fields
@@ -89,7 +102,8 @@ module VirtualMonkey
         opts["priority"] = [[opts["priority"], 10].min, 1].max unless (1..10) === opts["priority"]
 
         new_record = self.new.deep_merge(opts)
-        new_record.links |= [{"href" => task_uri, "rel" => "task"}]
+        new_record.links |= [{"href" => task_uri, "rel" => "parent"}]
+        new_record.links |= [{"href" => callback_task.uri, "rel" => "callback"}] if callback_task
 
         # Ensure a Cronjob exists to bump the queue
         crontab = File.join("", "etc", "crontab")
@@ -128,6 +142,8 @@ module VirtualMonkey
 
       def self.delete(uid)
         uid = normalize_uid(uid)
+        # NOTE: this cancel function will cancel the callbacks as well
+
         # First try in running daemons
         record = VirtualMonkey::daemons.detect { |d| d.uid == uid }
         if record
@@ -177,21 +193,32 @@ module VirtualMonkey
 
       def self.garbage_collect
         cache = read_cache
+        callback_tasks = []
         VirtualMonkey::daemons.each do |record|
-          if record["daemon"].join(0.05)
+          unless record["daemon"].alive?
             record["status"] = (record["daemon"].value.exitstatus == 0 ? "passed" : "failed")
             record.delete("daemon")
             record.delete("pid")
+            callback_tasks << {record.uid => record.links.to_h("rel", "href")["callback"]}
 
             cache[record.uid] = record
           end
         end
         write_cache(cache)
         VirtualMonkey::daemons.reject! { |d| d["status"] =~ /^(pending|running)$/ }
+
+        # Callback tasks take priority
+        callback_tasks = callback_tasks.to_h.reject { |k,v| v.nil? }
+        callback_tasks.each do |parent_uid, callback_uri|
+          next_task_href = VirtualMonkey::API::Task.get_next_subtask_href(parent_uid, callback_uri)
+          self.create("parent_task" => next_task_href, "callback_task" => callback_uri) if next_task_href
+        end
+
+        # Replace any vacancies with jobs from the queue
         ((VirtualMonkey::config[:max_jobs] || 2) - VirtualMonkey::daemons.size).times do |i|
           job = VirtualMonkey::daemon_queue.pop
           if job
-            parent_task = VirtualMonkey::API::Task.get(job.links.to_h("rel", "href")["task"])
+            parent_task = VirtualMonkey::API::Task.get(job.links.to_h("rel", "href")["parent"])
             pid, thread = daemon_child do
               VirtualMonkey::Command.__send__(parent_task["command"], *parent_task["options"])
             end

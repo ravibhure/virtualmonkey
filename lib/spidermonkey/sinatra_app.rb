@@ -36,6 +36,9 @@ set :lock, true
 #use Rack::Session::Cookie, :expire_after => 1.week, :secret => ''
 
 use Rack::Auth::Basic, "Restricted Area" do |username, password|
+  VirtualMonkey::CachedLogins = {} unless VirtualMonkey.constants.include?("CachedLogins")
+  return true if VirtualMonkey::CachedLogins[username] == password
+
   headers = {'Authorization' => "Basic #{["#{username}:#{password}"].pack('m').delete("\r\n")}",
              'X_API_VERSION' => '1.0'}
   connection = Excon.new('https://my.rightscale.com', :headers => headers)
@@ -48,7 +51,7 @@ use Rack::Auth::Basic, "Restricted Area" do |username, password|
   rescue Exception => e
   end
 
-  # TODO CACHING!!!!
+  VirtualMonkey::CachedLogins[username] = password if success
 
   session[:virutalmonkey_id] = rand(1000000)
   success
@@ -79,15 +82,21 @@ helpers do
   rescue ArgumentError, TypeError => e
     status 400
     body(e.message)
+  rescue VirtualMonkey::API::MethodNotAllowedError => e
+    status 405
+    body(e.message)
   rescue NotImplementedError => e
     status 501
     body(e.message)
   rescue IndexError, NameError => e
     status 404
     body(e.message)
-  rescue Exception => e
-    status 500
+  rescue VirtualMonkey::API::SemanticError => e
+    status 422
     body(e.message)
+#  rescue Exception => e
+#    status 500
+#    body(e.message)
   end
 end
 
@@ -183,10 +192,16 @@ end
 # Start
 post "#{VirtualMonkey::API::Task::PATH}/:task_uid/start" do |task_uid|
   standard_handlers do
-    job_uid = VirtualMonkey::API::Task.start(task_uid)
-    status 201
-    headers "Location" => "#{VirtualMonkey::API::Job::PATH}/#{job_uid}",
-            "Content-Type" => "#{VirtualMonkey::API::Job::ContentType}"
+    ret_val = VirtualMonkey::API::Task.start(task_uid)
+    if ret_val.is_a?(Array)
+      status 201
+      headers "Location" => "#{VirtualMonkey::API::Job::PATH}",
+              "Content-Type" => "#{VirtualMonkey::API::Job::CollectionContentType}"
+      body(ret_val.map { |uid| VirtualMonkey::API::Job.get(uid) }.to_json)
+    else
+      status 201
+      headers "Location" => "#{VirtualMonkey::API::Job::PATH}/#{ret_val}"
+    end
   end
 end
 
