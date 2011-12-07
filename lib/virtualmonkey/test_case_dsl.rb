@@ -17,11 +17,12 @@ module VirtualMonkey
       end
       @file_stack.push(file)
       @current_file = file
+      @keys_per_feature[@current_file] ||= []
       ruby = IO.read(file)
       # Setting this to true will isolate the tests and call reset between feature sets
       @features[file] = isolate_feature_set
       # TODO Do actual mixins with the ability to enqueue a set of before/after stuff
-      eval(ruby)
+      eval(ruby, binding, file, 1)
       @file_stack.pop
       @current_file = @file_stack.last
     end
@@ -37,25 +38,25 @@ module VirtualMonkey
       @options[:additional_logs] = []
       @options[:runner_options] = {}
       @runner = nil
+      @all_keys = []
       @file_stack = [file]
       @current_file = file
+      @keys_per_feature = {@current_file => []}
       @main_feature = file
       @features[file] = false
       ruby = IO.read(file)
-      eval(ruby)
+      eval(ruby, binding, file, 1)
       raise "Need a VirtualMonkey::Runner Class!" unless @options[:runner]
       @file_stack.pop
       @current_file = @file_stack.last
+      @all_keys.freeze
+      @keys_per_feature.freeze
       self
     end
 
     def get_keys(*features)
-      features = @features.keys if features.empty?
-      features.map { |feature|
-        tests = []
-        STAGES.each { |stage| tests += @blocks[stage][feature].keys if @blocks[stage][feature].is_a?(Hash) }
-        tests.select { |test| test.is_a? String }
-      }.flatten.compact.uniq
+      return @all_keys.dup if features.empty?
+      features.map { |feature| @keys_per_feature[feature].dup }.flatten.compact.uniq
     end
 
     def check_for_resume
@@ -263,19 +264,30 @@ module VirtualMonkey
         warn "WARNING: overwriting run_once before for feature '#{@current_file}'" if @blocks[:before][@current_file][:once]
         @blocks[:before][@current_file][:once] = block
       else
+        warn "WARNING: only Strings are allowed for test case names" if args.reject! { |test| !test.is_a?(String) }
         args.each { |test|
           warn "WARNING: overwriting before '#{test}' for feature '#{@current_file}'" if @blocks[:before][@current_file][test]
-          @blocks[:before][@current_file][test] = block if test.is_a?(String)
+          @blocks[:before][@current_file][test] = block
         }
+        # Uncomment the following lines to allow "before" blocks without corresponding "test" blocks
+#        @all_keys -= args
+#        @all_keys |= args
+#        @keys_per_feature[@current_file] -= args
+#        @keys_per_feature[@current_file] |= args
       end
     end
 
     def test(*args, &block)
       @blocks[:test][@current_file] ||= {}
+      warn "WARNING: only Strings are allowed for test case names" if args.reject! { |test| !test.is_a?(String) }
       args.each { |test|
         warn "WARNING: overwriting test '#{test}' for feature '#{@current_file}'" if @blocks[:test][@current_file][test]
-        @blocks[:test][@current_file][test] = block if test.is_a?(String)
+        @blocks[:test][@current_file][test] = block
       }
+      @all_keys -= args
+      @all_keys |= args
+      @keys_per_feature[@current_file] -= args
+      @keys_per_feature[@current_file] |= args
     end
 
     def after(*args, &block)
@@ -284,10 +296,16 @@ module VirtualMonkey
         warn "WARNING: overwriting universal after for feature '#{@current_file}'" if @blocks[:after][@current_file][:all]
         @blocks[:after][@current_file][:all] = block
       else
+        warn "WARNING: only Strings are allowed for test case names" if args.reject! { |test| !test.is_a?(String) }
         args.each { |test|
           warn "WARNING: overwriting after '#{test}' for feature '#{@current_file}'" if @blocks[:after][@current_file][test]
-          @blocks[:after][@current_file][test] = block if test.is_a?(String)
+          @blocks[:after][@current_file][test] = block
         }
+        # Uncomment the following lines to allow "after" blocks without corresponding "test" blocks
+#        @all_keys -= args
+#        @all_keys |= args
+#        @keys_per_feature[@current_file] -= args
+#        @keys_per_feature[@current_file] |= args
       end
     end
 
