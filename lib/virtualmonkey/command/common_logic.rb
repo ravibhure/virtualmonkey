@@ -385,7 +385,7 @@ module VirtualMonkey
       return cmd_line
     end
 
-    def self.retry_block(max_retries=(VirtualMonkey::config[:max_retries] || 10), &block)
+    def self.retry_block(max_retries=VirtualMonkey::config[:max_retries], &block)
       begin
         yield()
       rescue Interrupt, NameError, ArgumentError, TypeError => e

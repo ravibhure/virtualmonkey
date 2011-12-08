@@ -85,6 +85,24 @@ if [[ "$fail" -ne 0 && -n "$fail" ]]; then
   exit 1
 fi
 
+# Check for warnings
+fail=0
+for FILE in `git diff-index --name-only HEAD --` ; do
+  if test -e $FILE; then
+    # If a file is ruby, check for syntax errors
+    if [[ -n `find $FILE -regex ".*\.rb$"` ]]; then
+      warnings=`ruby -c "$FILE" 2>&1 | grep -i warn`
+      if [[ -n "$warnings" ]]; then echo "$warnings"; fail=1; fi
+    fi
+  fi
+done
+
+if [[ "$fail" -ne 0 && -n "$fail" ]]; then
+  echo "Syntax Warnings Found. Aborting commit"
+  lod_message
+  exit 1
+fi
+
 for FILE in $whitespace; do
   echo "Whitespace problem fixed. Please re-add '$FILE' to your commit"
 done

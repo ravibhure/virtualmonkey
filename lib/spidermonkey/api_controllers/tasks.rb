@@ -37,6 +37,7 @@ module VirtualMonkey
           "affinity",
           "name",
           "uid",
+          "user",
         ]
       end
       private_class_method :fields
@@ -97,6 +98,9 @@ module VirtualMonkey
         schedule_opts = opts & CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s }
         opts -= CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s }
 
+        # Get user data
+        opts["user"] ||= rest_config_yaml[:user]
+
         # Read, Create, and Write record
         cache = read_cache
         new_record = self.new.deep_merge(opts.merge("scheduled" => false))
@@ -126,6 +130,9 @@ module VirtualMonkey
         # Check for Schedule options
         schedule_opts = opts & CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s }
         opts -= CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s }
+
+        # Get user data NOTE: this means the person who updated takes control
+        opts["user"] ||= rest_config_yaml[:user]
 
         # Read Cache
         cache = read_cache
@@ -187,7 +194,7 @@ module VirtualMonkey
         cronedit_opts = (opts.map { |k,v| [k.to_sym, v] }.to_h) & CronEdit::CronEntry::DEFAULTS.keys
 
         # Read rest_connection settings
-        settings = YAML::load(IO.read(VirtualMonkey::REST_YAML))
+        settings = rest_config_yaml
         base_url = "https://#{settings[:user]}:#{settings[:pass]}@127.0.0.1"
         path = "#{PATH}/#{uid}/start"
         cronedit_opts[:command] = "curl -x POST #{base_url}#{path}"
@@ -198,15 +205,23 @@ module VirtualMonkey
         ct.add("#{uid}", cronedit_opts)
         ct.commit
 
-        cache[uid].deep_merge!(opts & ["updated_at", "scheduled"])
+        # Get user data NOTE: this means the person who updated takes control
+        opts["user"] ||= settings[:user]
+
+        cache[uid].deep_merge!(opts & ["updated_at", "scheduled", "user"])
         write_cache(cache)
 
         return nil
       end
 
-      def self.start(uid)
+      def self.start(uid, additional_opts={})
         uid = normalize_uid(uid)
-        opts = {"parent_task" => uid}
+        additional_opts &= fields
+
+        # Get user data
+        additional_opts["user"] ||= rest_config_yaml[:user]
+
+        opts = additional_opts.merge("parent_task" => uid)
         parent_task = self.get(uid)
 
         case parent_task["affinity"]
@@ -232,7 +247,8 @@ module VirtualMonkey
             msg = "Tasks with affinity=#{parent_task["affinity"]} cannot have grandchild subtasks"
             raise VirtualMonkey::API::SemanticError.new(msg)
           end
-          return VirtualMonkey::API::Job.create("parent_task" => subtask.uid, "callback_task" => uid)
+          opts.merge!("parent_task" => subtask.uid, "callback_task" => uid)
+          return VirtualMonkey::API::Job.create(opts)
         when nil then return VirtualMonkey::API::Job.create(opts)
         else
           msg = "Invalid 'affinity': #{parent_task["affinity"]}. Valid values: #{valid_affinities.inspect}"

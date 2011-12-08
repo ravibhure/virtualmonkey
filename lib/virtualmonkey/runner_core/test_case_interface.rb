@@ -102,7 +102,7 @@ module VirtualMonkey
         "@rerun_last_command"
       ]
 
-      @max_retries = ::VirtualMonkey::config[:max_retries] || 10
+      @max_retries = ::VirtualMonkey::config[:max_retries]
       @options = options
       @options[:additional_logs] ||= []
       @deprecation_error = `curl -s "www.kdegraaf.net/cgi-bin/bofh" | grep -o "<b>.*</b>"`

@@ -48,6 +48,11 @@ module VirtualMonkey
         end
       end
     end
+    if VirtualMonkey.const_defined?("Command") && VirtualMonkey::Command.const_defined?("ConfigVariables")
+      VirtualMonkey::Command::ConfigVariables.each do |var,hsh|
+        @@virtual_monkey_config[var.to_sym] ||= hsh["default"]
+      end
+    end
     @@virtual_monkey_config
   end
 end
@@ -56,7 +61,7 @@ require 'colorize'
 require 'patches.rb'
 
 def progress_require(file, progress=nil)
-  if VirtualMonkey::config[:load_progress] != "hide" && tty?
+  if ::VirtualMonkey::config[:load_progress] != "hide" && tty?
     @current_progress ||= nil
     if ENV['ENTRY_COMMAND'] == "monkey" && progress && progress != @current_progress
       STDOUT.print "\nloading #{progress}"
@@ -67,7 +72,7 @@ def progress_require(file, progress=nil)
 
   ret = require file
 
-  if VirtualMonkey::config[:load_progress] != "hide" && tty?
+  if ::VirtualMonkey::config[:load_progress] != "hide" && tty?
     if ENV['ENTRY_COMMAND'] == "monkey" && ret
       STDOUT.print "."
     end
@@ -122,6 +127,6 @@ progress_require('virtualmonkey/manager', 'managers')
 progress_require('virtualmonkey/utility', 'utilities')
 progress_require('virtualmonkey/command', 'commands')
 
-progress_require('spidermonkey.rb', 'spidermonkey')
+progress_require('spidermonkey', 'spidermonkey')
 puts "\n"
 VirtualMonkey::config # Verify config files

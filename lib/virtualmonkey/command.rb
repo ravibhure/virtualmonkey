@@ -129,6 +129,10 @@ module VirtualMonkey
                                 "default"     => 10,
                                 "values"      => Integer},
 
+      "default_timeout"     => {"description" => "Controls the default timeout for server actions",
+                                "default"     => (20*60),
+                                "values"      => Integer},
+
       "enable_log_auditor"  => {"description" => "Enables log auditing for logfiles defined in lists/*.json",
                                 "default"     => "false",
                                 "values"      => [false, true]},

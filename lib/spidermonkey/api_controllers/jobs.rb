@@ -33,6 +33,7 @@ module VirtualMonkey
         [
 #          "parent_task",
           "priority",
+          "user",
 #          "callback_task",
         ]
       end
@@ -101,6 +102,9 @@ module VirtualMonkey
         opts["priority"] ||= 5
         opts["priority"] = [[opts["priority"], 10].min, 1].max unless (1..10) === opts["priority"]
 
+        # Get user data
+        opts["user"] ||= rest_config_yaml[:user]
+
         new_record = self.new.deep_merge(opts)
         new_record.links |= [{"href" => task_uri, "rel" => "parent"}]
         new_record.links |= [{"href" => callback_task.uri, "rel" => "callback"}] if callback_task
@@ -118,7 +122,7 @@ module VirtualMonkey
         end
 
         # Create record
-        if VirtualMonkey::daemons.length < (VirtualMonkey::config[:max_jobs] || 2)
+        if VirtualMonkey::daemons.length < VirtualMonkey::config[:max_jobs]
           pid, app = daemon_child do
             VirtualMonkey::Command.__send__(parent_task["command"], *parent_task["options"])
           end
@@ -193,13 +197,13 @@ module VirtualMonkey
 
       def self.garbage_collect
         cache = read_cache
-        callback_tasks = []
+        callback_jobs = []
         VirtualMonkey::daemons.each do |record|
           unless record["daemon"].alive?
             record["status"] = (record["daemon"].value.exitstatus == 0 ? "passed" : "failed")
             record.delete("daemon")
             record.delete("pid")
-            callback_tasks << {record.uid => record.links.to_h("rel", "href")["callback"]}
+            callback_jobs << record if record.links.to_h("rel", "href")["callback"]
 
             cache[record.uid] = record
           end
@@ -208,14 +212,15 @@ module VirtualMonkey
         VirtualMonkey::daemons.reject! { |d| d["status"] =~ /^(pending|running)$/ }
 
         # Callback tasks take priority
-        callback_tasks = callback_tasks.to_h.reject { |k,v| v.nil? }
-        callback_tasks.each do |parent_uid, callback_uri|
+        callback_jobs.each do |record|
+          parent_uid, callback_uri = record.uid, record.links.to_h("rel", "href")["callback"]
           next_task_href = VirtualMonkey::API::Task.get_next_subtask_href(parent_uid, callback_uri)
-          self.create("parent_task" => next_task_href, "callback_task" => callback_uri) if next_task_href
+          opts = {"parent_task" => next_task_href, "callback_task" => callback_uri, "user" => record["user"]}
+          self.create(opts) if next_task_href
         end
 
         # Replace any vacancies with jobs from the queue
-        ((VirtualMonkey::config[:max_jobs] || 2) - VirtualMonkey::daemons.size).times do |i|
+        (VirtualMonkey::config[:max_jobs] - VirtualMonkey::daemons.size).times do |i|
           job = VirtualMonkey::daemon_queue.pop
           if job
             parent_task = VirtualMonkey::API::Task.get(job.links.to_h("rel", "href")["parent"])

@@ -6,7 +6,7 @@ $LOAD_PATH.unshift(File.expand_path(File.join(File.dirname(__FILE__), "..")))
 ENV['ENTRY_COMMAND'] ||= File.basename(__FILE__, ".rb")
 
 require 'rubygems'
-require File.join('..', 'spidermonkey')
+require File.expand_path(File.join(File.dirname(__FILE__), '..', 'virtualmonkey'))
 
 module VirtualMonkey
   PUBLIC_HOSTNAME = (VirtualMonkey::my_api_self ? VirtualMonkey::my_api_self.reachable_ip : ENV['REACHABLE_IP'])
@@ -37,6 +37,7 @@ set :lock, true
 
 use Rack::Auth::Basic, "Restricted Area" do |username, password|
   VirtualMonkey::CachedLogins = {} unless VirtualMonkey.constants.include?("CachedLogins")
+  session[:username] = username
   return true if VirtualMonkey::CachedLogins[username] == password
 
   headers = {'Authorization' => "Basic #{["#{username}:#{password}"].pack('m').delete("\r\n")}",
@@ -72,6 +73,10 @@ helpers do
     }
     opts.compact!
     opts |= ["--yes"]
+  end
+
+  def get_user()
+    {"user" => session[:username]}
   end
 
   def standard_handlers(&block)
@@ -138,7 +143,7 @@ end
 # Create
 post VirtualMonkey::API::Task::PATH do
   standard_handlers do
-    task_uid = VirtualMonkey::API::Task.create(JSON.parse(request.body))
+    task_uid = VirtualMonkey::API::Task.create(JSON.parse(request.body).merge(get_user))
     status 201
     headers "Location" => "#{VirtualMonkey::API::Task.collection_path}/#{task_uid}"
   end
@@ -156,7 +161,7 @@ end
 # Update
 put "#{VirtualMonkey::API::Task::PATH}/:task_uid" do |task_uid|
   standard_handlers do
-    VirtualMonkey::API::Task.put(task_uid, JSON.parse(request.body))
+    VirtualMonkey::API::Task.put(task_uid, JSON.parse(request.body).merge(get_user))
     body ""
     status 204
   end
@@ -180,10 +185,19 @@ post "#{VirtualMonkey::API::Task::PATH}/:task_uid/save" do |task_uid|
   end
 end
 
+# Purge
+post "#{VirtualMonkey::API::Task::PATH}/:task_uid/purge" do |task_uid|
+  standard_handlers do
+    VirtualMonkey::API::Task.purge(task_uid)
+    body ""
+    status 204
+  end
+end
+
 # Schedule
 post "#{VirtualMonkey::API::Task::PATH}/:task_uid/schedule" do |task_uid|
   standard_handlers do
-    VirtualMonkey::API::Task.schedule(task_uid, JSON.parse(request.body))
+    VirtualMonkey::API::Task.schedule(task_uid, JSON.parse(request.body).merge(get_user))
     body ""
     status 204
   end
@@ -192,7 +206,7 @@ end
 # Start
 post "#{VirtualMonkey::API::Task::PATH}/:task_uid/start" do |task_uid|
   standard_handlers do
-    ret_val = VirtualMonkey::API::Task.start(task_uid)
+    ret_val = VirtualMonkey::API::Task.start(task_uid, get_user)
     if ret_val.is_a?(Array)
       status 201
       headers "Location" => "#{VirtualMonkey::API::Job::PATH}",

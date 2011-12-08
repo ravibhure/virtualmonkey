@@ -153,7 +153,7 @@ module VirtualMonkey
       end
 
       # Check that Runners and Mixins are defined only once
-      msg = `cd #{VirtualMonkey::ROOTDIR}; ruby git_hooks/pre-commit-chk-collateral #{File.basename(root_path)} 2>&1`
+      msg = `cd #{VirtualMonkey::ROOTDIR.inspect}; ruby git_hooks/pre-commit-chk-collateral #{File.basename(root_path)} 2>&1`
       raise "'#{root_path}' failed Runner Checks:\n#{msg}" unless $?.to_i == 0
 
       self.class.automatic_require_within(@paths["mixins"])

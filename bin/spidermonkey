@@ -1,5 +1,10 @@
 #!/usr/bin/env ruby
 
+# Development ENV only
+$LOAD_PATH.unshift(File.expand_path(File.dirname(__FILE__)))
+$LOAD_PATH.unshift(File.expand_path(File.join(File.dirname(__FILE__), '..', 'lib')))
+###
+
 ENV['ENTRY_COMMAND'] = File.basename(__FILE__, ".rb")
 
 require 'rubygems'
@@ -13,4 +18,13 @@ require 'daemons'
 # Testing in-process:
 #  bin/spidermonkey run
 
-Daemons.run(File.join("..", "lib", "spidermonkey", "sinatra_app.rb"))
+daemons_opts = {
+  :dir_mode => :system,
+  :app_name => "SpiderMonkey",
+  :backtrace => true,
+  :monitor => true,
+  :log_output => true,
+  :keep_pid_files => true,
+}
+app = File.expand_path(File.join(File.dirname(__FILE__), "..", "lib", "spidermonkey", "sinatra_app.rb"))
+Daemons.run(app, daemons_opts)

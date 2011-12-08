@@ -221,7 +221,7 @@ module VirtualMonkey
       end
 
       # Launch a set of server(s)
-      def launch_set(set = @servers)
+      def launch_set(set=@servers)
         set = select_set(set)
         set.each { |s|
           begin
@@ -239,14 +239,15 @@ module VirtualMonkey
       end
 
       # Re-Launch all servers
-      def relaunch_all
-        relaunch_set(@servers)
+      def relaunch_all(timeout=::VirtualMonkey::config[:default_timeout])
+        relaunch_set(@servers, timeout)
       end
 
       # Re-Launch a set of servers
-      def relaunch_set(set=@servers)
+      def relaunch_set(set=@servers, timeout=::VirtualMonkey::config[:default_timeout])
         set = select_set(set)
         begin # This loop is to ensure that public and private ips are different (Euca bug)
+          private_ip_equals_public = true
           set.each { |s|
             begin
               transaction {
@@ -259,9 +260,14 @@ module VirtualMonkey
             end
           }
           set.each { |s|
-            transaction { wait_for_set(s, "operational") }
+            transaction { wait_for_set(s, "operational", timeout) }
           }
-        end while set.reduce(false) { |bool,s| bool || (s.dns_name == s.private_ip) }
+          if set.reduce(false) { |bool,s| bool || (s.dns_name == s.private_ip) }
+            warn "WARNING: Found a server with duplicate IPs in public and private"
+          else
+            private_ip_equals_public = false
+          end
+        end while private_ip_equals_public
       end
 
       # un-set all tags on all servers in the deployment
@@ -276,7 +282,7 @@ module VirtualMonkey
       # Wait for server(s) matching nickname_substr to enter state
       # * nickname_substr<~String> - regex compatible string to match
       # * state<~String> - state to wait for, eg. operational
-      def wait_for_set(nickname_substr, state, timeout=1200)
+      def wait_for_set(nickname_substr, state, timeout=::VirtualMonkey::config[:default_timeout])
         set = select_set(nickname_substr)
         state_wait(set, state, timeout)
       end
@@ -284,12 +290,13 @@ module VirtualMonkey
       # Helper method, waits for state on a set of servers.
       # * set<~Array> of servers to operate on
       # * state<~String> state to wait for
-      def state_wait(set, state, timeout=1200)
+      def state_wait(set, state, timeout=::VirtualMonkey::config[:default_timeout])
         # do a special wait, if waiting for operational (for dns)
         if state == "operational"
           set.each { |server| transaction { server.wait_for_operational_with_dns(timeout) } }
           if set.reduce(false) { |bool,s| bool || (s.dns_name == s.private_ip) }
-            warn "WARNING: Found a server with duplicate IPs in public and private"
+            warn "WARNING: Found a server with duplicate IPs in public and private. Relaunching..."
+            relaunch_set(set, timeout)
           end
         else
           set.each { |server| transaction { server.wait_for_state(state, timeout) } }
@@ -298,7 +305,7 @@ module VirtualMonkey
 
       # Wait for all server(s) to enter state.
       # * state<~String> - state to wait for, eg. operational
-      def wait_for_all(state, timeout=1200)
+      def wait_for_all(state, timeout=::VirtualMonkey::config[:default_timeout])
         state_wait(@servers, state, timeout)
       end
 
@@ -333,6 +340,7 @@ module VirtualMonkey
         wait_for_reboot = true
         set = select_set(set)
         begin # This loop is to ensure that public and private ips are different (Euca bug)
+          private_ip_equals_public = true
           # Do NOT thread this each statement
           set.each do |s|
             transaction { s.reboot(wait_for_reboot) }
@@ -343,7 +351,12 @@ module VirtualMonkey
           set.each do |s|
             transaction { s.wait_for_state("operational") }
           end
-        end while set.reduce(false) { |bool,s| bool || (s.dns_name == s.private_ip) }
+          if set.reduce(false) { |bool,s| bool || (s.dns_name == s.private_ip) }
+            warn "WARNING: Found a server with duplicate IPs in public and private"
+          else
+            private_ip_equals_public = false
+          end
+        end while private_ip_equals_public
       end
 
       def reboot_all(serially_reboot=false)
@@ -381,7 +394,7 @@ module VirtualMonkey
             else
               transaction {
                 a = launch_script(friendly_name, s, options)
-                transaction { a.wait_for_completed }
+                transaction { a.wait_for_completed(::VirtualMonkey::config[:default_timeout]) }
               }
             end
           end
@@ -616,7 +629,7 @@ module VirtualMonkey
   #       Do this for all? Or just the one?
   #       @servers.each { |server| server.wait_for_operational_with_dns }
           s = @servers.first
-          transaction { s.wait_for_operational_with_dns }
+          transaction { s.wait_for_operational_with_dns(::VirtualMonkey::config[:default_timeout]) }
           # Verify operational
           run_simple_check(s)
           check_monitoring

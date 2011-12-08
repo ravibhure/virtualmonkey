@@ -23,6 +23,9 @@ module VirtualMonkey
       #
       # Helper Methods
       #
+      def self.rest_config_yaml
+        @@rest_config_yaml ||= YAML::load(IO.read(VirtualMonkey::REST_YAML))
+      end
 
       def self.not_allowed
         msg = "Method `#{calling_method}' is not allowed on #{self}"

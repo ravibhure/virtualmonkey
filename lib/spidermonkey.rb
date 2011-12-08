@@ -1,5 +1,4 @@
 require 'rubygems'
-require 'virtualmonkey.rb'
 
 module VirtualMonkey
   WEB_APP_PUBLIC_DIR = File.join(VirtualMonkey::WEB_APP_DIR, "public")
