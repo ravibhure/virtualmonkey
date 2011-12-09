@@ -320,6 +320,14 @@ module VirtualMonkey
       # * feature_name<~String> the feature filename
       def run_tests(deploys, features, set=[])
         features = [features].flatten
+        unless set.empty?
+          features.reject! do |feature|
+            my_keys = VirtualMonkey::TestCase.new(feature, @options).get_keys & set
+            my_keys -= @options[:exclude_tests] unless @options[:exclude_tests].nil? || @options[:exclude_tests].empty?
+            my_keys.empty?
+          end
+        end
+
         test_cases = features.map_to_h { |feature| VirtualMonkey::TestCase.new(feature, @options) }
         deployment_hsh = {}
         if VirtualMonkey::config[:feature_mixins] == "parallel" or features.length < 2
