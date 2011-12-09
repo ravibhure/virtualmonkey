@@ -267,14 +267,16 @@ module VirtualMonkey
 
             # Before Create Hooks?
             if options[:runner].respond_to?(:before_create)
-              if not options[:runner].before_create.empty?
-                puts "Executing before_create hooks..."
-                runner_class = options[:runner]
-                runner_class.assert_integrity!
-                runner_class.before_create.each { |fn|
-                  (fn.is_a?(Proc) ? runner_class.instance_eval(&fn) : runner_class.__send__(fn))
-                }
-                puts "Finished executing before_create hooks."
+              options[:runner].ancestors.select { |a| a.respond_to?(:before_create) }.each do |ancestor|
+                if not ancestor.before_create.empty?
+                  puts "Executing before_create hooks..."
+                  runner_class = options[:runner]
+                  runner_class.assert_integrity!
+                  ancestor.before_create.each { |fn|
+                    (fn.is_a?(Proc) ? runner_class.instance_eval(&fn) : runner_class.__send__(fn))
+                  }
+                  puts "Finished executing before_create hooks."
+                end
               end
             else
               warn "#{options[:runner]} doesn't extend VirtualMonkey::RunnerCore::CommandHooks"
@@ -429,13 +431,15 @@ module VirtualMonkey
 
             # After Create Hooks for multiple deployments?
             if options[:runner].respond_to?(:after_create)
-              if not options[:runner].after_create.empty? and not @single_deployment
-                puts "Executing after_create hooks..."
-                runner = options[:runner].new(new_deploy.nickname)
-                options[:runner].after_create.each { |fn|
-                  (fn.is_a?(Proc) ? runner.instance_eval(&fn) : runner.__send__(fn))
-                }
-                puts "Finished executing after_create hooks."
+              options[:runner].ancestors.select { |a| a.respond_to?(:after_create) }.each do |ancestor|
+                if not ancestor.after_create.empty? and not @single_deployment
+                  puts "Executing after_create hooks..."
+                  runner = options[:runner].new(new_deploy.nickname)
+                  ancestor.after_create.each { |fn|
+                    (fn.is_a?(Proc) ? runner.instance_eval(&fn) : runner.__send__(fn))
+                  }
+                  puts "Finished executing after_create hooks."
+                end
               end
             else
               warn "#{options[:runner]} doesn't extend VirtualMonkey::RunnerCore::CommandHooks"
@@ -449,13 +453,15 @@ module VirtualMonkey
 
           # After Create Hooks for single deployment?
           if options[:runner].respond_to?(:after_create)
-            if not options[:runner].after_create.empty?
-              puts "Executing after_create hooks..."
-              runner = options[:runner].new(new_deploy.nickname)
-              options[:runner].after_create.each { |fn|
-                (fn.is_a?(Proc) ? runner.instance_eval(&fn) : runner.__send__(fn))
-              }
-              puts "Finished executing after_create hooks."
+            options[:runner].ancestors.select { |a| a.respond_to?(:after_create) }.each do |ancestor|
+              if not ancestor.after_create.empty?
+                puts "Executing after_create hooks..."
+                runner = options[:runner].new(new_deploy.nickname)
+                ancestor.after_create.each { |fn|
+                  (fn.is_a?(Proc) ? runner.instance_eval(&fn) : runner.__send__(fn))
+                }
+                puts "Finished executing after_create hooks."
+              end
             end
           else
             warn "#{options[:runner]} doesn't extend VirtualMonkey::RunnerCore::CommandHooks"

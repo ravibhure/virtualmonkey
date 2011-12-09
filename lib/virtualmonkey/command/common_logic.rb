@@ -295,12 +295,14 @@ module VirtualMonkey
     # Encapsulates the logic for running the before_destroy hooks for a particular runner
     def self.before_destroy_logic(runner)
       if @@options[:runner].respond_to?(:before_destroy)
-        if not @@options[:runner].before_destroy.empty?
-          puts "Executing before_destroy hooks..."
-          @@options[:runner].before_destroy.each { |fn|
-            retry_block { (fn.is_a?(Proc) ? runner.instance_eval(&fn) : runner.__send__(fn)) }
-          }
-          puts "Finished executing vefore_destroy hooks."
+        @@options[:runner].ancestors.select { |a| a.respond_to?(:before_destroy) }.each do |ancestor|
+          if not ancestor.before_destroy.empty?
+            puts "Executing before_destroy hooks..."
+            ancestor.before_destroy.each { |fn|
+              retry_block { (fn.is_a?(Proc) ? runner.instance_eval(&fn) : runner.__send__(fn)) }
+            }
+            puts "Finished executing before_destroy hooks."
+          end
         end
       else
         warn "#{@@options[:runner]} doesn't extend VirtualMonkey::RunnerCore::CommandHooks"
@@ -310,12 +312,14 @@ module VirtualMonkey
     # Encapsulates the logic for running the after_destroy hooks for a particular runner
     def self.after_destroy_logic(runner)
       if @@options[:runner].respond_to?(:after_destroy)
-        if not @@options[:runner].after_destroy.empty?
-          puts "Executing after_destroy hooks..."
-          @@options[:runner].after_destroy.each { |fn|
-            retry_block { (fn.is_a?(Proc) ? runner.instance_eval(&fn) : runner.__send__(fn)) }
-          }
-          puts "Finished executing after_destroy hooks."
+        @@options[:runner].ancestors.select { |a| a.respond_to?(:after_destroy) }.each do |ancestor|
+          if not ancestor.after_destroy.empty?
+            puts "Executing after_destroy hooks..."
+            ancestor.after_destroy.each { |fn|
+              retry_block { (fn.is_a?(Proc) ? runner.instance_eval(&fn) : runner.__send__(fn)) }
+            }
+            puts "Finished executing after_destroy hooks."
+          end
         end
       else
         warn "#{@@options[:runner]} doesn't extend VirtualMonkey::RunnerCore::CommandHooks"
@@ -391,9 +395,9 @@ module VirtualMonkey
       rescue Interrupt, NameError, ArgumentError, TypeError => e
         raise
       rescue Exception => e
-        warn "WARNING: Got \"#{e.message}\" from: #{e.backtrace.first}"
+        warn "WARNING: Got \"#{e.message}\" from: #{e.backtrace.join("\n")}"
         sleep 5
-        max_reties -= 1
+        max_retries -= 1
         (max_retries > 0) ? (retry) : (raise)
       end
     end
