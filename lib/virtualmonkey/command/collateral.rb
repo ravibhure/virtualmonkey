@@ -132,7 +132,7 @@ module VirtualMonkey
         project_path = File.join(VirtualMonkey::COLLATERAL_TEST_DIR, project_name)
         error "FATAL: #{project_path} doesn't exist!" unless File.exists?(project_path)
         remote ||= 'origin'
-        branch ||= 'master'
+        branch ||= git_objs[project_name].current_branch
         FileUtils.mkdir_p(VirtualMonkey::COLLATERAL_TEST_DIR)
         puts git_objs[project_name].pull(remote, "#{remote}/#{branch}", nil)
 

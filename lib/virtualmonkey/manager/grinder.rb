@@ -318,7 +318,7 @@ module VirtualMonkey
       # * feature_name<~String> the feature filename
       def run_tests(deploys, features, set=[])
         features = [features].flatten
-        unless set.empty?
+        unless set.nil? || set.empty?
           features.reject! do |feature|
             my_keys = VirtualMonkey::TestCase.new(feature, @options).get_keys & set
             my_keys -= @options[:exclude_tests] unless @options[:exclude_tests].nil? || @options[:exclude_tests].empty?
