@@ -337,7 +337,7 @@ module VirtualMonkey
               #Set Server Creation Parameters
               serv_name = "#{@prefix[0...2]}-#{rand(1000000)}-#{st.nickname}-#{dep_image_names}" if @single_deployment
               serv_name = "#{@prefix[0...2]}-#{rand(1000000)}-#{st.nickname}" unless @single_deployment
-              serv_name = "#{@prefix[0...2]}-#{rand(1000000)}" if cloud.to_s == "232"
+              serv_name = "#{@prefix[0...2]}-#{rand(1000000)}" if [232, 1868].include?(cloud.to_i)
               server_params = { "nickname" => serv_name,
                                 "deployment_href" => new_deploy.href.dup,
                                 "server_template_href" => st.href.dup,
