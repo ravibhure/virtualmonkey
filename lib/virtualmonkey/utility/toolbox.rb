@@ -116,12 +116,15 @@ module VirtualMonkey
     def get_available_clouds(up_to = 1000000)
       setup_paths()
       unless class_variable_defined?("@@clouds")
-        @@clouds = [{"cloud_id" => 1, "name" => "AWS US-East"},
+        @@clouds = [
+                    {"cloud_id" => 1, "name" => "AWS US-East"},
                     {"cloud_id" => 2, "name" => "AWS EU"},
                     {"cloud_id" => 3, "name" => "AWS US-West"},
                     {"cloud_id" => 4, "name" => "AWS AP-Singapore"},
                     {"cloud_id" => 5, "name" => "AWS AP-Tokyo"},
-                    {"cloud_id" => 6, "name" => "AWS US-Oregon"}]
+                    {"cloud_id" => 6, "name" => "AWS US-Oregon"},
+                    {"cloud_id" => 7, "name" => "AWS SA-Sao Paulo"},
+                   ]
         @@clouds += Cloud.find_all.map { |c| {"cloud_id" => c.cloud_id.to_i, "name" => c.name} } if api1_5?
       end
       @@clouds.select { |h| h["cloud_id"] <= up_to }
