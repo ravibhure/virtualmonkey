@@ -159,11 +159,14 @@ module VirtualMonkey
     end
 
     def function_wrapper(sym, behave_sym, *args, &block)
+      timing = Time.now
       if sym.to_s =~ /^set/
         call_str = stringify_call(sym, args) unless block
         call_str = stringify_call(sym, args, nil, block.to_ruby) if block
         write_readable_log(call_str)
-        return __send__(behave_sym, *args, &block)
+        ret = __send__(behave_sym, *args, &block)
+        write_readable_log("Duration: #{Time.duration(Time.now - timing, :include_usec)}")
+        return ret
       end
 
       @retry_loop << 0
@@ -181,6 +184,7 @@ module VirtualMonkey
       rescue VirtualMonkey::TestCaseInterface::Retry
       end while @rerun_last_command.pop
       write_trace_log
+      write_readable_log("Duration: #{Time.duration(Time.now - timing, :include_usec)}")
       @retry_loop.pop
       result
     end
@@ -234,6 +238,7 @@ module VirtualMonkey
       # audits.each { |audit| threads << Thread.new(audit) { |a| a.wait_for_completed } }
       # threads.each { |t| t.join }
       #
+      timing = Time.now
       call_str = stringify_call("transaction", [], nil, block.to_ruby)
       write_readable_log(call_str) unless option == :do_not_trace
       real_trace_log = nil
@@ -284,6 +289,7 @@ module VirtualMonkey
         end
       end
       write_trace_log(call_str) unless option == :do_not_trace
+      write_readable_log(Time.duration(Time.now - timing), :include_usec)
       result
     end
 

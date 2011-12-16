@@ -3,7 +3,7 @@ require 'git'
 module VirtualMonkey
   module Command
     # Collateral commands
-    @@command_flags.merge!("collateral" => [])
+    CommandFlags.merge!("collateral" => CollateralOptions.keys)
     def self.collateral(*args)
       self.init(*args)
       @@command = "collateral"

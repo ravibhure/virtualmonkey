@@ -8,6 +8,7 @@ $LOAD_PATH.unshift(File.expand_path(File.join(File.dirname(__FILE__), '..', 'lib
 ENV['ENTRY_COMMAND'] = File.basename(__FILE__, ".rb")
 
 require 'rubygems'
+=begin
 require 'daemons'
 
 # Control by running:
@@ -28,3 +29,5 @@ daemons_opts = {
 }
 app = File.expand_path(File.join(File.dirname(__FILE__), "..", "lib", "spidermonkey", "sinatra_app.rb"))
 Daemons.run(app, daemons_opts)
+=end
+require File.expand_path(File.join(File.dirname(__FILE__), "..", "lib", "spidermonkey", "sinatra_app.rb"))

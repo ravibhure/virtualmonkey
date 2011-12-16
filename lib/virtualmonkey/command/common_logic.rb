@@ -71,7 +71,11 @@ module VirtualMonkey
     # Encapsulates the logic for selecting a subset of deployments
     def self.select_only_logic(message)
       @@do_these ||= @@dm.deployments
-      @@do_these = @@do_these.select { |d| d.nickname =~ /#{@@options[:only]}/ } if @@options[:only]
+      if @@options[:only]
+        [@@options[:only]].flatten.compact.each do |filter|
+          @@do_these = @@do_these.select { |d| d.nickname =~ /#{filter}/ }
+        end
+      end
       all_clouds = VirtualMonkey::Toolbox::get_available_clouds.map { |hsh| hsh["cloud_id"].to_i }
       (all_clouds - @@options[:clouds]).each { |cid|
         @@do_these.reject! { |d| d.nickname =~ /-cloud_#{cid}-/ }

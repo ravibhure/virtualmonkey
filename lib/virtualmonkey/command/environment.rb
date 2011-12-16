@@ -1,7 +1,7 @@
 module VirtualMonkey
   module Command
     # Config commands
-    @@command_flags.merge!("environment" => [])
+    CommandFlags.merge!("environment" => EnvironmentPresets.keys)
     def self.environment(*args)
       self.init(*args)
       @@command = "environment"

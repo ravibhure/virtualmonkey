@@ -14,7 +14,7 @@ module VirtualMonkey
 
     def self.qa_audit_logs(*args)
       self.qa_init(*args)
-      #@@command_flags = [:prefix, :only, :config_file]
+      #CommandFlags = [:prefix, :only, :config_file]
       @@options = Trollop::options do
         eval(VirtualMonkey::Command::use_options)
       end

@@ -1,0 +1,53 @@
+<script type="text/javascript">
+  $(function() {
+    <% if (editing_task ||= nil) %>
+      <% editing_task["subtasks"].each do |subtask| %>
+        $("#subtasks ol").append("<li>"+<%= "<li>" %>+"</li>")
+      <% end %>
+    <% end %>
+    $("#tasks li").draggable({
+      appendTo: "body",
+      helper: "clone"
+    });
+    $("#subtasks ol").droppable({
+      activeClass: "ui-state-default",
+      hoverClass: "ui-state-hover",
+      accept: ":not(.ui-sortable-helper)",
+      drop: function(event, ui) {
+        $(this).find(".placeholder").remove();
+        name_div = ui.draggable.find(".name_column");
+        new_div = $("<div></div>").text(name_div.text());
+        new_div.appendTo(this);
+        new_div.data("content", name_div.data("content"));
+        new_div.attr("title", name_div.attr("title"));
+        new_div.addClass("name_column");
+        new_div.wrapAll("<li></li>");
+
+        new_actions = ui.draggable.find(".actions_column").clone();
+        new_actions.appendTo(new_div.parent());
+        new_actions.find("img").unbind('click');
+        new_actions.find("img").bind('click', function() {
+          $(this).parent().parent().remove();
+        });
+      }
+    }).sortable({
+      items: "li:not(.placeholder)",
+      sort: function() {
+        // gets added unintentionally by droppable interacting with sortable
+        // using connectWithSortable fixes this, but doesn't allow you to customize active/hoverClass options
+        $(this).removeClass("ui-state-default ui-draggable-dragging");
+      }
+    });
+  });
+</script>
+<div id="subtasks" class="ui-widget-content resource_list">
+  <h2>Subtasks</h2>
+  <ol class="zebra">
+    <li class="placeholder">Drag tasks here</li>
+  </ol>
+</div>
+<div id="tasks" class="resource_list">
+  <h2>Tasks</h2>
+  <% locals = {:editing_task => editing_task, :actions => actions} %>
+  <%= erb :tasks, :layout => false, :locals => locals %>
+</div>

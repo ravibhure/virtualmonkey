@@ -13,8 +13,8 @@ module VirtualMonkey
 
       def self.read_cache
         JSON::parse(IO.read(TEMP_STORE))
-      rescue Errno::ENOENT
-        File.open(TEMP_STORE, "w") { |f| {}.to_json }
+      rescue Errno::ENOENT, JSON::ParserError
+        File.open(TEMP_STORE, "w") { |f| f.write("{}") }
         return {}
       rescue Errno::EBADF
         sleep 0.1
@@ -23,7 +23,7 @@ module VirtualMonkey
       private_class_method :read_cache
 
       def self.write_cache(json_hash)
-        File.open(TEMP_STORE, "w") { |f| json_hash.to_json }
+        File.open(TEMP_STORE, "w") { |f| f.write(json_hash.to_json) }
       end
       private_class_method :write_cache
 
@@ -108,6 +108,7 @@ module VirtualMonkey
         new_record = self.new.deep_merge(opts)
         new_record.links |= [{"href" => task_uri, "rel" => "parent"}]
         new_record.links |= [{"href" => callback_task.uri, "rel" => "callback"}] if callback_task
+        new_record["name"] = parent_task["name"]
 
         # Ensure a Cronjob exists to bump the queue
         crontab = File.join("", "etc", "crontab")
@@ -124,7 +125,7 @@ module VirtualMonkey
         # Create record
         if VirtualMonkey::daemons.length < VirtualMonkey::config[:max_jobs]
           pid, app = daemon_child do
-            VirtualMonkey::Command.__send__(parent_task["command"], *parent_task["options"])
+            VirtualMonkey::Command.__send__(parent_task["command"], parent_task["options"].join(" "))
           end
           new_record.merge!("daemon" => app, "pid" => pid, "status" => "running")
           VirtualMonkey::daemons << new_record
@@ -213,8 +214,10 @@ module VirtualMonkey
 
         # Callback tasks take priority
         callback_jobs.each do |record|
-          parent_uid, callback_uri = record.uid, record.links.to_h("rel", "href")["callback"]
-          next_task_href = VirtualMonkey::API::Task.get_next_subtask_href(parent_uid, callback_uri)
+          parent_uid = record.uid
+          callback_uri = record.links.to_h("rel", "href")["callback"]
+          status = record["status"]
+          next_task_href = VirtualMonkey::API::Task.get_next_subtask_href(parent_uid, callback_uri, status)
           opts = {"parent_task" => next_task_href, "callback_task" => callback_uri, "user" => record["user"]}
           self.create(opts) if next_task_href
         end

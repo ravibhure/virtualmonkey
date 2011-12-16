@@ -1,0 +1,15 @@
+<ul class="zebra">
+<% actions.map! { |a| [a, "data-click='action%s'" % (a.titlecase + '("%s")')] } %>
+<% VirtualMonkey::API::Job.index().each do |job| %>
+  <li class="job <%= job["status"] %>">
+    <div class="name" title="<%= job["name"] %>" data-content='<%= job.render() %>'>
+      <%= job["name"] %>
+    </div>
+    <div class="actions_row">
+      <% actions.each do |action,dataclick| %>
+        <img src="/img/<%= action %>.png" <%= dataclick % url(job.href) %> class="action <%= action %>" />
+      <% end %>
+    </div>
+  </li>
+<% end %>
+</ul>

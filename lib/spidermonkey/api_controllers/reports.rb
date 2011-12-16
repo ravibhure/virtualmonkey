@@ -14,8 +14,8 @@ module VirtualMonkey
 
       def self.read_cache
         JSON::parse(IO.read(TEMP_STORE))
-      rescue Errno::ENOENT
-        File.open(TEMP_STORE, "w") { |f| {}.to_json }
+      rescue Errno::ENOENT, JSON::ParserError
+        File.open(TEMP_STORE, "w") { |f| f.write("{}") }
         return {}
       rescue Errno::EBADF
         sleep 0.1
@@ -24,7 +24,7 @@ module VirtualMonkey
       private_class_method :read_cache
 
       def self.write_cache(json_hash)
-        File.open(TEMP_STORE, "w") { |f| json_hash.to_json }
+        File.open(TEMP_STORE, "w") { |f| f.write(json_hash.to_json) }
       end
       private_class_method :write_cache
 
@@ -198,7 +198,7 @@ module VirtualMonkey
         to_prefix ||= (this_month_domain =~ /#{BASE_DOMAIN}([0-9]{6})/; "#{$1}31")
 
         # First check cache
-        # TODO
+        # TODO - later
 
         sdb = new_sdb_connection
         domains = sdb.list_domains.body["Domains"].select { |domain| domain =~ /#{BASE_DOMAIN}/ }
@@ -255,7 +255,7 @@ var data = [{
 
         ret = {"autocomplete_values" => {}, "raw_data" => []}
         domains.each do |domain|
-          # TODO Return in the above format
+          # TODO - later :Return in the above format
         end
 =end
       end
@@ -336,7 +336,7 @@ var data = [{
         bucket_name = Fog.credentials[:s3_bucket] || "virtual_monkey"
         local_log_dir = File.join(VirtualMonkey::LOG_DIR, log_started)
 
-        index = ERB.new(File.read(File.join(VirtualMonkey::LIB_DIR, "index.html.erb")))
+        index = ERB.new(File.read(File.join(VirtualMonkey::API_CONTROLLERS_DIR, "report.html.erb")))
         index_html_file = File.join(local_log_dir, "index.html")
         File.open(index_html_file, 'w') { |f| f.write(index.result(binding)) }
 

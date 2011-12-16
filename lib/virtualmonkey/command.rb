@@ -56,7 +56,7 @@ module VirtualMonkey
       :keep            => %q{opt :keep, 'Do not delete servers or deployments after terminating',                 :short => '-k',   :type => :boolean},
       :use_mci         => %q{opt :use_mci, 'List of MCI hrefs to substitute for the ST-attached MCIs',            :short => '-m',   :type => :string, :multi => true},
       :n_copies        => %q{opt :n_copies, 'Number of clones to make',                                           :short => '-n',   :type => :integer, :default => 1},
-      :only            => %q{opt :only, 'Regex string to use for subselection matching on MCIs',                  :short => '-o',   :type => :string},
+      :only            => %q{opt :only, 'Regex string to use for subselection matching on MCIs',                  :short => '-o',   :type => :string, :multi => true},
       :no_spot         => %q{opt :no_spot, 'do not use spot instances',                                           :short => :none,  :type => :boolean, :default => true},
       :no_resume       => %q{opt :no_resume, 'Do not use trace info to resume a previous test',                   :short => '-r',   :type => :boolean},
       :tests           => %q{opt :tests, 'List of test names to run across Deployments (default is all)',         :short => '-t',   :type => :strings},
@@ -75,6 +75,47 @@ module VirtualMonkey
       :security_group_name  => %q{opt :security_group_name, 'Populate the file with this security group',                                 :short => :none,  :type => :string},
       :ssh_keys             => %q{opt :ssh_keys, 'Takes a JSON object of cloud ids mapped to ssh_key ids. (e.g. {1: 123456, 2: 789012})', :short => :none,  :type => :string},
       :api_version          => %q{opt :api_version, 'Check to see if the monkey has RightScale API access',                               :short => '-a',   :type => :float}
+    }
+
+    EnvironmentPresets = {
+      "development" => {"description" => "ServerTemplate Developers need to work efficiently. These " +
+                                         "presets are designed to encourage small, independent tests " +
+                                         "that can be run in any order. Developers should also primarily " +
+                                         "use the grinder tool, to enable inline debugging.",
+                        "values" => {
+                          "environment"         => "development",
+                          "test_permutation"    => "distributive",
+                          "test_ordering"       => "random",
+                          "grinder_subprocess"  => "allow_same_process",
+                          "enable_log_auditor"  => true,
+                          "max_retries"         => 3,
+                        }
+      },
+      "testing"     => {"description" => "ServerTemplate Testers need to be thorough, and must produce " +
+                                         "reports. These presets are designed to make runs repeatable, " +
+                                         "accountable, and--most importantly--thorough.",
+                        "values" => {
+                          "environment"         => "testing",
+                          "test_permutation"    => "exhaustive",
+                          "test_ordering"       => "strict",
+                          "grinder_subprocess"  => "force_subprocess",
+                          "enable_log_auditor"  => false,
+                          "max_retries"         => 10,
+                        }
+      },
+      "sixsigma"    => {"description" => "SixSigma is a concept from manufacturing meant to minimize " +
+                                         "the rate of defects to 3.4 per million. Due to the nature of " +
+                                         "distributed systems, it is highly unlikely that this testing " +
+                                         "mode will ever pass, but it can be useful in identifying problems.",
+                        "values" => {
+                          "environment"         => "sixsigma",
+                          "test_permutation"    => "exhaustive",
+                          "test_ordering"       => "random",
+                          "grinder_subprocess"  => "force_subprocess",
+                          "enable_log_auditor"  => true,
+                          "max_retries"         => 5,
+                        }
+      }
     }
 
     ConfigOptions = {
@@ -137,6 +178,10 @@ module VirtualMonkey
                                 "default"     => "false",
                                 "values"      => [false, true]},
 
+      "environment"         => {"description" => "Allows different behaviors in runners based on the environment",
+                                "default"     => "testing",
+                                "values"      => EnvironmentPresets.keys},
+
       "grinder_subprocess"  => {"description" => "Turns on/off the ability of Grinder to load into the current process",
                                 "default"     => "force_subprocess",
                                 "values"      => ["allow_same_process", "force_subprocess"]}
@@ -165,45 +210,7 @@ module VirtualMonkey
                       "usage"       => "'monkey collateral (-h|--help|help)'"}
     }
 
-    EnvironmentPresets = {
-      "development" => {"description" => "ServerTemplate Developers need to work efficiently. These " +
-                                         "presets are designed to encourage small, independent tests " +
-                                         "that can be run in any order. Developers should also primarily " +
-                                         "use the grinder tool, to enable inline debugging.",
-                        "values" => {
-                          "test_permutation"    => "distributive",
-                          "test_ordering"       => "random",
-                          "grinder_subprocess"  => "allow_same_process",
-                          "enable_log_auditor"  => true,
-                          "max_retries"         => 3
-                        }
-      },
-      "testing"     => {"description" => "ServerTemplate Testers need to be thorough, and must produce " +
-                                         "reports. These presets are designed to make runs repeatable, " +
-                                         "accountable, and--most importantly--thorough.",
-                        "values" => {
-                          "test_permutation"    => "exhaustive",
-                          "test_ordering"       => "strict",
-                          "grinder_subprocess"  => "force_subprocess",
-                          "enable_log_auditor"  => false,
-                          "max_retries"         => 10
-                        }
-      },
-      "sixsigma"    => {"description" => "SixSigma is a concept from manufacturing meant to minimize " +
-                                         "the rate of defects to 3.4 per million. Due to the nature of " +
-                                         "distributed systems, it is highly unlikely that this testing " +
-                                         "mode will ever pass, but it can be useful in identifying problems.",
-                        "values" => {
-                          "test_permutation"    => "exhaustive",
-                          "test_ordering"       => "random",
-                          "grinder_subprocess"  => "force_subprocess",
-                          "enable_log_auditor"  => true,
-                          "max_retries"         => 5
-                        }
-      }
-    }
-
-    @@command_flags ||= {}
+    CommandFlags = {}
 
     def self.init(*args)
       # Monkey available_commands
@@ -288,12 +295,12 @@ module VirtualMonkey
 
     def self.use_options
       ("text '  monkey #{@@command} [options...]\n\n #{@@available_commands[@@command.to_sym]}';" +
-      @@command_flags["#{@@command}"].map { |op| @@flags[op] }.join(";"))
+      CommandFlags["#{@@command}"].map { |op| @@flags[op] }.join(";"))
     end
 
     def self.add_command(command_name, command_flags=[], more_opts=[], flagless=false, &block)
       command_name = command_name.to_s.downcase
-      @@command_flags.merge!(command_name => command_flags.sort { |a,b| a.to_s <=> b.to_s })
+      CommandFlags.merge!(command_name => command_flags.sort { |a,b| a.to_s <=> b.to_s })
       self.instance_eval <<EOS
         def #{command_name}(*args)
           self.init(*args)
@@ -321,7 +328,7 @@ EOS
     end
 
     # Help command
-    @@command_flags.merge!("help" => [])
+    CommandFlags.merge!("help" => [])
     def self.help(*args)
       self.init(*args)
       case ARGV.shift
@@ -336,7 +343,7 @@ EOS
     end
 
     # Version command
-    @@command_flags.merge!("version" => [])
+    CommandFlags.merge!("version" => [])
     def self.version(*args)
       self.init(*args)
       puts @@version_string
@@ -422,7 +429,7 @@ EOS
     end
 
     # Config commands
-    @@command_flags.merge!("config" => [])
+    CommandFlags.merge!("config" => ConfigOptions.keys)
     def self.config(*args)
       self.init(*args)
       @@command = "config"

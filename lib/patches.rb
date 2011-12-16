@@ -238,12 +238,14 @@ class Object
 end
 
 class Time
-  def self.duration(num)
+  def self.duration(num, usecs=false)
     raise TypeError.new("can't convert #{num.class} into Numeric") unless num.is_a?(Numeric)
     secs  = num.to_i
     mins  = secs / 60
     hours = mins / 60
     days  = hours / 24
+
+    secs  = num if usecs
 
     day_str = (days == 1 ? "day" : "days")
     hour_str = (hours == 1 ? "hour" : "hours")

@@ -108,8 +108,12 @@ module VirtualMonkey
             mci.find_and_flatten_settings
             multi_cloud_images = [mci]
         elsif options[:only]
-          multi_cloud_images = st.multi_cloud_images.select { |mci| mci['name'] =~ /#{options[:only]}/ }
-          raise "No MCI on ServerTemplate '#{st.nickname}' matches regex /#{options[:only]}/" if multi_cloud_images.empty?
+          multi_cloud_images = st.multi_cloud_images
+          [options[:only]].flatten.compact.each do |filter|
+            multi_cloud_images = multi_cloud_images.select { |mci| mci['name'] =~ /#{filter}/ }
+          end
+          wrapped_regexps = [options[:only]].flatten.compact.map { |filter| "/#{filter}/" }.join("&&")
+          raise "No MCI on ServerTemplate '#{st.nickname}' matches regexps #{wrapped_regexps}" if multi_cloud_images.empty?
         else
           multi_cloud_images = st.multi_cloud_images
         end

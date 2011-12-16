@@ -9,4 +9,5 @@ module VirtualMonkey
   end
 end
 
+progress_require('cronedit')
 progress_require('spidermonkey/api_controllers')

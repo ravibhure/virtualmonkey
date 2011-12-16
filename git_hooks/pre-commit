@@ -34,12 +34,16 @@ EOS
 whitespace=""
 echo "Checking for syntax errors..."
 for FILE in `git diff-index --name-only HEAD --` ; do
-  if test -e $FILE; then
-    if [[ -n `grep "\\s\\s*$" $FILE` ]]; then whitespace="$whitespace $FILE"; fi
-    # Remove trailing whitespace
-    sed -i "s/\\s\\s*$//g" $FILE
-    # Remove tabs
-    sed -i "s/\t/  /g" $FILE
+  if test -f $FILE; then
+    filetype=`file -b $FILE`
+    if [[ "$filetype" =~ "text" ]]; then
+      if [[ -n `grep "\\s\\s*$" $FILE` ]]; then whitespace="$whitespace $FILE"; fi
+      # Remove trailing whitespace
+      sed -i "s/\\s\\s*$//g" $FILE
+      # Remove tabs
+      sed -i "s/\t/  /g" $FILE
+    fi
+
     # If a file is ruby, check for syntax errors
     if [[ -n `find $FILE -regex ".*\.rb$"` ]]; then
       if [[ "$fail" -eq 0 || -z "$fail" ]]; then
@@ -92,7 +96,7 @@ for FILE in `git diff-index --name-only HEAD --` ; do
     # If a file is ruby, check for syntax errors
     if [[ -n `find $FILE -regex ".*\.rb$"` ]]; then
       warnings=`ruby -c "$FILE" 2>&1 | grep -i warn`
-      if [[ -n "$warnings" ]]; then echo "$warnings"; fail=1; fi
+      if [[ -n "$warnings" ]]; then fail=1; fi
     fi
   fi
 done

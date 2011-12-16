@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <% title ||= nil %>
+    <% editing_task ||= nil %>
+    <% if title %>
+      <title><%= title %></title>
+    <% end %>
+    <link rel="shortcut icon" href="/favicon2.ico" type="image/x-icon" />
+    <link rel="icon" href="/favicon2.ico" type="image/x-icon" />
+    <%= VirtualMonkey::JQUERY %>
+    <%= VirtualMonkey::JQUERY_UI %>
+    <%= VirtualMonkey::MODERNIZR %>
+    <%= VirtualMonkey::HTML5_SHIM %>
+    <%= VirtualMonkey::INIT_JS %>
+    <%= VirtualMonkey::STYLESHEET %>
+    <script type="text/javascript">
+      var commands = <%= VirtualMonkey::Command::NonInteractiveCommands.to_json %>;
+      var all_flags = <%= VirtualMonkey::Command::Flags.to_json %>;
+      var command_flags = <%= VirtualMonkey::Command::CommandFlags.to_json %>;
+      for (cmd in command_flags) { command_flags[cmd].sort(); }
+      var config_opts = <%= VirtualMonkey::Command::ConfigOptions.to_json %>;
+      var config_vars = <%= VirtualMonkey::Command::ConfigVariables.to_json %>;
+      var collateral_opts = <%= VirtualMonkey::Command::CollateralOptions.to_json %>;
+      var environment_presets = <%= VirtualMonkey::Command::EnvironmentPresets.to_json %>;
+      var num_options = 0;
+      var optFlag = "optionFlag";
+      var optVal = "optionVal";
+
+      var sorted_commands = []
+
+      $(function() {
+        $("#command").html(function(index,old) {
+          var ret = old;
+          for (cmd in commands) { sorted_commands.push(cmd); }
+          sorted_commands.sort();
+          for (index in sorted_commands) {
+            cmd = sorted_commands[index];
+            ret += "<option value='" + cmd + "'>" + cmd + "</option>\n";
+          }
+          return ret
+        }).change(function() {
+          var cmd = $(this).find("option:selected").text();
+          var options = "";
+          for (index in command_flags[cmd]) {
+            flag = command_flags[cmd][index];
+            options += "<option value='" + flag + "'>" + flag + "</option>";
+          }
+          // Reject already selected options that aren't shared by the new command
+          $(".command_option").each(function() {
+            var div = $(this);
+            select = div.find("select");
+            selected_option = select.find("option:selected");
+            if (command_flags[cmd].indexOf(selected_option.text()) >= 0) {
+              select.html(options);
+              select.find("option:contains("+selected_option.text()+")").attr("selected", true);
+            } else {
+              div.remove();
+            }
+          });
+          // TODO - later: Display info in bootstrap pop-up on hover
+        });
+
+        // Set up
+        $("#add_flag").click(function() {
+          cmd = $("#command option:selected").text()
+          if (cmd === "") return alert("Please select a command first");
+          // Add option div
+          num_options++;
+          var div = $("<div data-label='Option' id='option" + num_options + "' />");
+          var select = $("<select name='" + optFlag + num_options + "' />");
+          var input = $("<input type='text' class='large' name='" + optVal + num_options + "' />");
+          var del = $("<img src='/img/delete.png' class='action delete_option' />");
+          del.click(function() { $(this).parent().remove(); });
+          select.append("<option value=''></option>");
+          for (index in command_flags[cmd]) {
+            flag = command_flags[cmd][index];
+            select.append("<option value='" + flag + "'>" + flag + "</option>");
+          }
+          div.addClass("inline-inputs command_option")
+             .append(select).append(input).append(del)
+             .wrap("<div class='clearfix' />")
+             .wrap("<div class='input' />")
+             .attr("name", function(index,old) { return this.id; })
+             .before(function(index) { return "<label>" + $(this).data("label") + "</label>"; })
+             .insertBefore($(this));
+          // TODO - later: hide the text input when a flag is a boolean type of empty
+        });
+
+        // Submit
+        $("#task_edit").submit(function(event) {
+          var name_value_data = $(this).serializeArray();
+          var raw_form_data = {};
+          for (index in name_value_data) {
+            if (name_value_data[index].value !== "") {
+              raw_form_data[name_value_data[index].name] = name_value_data[index].value;
+            }
+          }
+          console.log(raw_form_data);
+          var nice_data = {options: {}};
+          var flag_regex = new RegExp(optFlag + "(\\d+)", "i");
+          var val_regex = new RegExp(optVal + "(\\d+)", "i");
+
+          if ($("#task_type").find("div.active").attr("id") === "command_edit") {
+            for (field in raw_form_data) {
+              // Transform option data
+              if (flag_regex.test(field)) {
+                // Ignore, will be grabbed by val_regex
+              } else if (val_regex.test(field)) {
+                optNum = val_regex.exec(field)[1];
+                optName = raw_form_data[optFlag + optNum];
+                new_value = raw_form_data[field];
+                if (optName in nice_data.options) {
+                  if (typeof nice_data.options[optName] === "object") {
+                    nice_data.options[optName].push(new_value);
+                  } else {
+                    nice_data.options[optName] = new Array(nice_data.options[optName], new_value);
+                  }
+                } else {
+                  nice_data.options[optName] = new_value;
+                }
+              } else if (field !== "affinity") {
+                // Reject affinity data
+                nice_data[field] = raw_form_data[field];
+              }
+            }
+          } else {
+            for (field in raw_form_data) {
+              // Reject all command and options from form data
+              if (flag_regex.test(field) || val_regex.test(field) || field === "command") {}
+              else { nice_data[field] = raw_form_data[field]; }
+            }
+            // Serialize subtasks
+            // TODO
+          }
+
+          <% if editing_task %>
+            $.ajax({
+              type: 'PUT',
+              url: "/api/tasks/" + <%= editing_task.uid %>,
+              data: nice_data,
+              success: function(data) {
+                $("#update_btn").button('reset');
+                parent.postMessage({action: "closeedit"}, location.protocol + "//" + location.host);
+              }
+            });
+          <% else %>
+            $.ajax({
+              type: 'POST',
+              url: "/api/tasks",
+              data: nice_data,
+              success: function(data) {
+                $("#update_btn").button('reset');
+                parent.postMessage({action: "closeedit"}, location.protocol + "//" + location.host);
+              }
+            });
+          <% end %>
+          return false;
+        });
+
+        // Initialize Buttons
+        $("#update_btn").click(function() { $("#task_edit").submit(); });
+        $("#cancel_btn").click(function() {
+          parent.postMessage({action: "closeedit"}, location.protocol + "//" + location.host);
+        });
+        <% if editing_task %>
+          $("#delete_btn").click(function() {
+            if (confirm("Are you sure you want to delete this item?")) {
+              $.ajax({
+                type: 'DELETE',
+                url: <%= url(editing_task.href) %>,
+                success: function(data) {
+                  $("#update_btn").button('reset');
+                  parent.postMessage({action: "closeedit"}, location.protocol + "//" + location.host);
+                }
+              });
+            }
+          });
+        <% end %>
+      });
+    </script>
+  </head>
+  <body>
+    <form id="task_edit" name="task_edit" style="text-align:left">
+    <fieldset>
+      <legend class="legend">Edit Task</legend>
+      <input type="text" class="large init" data-label="Name" id="name" />
+      <div id="task_type">
+        <ul class="tabs" data-tabs="tabs">
+          <li class="active"><a href="#command_edit">Command</a></li>
+          <li><a href="#subtask_edit">Other Tasks</a></li>
+        </ul>
+        <div class="tab-content" id="task_type">
+          <div class="active" id="command_edit">
+            <select class="init" data-label="Command" id="command">
+              <option value=""></option>
+            </select>
+            <a href="javascript:void(0)" id="add_flag">+ Add Flag...</a>
+          </div>
+          <div id="subtask_edit">
+            <select class="init" data-label="Subtask Affinity" id="affinity">
+              <option value="parallel">Parallel Enqueue</option>
+              <option value="stop">Stop if one subtask fails</option>
+              <option value="continue">Continue even if any subtask fails</option>
+            </select>
+            <%= yield %>
+          </div>
+        </div>
+      </div>
+      <div id="task_schedule">
+        <ul class="tabs" data-tabs="tabs">
+          <li class="active"><a href="#schedule_edit">Schedule</a></li>
+        </ul>
+        <div class="tab-content">
+          <div class="active" id="schedule_edit">
+            <input type="text" class="large init" data-label="Minute" id="minute" />
+            <input type="text" class="large init" data-label="Hour" id="hour" />
+            <input type="text" class="large init" data-label="Day of Month" id="day" />
+            <select class="init" data-label="Month of Year" id="month">
+              <option value=""></option>
+              <option value="*">*</option>
+              <option value="1">January</option>
+              <option value="2">February</option>
+              <option value="3">March</option>
+              <option value="4">April</option>
+              <option value="5">May</option>
+              <option value="6">June</option>
+              <option value="7">July</option>
+              <option value="8">August</option>
+              <option value="9">September</option>
+              <option value="10">October</option>
+              <option value="11">November</option>
+              <option value="12">December</option>
+            </select>
+            <select class="init" data-label="Day of Week" id="weekday">
+              <option value=""></option>
+              <option value="*">*</option>
+              <option value="0">Sunday</option>
+              <option value="1">Monday</option>
+              <option value="2">Tuesday</option>
+              <option value="3">Wednesday</option>
+              <option value="4">Thursday</option>
+              <option value="5">Friday</option>
+              <option value="6">Saturday</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <% text = (editing_task ? "Updat" : "Creat") %>
+      <button class="btn primary" data-loading-text="<%= text %>ing..." id="update_btn" ><%= text %>e</button>
+      <button class="btn" id="cancel_btn">Cancel</button>
+      <% if editing_task %>
+        <button class="btn danger" data-loading-text="Deleting..." id="delete_btn" >Delete</button>
+      <% end %>
+    </fieldset>
+    </form>
+    <%= VirtualMonkey::BOOTSTRAP_JS %>
+    <%= VirtualMonkey::ACTIONS_JS %>
+  </body>
+</html>

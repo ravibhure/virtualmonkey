@@ -125,6 +125,11 @@ module VirtualMonkey
           self[field].uniq_by! { |hsh| hsh["rel"] }
         end
       end
+
+      def render()
+        self.pretty_inspect
+        # TODO - later
+      end
     end
   end
 end

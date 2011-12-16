@@ -1,0 +1,99 @@
+<div id="sidebar" class="display_panel">
+  <!-- Driving tool -->
+  <div id="footer">
+    <a class="btn" data-controls-modal="manager_modal" data-backdrop="static" data-keyboard="true" >Manage Tasks</a>
+    <!-- TODO - later: edit max_daemons -->
+
+    <div class="modal hide fade" id="manager_modal" style="display: none;">
+      <div class="modal-header">
+        <a class="close" href="javascript:void(0)"><img src="/img/delete.png" /></a>
+        <h3>Task/Job Manager</h3>
+      </div>
+      <div class="modal-body" id="manager_slider">
+        <div class="strip" id="manager_strip">
+          <div class="pane" id="pane_0">
+            <%= erb :manager, :layout => false %>
+          </div>
+          <div class="pane" id="pane_1">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <a class="btn primary" id="new_task_btn">New Task...</a>
+      </div>
+    </div>
+  </div>
+
+  <fieldset>
+  <legend class="legend">Filters</legend>
+  <!-- Date Range Picker -->
+  <div class="inline-inputs init" data-label="Date range" id="date_range">
+    <input type="text" class="small" name="from_date" id="from_date" />
+    to
+    <input type="text" class="small" name="to_date" id="to_date" />
+  </div>
+  <!-- Tags filters --><br />
+  <input type="text" class="large init" data-label="Run tags" id="tag" />
+  <!-- Troop filters --><br />
+  <input type="text" class="large init" data-label="Troop file" id="troop" />
+
+  <!-- User filters -->
+  <input type="text" class="large init" data-label="User email" id="user_email" />
+  <input type="text" class="large init" data-label="User name" id="user_name" />
+  <!-- Cloud filters --><br />
+  <input type="text" class="large init" data-label="Cloud name" id="cloud_name" />
+  <input type="text" class="large init" data-label="Cloud ID" id="cloud_id" />
+  <!-- ServerTemplate filters --><br />
+  <input type="text" class="large init" data-label="ServerTemplate name" id="servertemplate_name" />
+  <input type="text" class="large init" data-label="ServerTemplate href" id="servertemplate_href" />
+  <input type="text" class="large init" data-label="ServerTemplate revision" id="servertemplate_rev" />
+  <input type="text" class="large init" data-label="ServerTemplate ID" id="servertemplate_id" />
+  <!-- MultiCloudImage filters --><br />
+  <input type="text" class="large init" data-label="MCI name" id="mci_name" />
+  <input type="text" class="large init" data-label="MCI href" id="mci_href" />
+  <input type="text" class="large init" data-label="MCI OS" id="mci_os" />
+  <input type="text" class="large init" data-label="MCI OS version" id="mci_os_version" />
+  <input type="text" class="large init" data-label="MCI architecture" id="mci_arch" />
+  <input type="text" class="large init" data-label="MCI RightLink version" id="mci_rightlink" />
+  <input type="text" class="large init" data-label="MCI revision" id="mci_rev" />
+  <input type="text" class="large init" data-label="MCI ID" id="mci_id" />
+  <!-- InstanceType filters --><br />
+  <input type="text" class="large init" data-label="InstanceType name" id="instancetype_name" />
+  <input type="text" class="large init" data-label="InstanceType href" id="instancetype_href" />
+  <!-- Datacenter filters --><br />
+  <input type="text" class="large init" data-label="Datacenter name" id="datacenter_name" />
+  <input type="text" class="large init" data-label="Datacenter href" id="datacenter_href" />
+  </fieldset>
+
+</div>
+
+<!-- Graph and Data Tabs -->
+<div id="container" class="display_panel">
+  <ul class="tabs" data-tabs="tabs">
+    <li class="active"><a href="#graph">Graph</a></li>
+    <li><a href="#burndown">Burndown</a></li>
+    <li><a href="#map">Map</a></li>
+    <li><a href="#data">Data</a></li>
+  </ul>
+  <div class="tab-content">
+    <div class="active" id="graph">
+      Spider Graph Here...
+    </div>
+    <div id="burndown">
+      Burndown Graph Here...
+    </div>
+    <div id="map">
+      Map here...
+    </div>
+    <div id="data">
+      Data here...
+    </div>
+  </div>
+</div>
+
+<!-- Load other scripts later for speed -->
+<script type="text/javascript" src="js/jquery.flot.min.js"></script>
+<!--script type="text/javascript" src="js/jquery.flot.navigate.min.js"></script>
+<script type="text/javascript" src="js/jquery.flot.resize.min.js"></script-->
+<script type="text/javascript" src="js/jquery.flot.highlighter.js"></script>
+<script type="text/javascript" src="js/jquery.flot.spider.js"></script>

@@ -14,8 +14,8 @@ module VirtualMonkey
 
       def self.read_cache
         JSON::parse(IO.read(TEMP_STORE))
-      rescue Errno::ENOENT
-        File.open(TEMP_STORE, "w") { |f| {}.to_json }
+      rescue Errno::ENOENT, JSON::ParserError
+        File.open(TEMP_STORE, "w") { |f| f.write("{}") }
         return {}
       rescue Errno::EBADF
         sleep 0.1
@@ -24,7 +24,7 @@ module VirtualMonkey
       private_class_method :read_cache
 
       def self.write_cache(json_hash)
-        File.open(TEMP_STORE, "w") { |f| json_hash.to_json }
+        File.open(TEMP_STORE, "w") { |f| f.write(json_hash.to_json) }
       end
       private_class_method :write_cache
 
@@ -81,12 +81,15 @@ module VirtualMonkey
       def self.create(opts={})
         # Check for required Arguments
         unless opts["command"].is_a?(String) or opts["subtask_hrefs"].is_a?(Array)
+          STDERR.puts(opts.pretty_inspect)
           raise ArgumentError.new("#{PATH} requires a 'command' String or a 'subtask_hrefs' Array")
         end
         if opts["subtask_hrefs"] and opts["command"]
+          STDERR.puts(opts.pretty_inspect)
           raise ArgumentError.new("The 'command' String and 'subtask_hrefs' Array are mutually exclusive")
         end
         if opts["subtask_hrefs"] and not valid_affinities.include?(opts["affinity"])
+          STDERR.puts(opts.pretty_inspect)
           msg = "#{PATH} requires an 'affinity' String when passing a 'subtask_hrefs' Array"
           raise ArgumentError.new(msg)
         end
@@ -259,12 +262,14 @@ module VirtualMonkey
       #
       # Unexposed API
       #
-      def self.get_next_subtask_href(last_task_uid, managing_task_uid)
+      def self.get_next_subtask_href(last_task_uid, managing_task_uid, status)
         last_task, managing_task = self.get(last_task_uid), self.get(managing_task_uid)
         if last_task && managing_task
-          next_index = managing_task["subtask_hrefs"].index(last_task.href) + 1
-          if next_index < managing_task["subtask_hrefs"].size
-            return managing_task["subtask_hrefs"][next_index]
+          unless managing_task["affinity"] == "stop" && status != "passed"
+            next_index = managing_task["subtask_hrefs"].index(last_task.href) + 1
+            if next_index < managing_task["subtask_hrefs"].size
+              return managing_task["subtask_hrefs"][next_index]
+            end
           end
         end
         return nil
