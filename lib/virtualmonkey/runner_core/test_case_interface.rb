@@ -159,31 +159,30 @@ module VirtualMonkey
     end
 
     def function_wrapper(sym, behave_sym, *args, &block)
-      timing = Time.now
-      if sym.to_s =~ /^set/
+      @retry_loop << 0
+      if starts_with_set
         call_str = stringify_call(sym, args) unless block
         call_str = stringify_call(sym, args, nil, block.to_ruby) if block
         write_readable_log(call_str)
-        ret = __send__(behave_sym, *args, &block)
-        write_readable_log("Duration: #{Time.duration(Time.now - timing, :include_usec)}")
-        return ret
+      else
+        execution_stack_trace(sym, args) unless block
+        execution_stack_trace(sym, args, nil, block.to_ruby) if block
       end
 
-      @retry_loop << 0
-      execution_stack_trace(sym, args) unless block
-      execution_stack_trace(sym, args, nil, block.to_ruby) if block
+      timing = Time.now
       begin
         push_rerun_test
         #pre-command
         populate_settings if @deployment
-        done_resuming?
+        done_resuming? unless starts_with_set
         #command
         result = __send__(behave_sym, *args, &block)
         #post-command
         continue_test
       rescue VirtualMonkey::TestCaseInterface::Retry
       end while @rerun_last_command.pop
-      write_trace_log
+
+      write_trace_log unless starts_with_set
       write_readable_log("Duration: #{Time.duration(Time.now - timing, :include_usec)}")
       @retry_loop.pop
       result
