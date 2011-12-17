@@ -160,6 +160,7 @@ module VirtualMonkey
 
     def function_wrapper(sym, behave_sym, *args, &block)
       @retry_loop << 0
+      starts_with_set = (sym.to_s =~ /^set/)
       if starts_with_set
         call_str = stringify_call(sym, args) unless block
         call_str = stringify_call(sym, args, nil, block.to_ruby) if block
