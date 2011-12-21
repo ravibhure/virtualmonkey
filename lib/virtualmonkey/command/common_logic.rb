@@ -394,8 +394,9 @@ module VirtualMonkey
         yield()
       rescue Interrupt, NameError, ArgumentError, TypeError => e
         raise
-      rescue Exception => e
+      rescue StandardError, Timeout::Error => e
         warn "WARNING: Got \"#{e.message}\" from: #{e.backtrace.join("\n")}"
+        raise if @@options[:force]
         sleep 5
         max_retries -= 1
         (max_retries > 0) ? (retry) : (raise)
