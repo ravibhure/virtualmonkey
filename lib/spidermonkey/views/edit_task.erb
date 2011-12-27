@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <% title ||= nil %>
-    <% editing_task ||= nil %>
-    <% if title %>
-      <title><%= title %></title>
+    <% @edit ||= nil %>
+    <% if (@title ||= nil) %>
+      <title><%= @title %></title>
     <% end %>
     <link rel="shortcut icon" href="/favicon2.ico" type="image/x-icon" />
     <link rel="icon" href="/favicon2.ico" type="image/x-icon" />
@@ -82,20 +81,77 @@
              .wrap("<div class='clearfix' />")
              .wrap("<div class='input' />")
              .attr("name", function(index,old) { return this.id; })
-             .before(function(index) { return "<label>" + $(this).data("label") + "</label>"; })
+             .before(function(index) { return "<label>" + $(this).attr("data-label") + "</label>"; })
              .insertBefore($(this));
           // TODO - later: hide the text input when a flag is a boolean type of empty
         });
 
-        // Submit
-        $("#task_edit").submit(function(event) {
-          var name_value_data = $(this).serializeArray();
+        <% if @edit %>
+          var editing_task = <%= @edit.to_json() %>;
+          console.log(editing_task)
+          for (field in editing_task) {
+            switch(field) {
+              // Text Fields
+              case "name": case "minute": case "hour": case "day":
+                $("#"+field).attr("value", editing_task[field]);
+                break;
+
+              // Selects - NOTE: skip "command" if "options" exists
+              case "command":
+                if ("options" in editing_task) { break; }
+              case "affinity": case "month": case "weekday":
+                $("#"+field).find("option:contains("+editing_task[field]+")")
+                            .attr("selected", true);
+                break;
+
+              // Options
+              case "options":
+                if ("command" in editing_task) {
+                  $("#command").find("option:contains("+editing_task["command"]+")")
+                               .attr("selected", true);
+                  opts = editing_task["options"];
+                  for (flag_name in opts) {
+                    switch(typeof opts[flag_name]) {
+                      case "string":
+                        $("#add_flag").click();
+                        optDiv = $("#option"+(num_options-1));
+                        optDiv.find("select option:contains("+flag_name+")").attr("selected", true);
+                        optDiv.find("input").attr("value", opts[flag_name]);
+                        break;
+                      case "object":
+                        if (opts[flag_name].length) {
+                          var i = opts[flag_name].length;
+                          while (i--) {
+                            $("#add_flag").click();
+                            optDiv = $("#option"+(num_options-1));
+                            optDiv.find("select option:contains("+flag_name+")").attr("selected", true);
+                            optDiv.find("input").attr("value", opts[flag_name][i]);
+                          }
+                        }
+                        break;
+                      default:
+                        break;
+                    }
+                  }
+                }
+                break;
+
+              // Ignore
+              default:
+                break;
+            }
+          }
+        <% end %>
+
+        function serializeTaskForm() {
+          var name_value_data = $("#task_edit").serializeArray();
           var raw_form_data = {};
           for (index in name_value_data) {
             if (name_value_data[index].value !== "") {
               raw_form_data[name_value_data[index].name] = name_value_data[index].value;
             }
           }
+          console.log("raw_data:")
           console.log(raw_form_data);
           var nice_data = {options: {}};
           var flag_regex = new RegExp(optFlag + "(\\d+)", "i");
@@ -131,47 +187,68 @@
               else { nice_data[field] = raw_form_data[field]; }
             }
             // Serialize subtasks
-            // TODO
+            nice_data["subtask_hrefs"] = []
+            $("#subtasks ol li").each(function(index) {
+              href = <%= VirtualMonkey::API::Task::PATH.inspect %> + "/" + $(this).attr("data-uid");
+              nice_data["subtask_hrefs"].push(href);
+            });
           }
-
-          <% if editing_task %>
-            $.ajax({
-              type: 'PUT',
-              url: "/api/tasks/" + <%= editing_task.uid %>,
-              data: nice_data,
-              success: function(data) {
-                $("#update_btn").button('reset');
-                parent.postMessage({action: "closeedit"}, location.protocol + "//" + location.host);
-              }
-            });
-          <% else %>
-            $.ajax({
-              type: 'POST',
-              url: "/api/tasks",
-              data: nice_data,
-              success: function(data) {
-                $("#update_btn").button('reset');
-                parent.postMessage({action: "closeedit"}, location.protocol + "//" + location.host);
-              }
-            });
-          <% end %>
-          return false;
-        });
+          return nice_data;
+        }
 
         // Initialize Buttons
-        $("#update_btn").click(function() { $("#task_edit").submit(); });
-        $("#cancel_btn").click(function() {
-          parent.postMessage({action: "closeedit"}, location.protocol + "//" + location.host);
+        <% if @edit %>
+          $("#update_btn").click(function() {
+            nice_data = serializeTaskForm();
+            console.log("nice_data:");
+            console.log(nice_data);
+            $.ajax({
+              type: 'PUT',
+              url: <%= [VirtualMonkey::API::Task::PATH, @edit.uid].join("/").inspect %>,
+              data: nice_data,
+              success: function(data) {
+                sendMsg({action: "refreshtasks"});
+                $("#update_btn").button('reset');
+                sendMsg({action: "closeedit"});
+              }
+            });
+          });
+        <% end %>
+
+        $("#create_btn").click(function() {
+          nice_data = serializeTaskForm();
+          console.log("nice_data:");
+          console.log(nice_data);
+          $.ajax({
+            type: 'POST',
+            url: <%= VirtualMonkey::API::Task::PATH.inspect %>,
+            data: nice_data,
+            success: function(data, textStatus, jqXHR) {
+              e = {
+                action: "addtask",
+                href: jqXHR.getResponseHeader("Location"),
+                actions: ["run", "edit", "save", "delete"],
+              };
+              sendMsg(e);
+              $("#update_btn").button('reset');
+              sendMsg({action: "closeedit"});
+            }
+          });
         });
-        <% if editing_task %>
+
+        $("#cancel_btn").click(function() { sendMsg({action: "closeedit"}); });
+
+        <% if @edit %>
           $("#delete_btn").click(function() {
             if (confirm("Are you sure you want to delete this item?")) {
               $.ajax({
                 type: 'DELETE',
-                url: <%= url(editing_task.href) %>,
+                url: <%= url(@edit.href).inspect %>,
                 success: function(data) {
+                  e = {action: "deletetask", uid: <%= @edit.uid.inspect %>}
+                  sendMsg(e);
                   $("#update_btn").button('reset');
-                  parent.postMessage({action: "closeedit"}, location.protocol + "//" + location.host);
+                  sendMsg({action: "closeedit"});
                 }
               });
             }
@@ -246,11 +323,14 @@
           </div>
         </div>
       </div>
-      <% text = (editing_task ? "Updat" : "Creat") %>
-      <button class="btn primary" data-loading-text="<%= text %>ing..." id="update_btn" ><%= text %>e</button>
-      <button class="btn" id="cancel_btn">Cancel</button>
-      <% if editing_task %>
-        <button class="btn danger" data-loading-text="Deleting..." id="delete_btn" >Delete</button>
+      <% text = (@edit ? "Create New Task" : "Create Task") %>
+      <a class="btn primary" data-loading-text="Creating..." id="create_btn" ><%= text %></a>
+      <% if @edit %>
+        <a class="btn secondary" data-loading-text="Updating..." id="update_btn" >Update Task</a>
+      <% end %>
+      <a class="btn" id="cancel_btn">Cancel</a>
+      <% if @edit %>
+        <a class="btn danger" data-loading-text="Deleting..." id="delete_btn" >Delete Task</a>
       <% end %>
     </fieldset>
     </form>

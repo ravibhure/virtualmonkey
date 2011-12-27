@@ -1,17 +1,5 @@
-<% editing_task ||= nil %>
-<ul class="zebra">
-<% actions.map! { |a| [a, "data-click='action%s'" % (a.titlecase + '("%s")')] } %>
-<% VirtualMonkey::API::Task.index().each do |task| %>
-  <% next if editing_task && editing_task.uid == task.uid %>
-  <li>
-    <div class="name_column" title="<%= task["name"] %>" data-content='<%= task.render() %>'>
-      <%= task["name"] %>
-    </div>
-    <div class="actions_column">
-      <% actions.each do |action,dataclick| %>
-        <img src="/img/<%= action %>.png" <%= dataclick % url(task.href) %> class="action <%= action %>" />
-      <% end %>
-    </div>
-  </li>
-<% end %>
+<% @edit ||= nil %>
+<ul class="zebra task_list">
+  <% tasks = VirtualMonkey::API::Task.index().reject { |t| @edit && @edit.uid == t.uid } %>
+  <%= partial :task, :collection => tasks %>
 </ul>

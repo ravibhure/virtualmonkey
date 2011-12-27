@@ -390,14 +390,8 @@ module VirtualMonkey
               # Set info tags on deployment
               tags = {}
               tags["server_#{server.rs_id}-servertemplate_id"] = "#{st.rs_id}"
-              unless @single_deployment
-                # MCI info isn't available from RightScale Server API
-                if options[:use_mci] && !options[:use_mci].empty?
-                  tags["mci_id"] = options[:use_mci].split(/\//).last
-                else
-                  tags["server_#{server.rs_id}-mci_id"] = use_this_image.split(/\//).last
-                end
-              end
+              # MCI info isn't available from RightScale Server API
+              tags["server_#{server.rs_id}-mci_id"] = use_this_image.split(/\//).last
               new_deploy.set_info_tags(tags)
 
               # AWS Cloud-specific Code XXX LEGACY XXX

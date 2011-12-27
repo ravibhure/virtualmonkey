@@ -54,7 +54,7 @@ module VirtualMonkey
 
       def initialize(*args, &block)
         super(*args, &block)
-        task_uid = Time.now.strftime("%Y%m%d%H%M%S#{rand(1000000)}")
+        task_uid = Time.now.strftime("%Y%m%d%H%M%S#{[rand(1000000).to_s].pack('m').chomp}")
         self.actions |= [
           {"rel" => "save"},
           {"rel" => "purge"},
@@ -99,6 +99,7 @@ module VirtualMonkey
 
         # Check for Schedule options
         schedule_opts = opts & CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s }
+        schedule_opts -= ["command"]
         opts -= CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s }
 
         # Get user data
@@ -132,6 +133,7 @@ module VirtualMonkey
 
         # Check for Schedule options
         schedule_opts = opts & CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s }
+        schedule_opts -= ["command"]
         opts -= CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s }
 
         # Get user data NOTE: this means the person who updated takes control
@@ -194,19 +196,27 @@ module VirtualMonkey
         opts["updated_at"] = Time.now.utc.strftime("%Y/%m/%d %H:%M:%S +0000")
         opts["scheduled"] = true
         opts.delete("command")
-        cronedit_opts = (opts.map { |k,v| [k.to_sym, v] }.to_h) & CronEdit::CronEntry::DEFAULTS.keys
 
         # Read rest_connection settings
         settings = rest_config_yaml
-        base_url = "https://#{settings[:user]}:#{settings[:pass]}@127.0.0.1"
-        path = "#{PATH}/#{uid}/start"
-        cronedit_opts[:command] = "curl -x POST #{base_url}#{path}"
 
-        crontab = File.join("", "etc", "crontab")
+        if File.writable?(VirtualMonkey::SYS_CRONTAB)
+          cronedit_opts = (opts.map { |k,v| [k.to_sym, v] }.to_h) & CronEdit::CronEntry::DEFAULTS.keys
 
-        ct = CronEdit::FileCrontab.new(crontab, crontab)
-        ct.add("#{uid}", cronedit_opts)
-        ct.commit
+          base_url = "https://#{settings[:user]}:#{settings[:pass]}@127.0.0.1"
+          path = "#{PATH}/#{uid}/start"
+          cronedit_opts[:command] = "curl -x POST #{base_url}#{path}"
+
+
+          crontab = VirtualMonkey::SYS_CRONTAB
+
+          ct = CronEdit::FileCrontab.new(crontab, crontab)
+          ct.add("#{uid}", cronedit_opts)
+          ct.commit
+        else
+          STDERR.puts("File #{VirtualMonkey::SYS_CRONTAB} isn't writable! You cannot schedule tasks right now.")
+          opts["scheduled"] = false
+        end
 
         # Get user data NOTE: this means the person who updated takes control
         opts["user"] ||= settings[:user]

@@ -57,7 +57,7 @@ module VirtualMonkey
 
       def initialize(*args, &block)
         super(*args, &block)
-        job_uid = Time.now.strftime("%Y%m%d%H%M%S#{rand(1000000)}")
+        job_uid = Time.now.strftime("%Y%m%d%H%M%S#{[rand(1000000).to_s].pack('m').chomp}")
         self.actions |= [
         ]
         self.links |= [
@@ -110,16 +110,20 @@ module VirtualMonkey
         new_record.links |= [{"href" => callback_task.uri, "rel" => "callback"}] if callback_task
         new_record["name"] = parent_task["name"]
 
-        # Ensure a Cronjob exists to bump the queue
-        crontab = File.join("", "etc", "crontab")
-        ct = CronEdit::FileCrontab.new(crontab, crontab)
-        unless ct.list["garbage_collection"]
-          # Read rest_connection settings
-          settings = YAML::load(IO.read(VirtualMonkey::REST_YAML))
-          base_url = "https://#{settings[:user]}:#{settings[:pass]}@127.0.0.1"
-          path = "#{PATH}/garbage_collect"
-          ct.add("garbage_collection", :minute => "*/1", :command => "curl -x POST #{base_url}#{path}")
-          ct.commit
+        if File.writable?(VirtualMonkey::SYS_CRONTAB)
+          # Ensure a Cronjob exists to bump the queue
+          crontab = VirtualMonkey::SYS_CRONTAB
+          ct = CronEdit::FileCrontab.new(crontab, crontab)
+          unless ct.list["garbage_collection"]
+            # Read rest_connection settings
+            settings = YAML::load(IO.read(VirtualMonkey::REST_YAML))
+            base_url = "https://#{settings[:user]}:#{settings[:pass]}@127.0.0.1"
+            path = "#{PATH}/garbage_collect"
+            ct.add("garbage_collection", :minute => "*/1", :command => "curl -x POST #{base_url}#{path}")
+            ct.commit
+          end
+        else
+          STDERR.puts("File #{VirtualMonkey::SYS_CRONTAB} isn't writable! You need to POST to '#{PATH}/garbage_collect' manually.")
         end
 
         # Create record

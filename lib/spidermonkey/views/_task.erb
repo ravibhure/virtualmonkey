@@ -1,0 +1,11 @@
+<% datafields = 'data-uid="%s" data-uri="%s"' % [task.uid, url(task.href)] %>
+<li class="task" data-uid="<%= task.uid %>">
+  <div class="name_column" title="<%= task["name"] %>" data-content='<%= task.render() %>'>
+    <%= task["name"] %>
+  </div>
+  <div class="actions_column">
+    <% @actions.each do |action| %>
+      <img src="/img/<%= action %>.png" <%= datafields %> class="action <%= action %>" />
+    <% end %>
+  </div>
+</li>

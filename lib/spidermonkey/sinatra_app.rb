@@ -32,7 +32,9 @@ module VirtualMonkey
     <![endif]-->
   EOS
 
-  BOOTSTRAP_JS = [BOOTSTRAP_MODAL, BOOTSTRAP_TABS, BOOTSTRAP_POPOVER, BOOTSTRAP_BUTTONS].join("\n")
+#  BOOTSTRAP_JS = [BOOTSTRAP_MODAL, BOOTSTRAP_TABS, BOOTSTRAP_POPOVER, BOOTSTRAP_BUTTONS].join("\n")
+  BOOTSTRAP_JS = script_tag("/js/bootstrap.js")
+  BOOTSTRAP_RAW_JAVASCRIPT = Dir["public/js/bootstrap*"].map { |js| IO.read(js) }.join("\n")
 
   ALL_JS = [
             JQUERY,
@@ -53,10 +55,19 @@ module VirtualMonkey
 
   INDEX_TITLE = "VirtualMonkey WebUI"
   CachedLogins = {}
-  RACK_ENV = (ENV["RACK_ENV"] || :development).to_sym # :production
+  RACK_ENV = lambda {
+    default = :development
+    if File.writable?(SYS_CRONTAB)
+      default = :production
+    else
+      STDERR.puts("File #{SYS_CRONTAB} is not writable! You may not get expected behavior")
+    end
+    return (ENV["RACK_ENV"] || default).to_sym
+  }.call
 end
 
 require 'sinatra'
+require 'partials'
 require 'erb'
 require 'less'
 require 'digest/sha1'
@@ -132,32 +143,47 @@ helpers do
     {"user" => session[:username]}
   end
 
+  def get_error_message(e)
+    if VirtualMonkey::RACK_ENV == :development
+      return "#{e}\n#{e.backtrace.join("\n")}"
+    else
+      return "#{e.message}"
+    end
+  end
+
   def standard_handlers(&block)
     data = (params.empty? ? JSON.parse(request.body) : params.dup)
     yield(data)
   rescue Excon::Errors::HTTPStatusError => e
     status((e.message =~ /Actual\(([0-9]+)\)/; $1.to_i))
-    body(e.response)
+    body e.response
   rescue ArgumentError, TypeError => e
     status 400
-    body(e.message)
+    body get_error_message(e)
   rescue VirtualMonkey::API::MethodNotAllowedError => e
     status 405
-    body(e.message)
+    body get_error_message(e)
   rescue NotImplementedError => e
     status 501
-    body(e.message)
+    body get_error_message(e)
   rescue IndexError, NameError, Errno::EBADF, Errno::ENOENT => e
     status 404
-    body(e.message)
+    body get_error_message(e)
   rescue VirtualMonkey::API::SemanticError => e
     status 422
-    body(e.message)
+    body get_error_message(e)
 #  rescue Exception => e
 #    status 500
-#    body(e.message)
+#    body get_error_message(e)
+  end
+
+  def set_context(symbol)
+    @context = symbol.to_sym
+    instance_eval("def #{@context}?; #{@context.inspect} == @context; end")
   end
 end
+
+helpers Sinatra::Partials
 
 # Default Layout Template
 template :layout do
@@ -165,9 +191,8 @@ template :layout do
     <!DOCTYPE html>
     <html lang="en">
       <head>
-        <% title ||= nil %>
-        <% if title %>
-          <title><%= title %></title>
+        <% if (@title ||= nil) %>
+          <title><%= @title %></title>
         <% end %>
         <link rel="shortcut icon" href="/favicon2.ico" type="image/x-icon" />
         <link rel="icon" href="/favicon2.ico" type="image/x-icon" />
@@ -180,9 +205,6 @@ template :layout do
       </head>
       <body>
         <%= yield %>
-        <% if title == #{VirtualMonkey::INDEX_TITLE.inspect} %>
-          #{VirtualMonkey::MAIN_JS}
-        <% end %>
         #{VirtualMonkey::BOOTSTRAP_JS}
         #{VirtualMonkey::ACTIONS_JS}
       </body>
@@ -206,7 +228,7 @@ VirtualMonkey::Command::NonInteractiveCommands.keys.each do |cmd|
       uid = VirtualMonkey::API::Task.create("command" => cmd, "options" => opts)
 
       status 201
-      headers "Location" => "#{VirtualMonkey::API::Task.collection_path}/#{uid}",
+      headers "Location" => "#{VirtualMonkey::API::Task::PATH}/#{uid}",
               "Content-Type" => "#{VirtualMonkey::API::Task::ContentType}"
     end
   end
@@ -230,7 +252,7 @@ post VirtualMonkey::API::Task::PATH do
   standard_handlers do |data|
     uid = VirtualMonkey::API::Task.create(data.merge(get_user))
     status 201
-    headers "Location" => "#{VirtualMonkey::API::Task.collection_path}/#{uid}"
+    headers "Location" => "#{VirtualMonkey::API::Task::PATH}/#{uid}"
   end
 end
 
@@ -246,7 +268,7 @@ end
 # Update
 put "#{VirtualMonkey::API::Task::PATH}/:uid" do |uid|
   standard_handlers do |data|
-    VirtualMonkey::API::Task.put(uid, data.merge(get_user))
+    VirtualMonkey::API::Task.update(uid, data.merge(get_user))
     body ""
     status 204
   end
@@ -377,21 +399,51 @@ end
 # =========
 
 get "/" do
-  erb :index, :locals => {:title => VirtualMonkey::INDEX_TITLE}
+  @title = VirtualMonkey::INDEX_TITLE
+  erb :index
 end
 
 get "/manager" do
+  @title = "VirtualMonkey Manager"
   erb :manager
 end
 
+get "/edit_task/:uid" do |uid|
+  @actions = ["delete"]
+  @edit, @title = nil, nil
+  if uid != "new"
+    @edit = VirtualMonkey::API::Task.get(uid)
+    @title = "Editing Task #{@edit["name"]} (#{@edit.uid})"
+  end
+  erb :subtasks, :layout => :edit_task
+end
+
 get "/tasks/:uid" do |uid|
-  locals = {:actions => ["delete"]}
-  locals[:editing_task] = VirtualMonkey::API::Task.get(uid) unless uid == "new"
-  erb :subtasks, :layout => :edit_task, :locals => locals
+  @actions = (params["actions"] || ["delete"])
+  partial :task, :collection => [VirtualMonkey::API::Task.get(uid)]
+end
+
+get "/tasks" do
+  @actions = (params["actions"] || ["delete"])
+  erb :tasks, :layout => :false
+end
+
+get "/jobs/:uid" do |uid|
+  @actions = (params["actions"] || ["cancel"])
+  partial :job, :collection => [VirtualMonkey::API::Job.get(uid)]
+end
+
+get "/jobs" do
+  @actions = (params["actions"] || ["cancel"])
+  erb :tasks, :layout => :false
 end
 
 get "/css/virtualmonkey.css" do
   less :virtualmonkey, :views => File.join("public", "css")
+end
+
+get "/js/bootstrap.js" do
+  VirtualMonkey::BOOTSTRAP_RAW_JAVASCRIPT
 end
 
 # ============

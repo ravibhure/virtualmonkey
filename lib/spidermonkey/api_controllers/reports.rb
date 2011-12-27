@@ -173,7 +173,7 @@ module VirtualMonkey
 
       def initialize(*args, &block)
         super(*args, &block)
-        report_uid = Time.now.strftime("%Y%m%d%H%M%S#{rand(1000000)}")
+        report_uid = Time.now.strftime("%Y%m%d%H%M%S#{[rand(1000000).to_s].pack('m').chomp}")
         self.actions |= [
           {"rel" => "details"}
         ]

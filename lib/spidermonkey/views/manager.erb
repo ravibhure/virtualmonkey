@@ -1,9 +1,10 @@
 <div id="task_manager" class="resource_list">
   <h2>Tasks</h2>
-  <% locals = {:actions => ["run", "edit", "save", "delete"]} %>
-  <%= erb :tasks, :layout => false, :locals => locals %>
+  <% @actions = ["run", "edit", "save", "delete"] %>
+  <%= erb :tasks, :layout => false %>
 </div>
 <div id="job_manager" class="resource_list">
   <h2>Jobs</h2>
-  <%= erb :jobs, :layout => false, :locals => {:actions => ["cancel"]} %>
+  <% @actions = ["cancel"] %>
+  <%= erb :jobs, :layout => false %>
 </div>

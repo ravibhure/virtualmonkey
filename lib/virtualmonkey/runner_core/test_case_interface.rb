@@ -17,21 +17,6 @@ module VirtualMonkey
     class Retry < Exception
     end
 
-    class UnhandledException < Exception
-      attr_reader :exception
-      def initialize(e); @exception = e; end
-      def inspect; @exception.inspect; end
-      def message; @exception.message; end
-      def backtrace; @exception.backtrace; end
-      def to_s; @exception.to_s; end
-      def set_backtrace(*args, &block)
-        @exception.set_backtrace(*args, &block)
-      end
-      def method_missing(m, *args, &block)
-        @exception.__send__(m, *args, &block)
-      end
-    end
-
     alias_method :orig_raise, :raise
 
     # Overrides puts to provide slightly better logging
@@ -64,7 +49,8 @@ module VirtualMonkey
 #           end
             debugger
           end
-          orig_raise(VirtualMonkey::TestCaseInterface::UnhandledException.new(e))
+          e.uncaught = true
+          orig_raise(e)
         else
           orig_raise(VirtualMonkey::TestCaseInterface::Retry.new)
         end
@@ -73,6 +59,7 @@ module VirtualMonkey
 
     # Gets called from runner_mixins/deployment_base.rb: initialize(...)
     def test_case_interface_init(options = {})
+      @runner = self
       @log_checklists = {"whitelist" => [], "blacklist" => [], "needlist" => []}
       @rerun_last_command = []
 
@@ -171,16 +158,23 @@ module VirtualMonkey
       end
 
       timing = Time.now
+      # Retry loop
       begin
         push_rerun_test
         #pre-command
         populate_settings if @deployment
         done_resuming? unless starts_with_set
         #command
-        result = __send__(behave_sym, *args, &block)
+        result = __send__(behave_sym, *args, &block) if @done_resuming
         #post-command
         continue_test
       rescue VirtualMonkey::TestCaseInterface::Retry
+      rescue Exception => e
+        orig_raise if e.uncaught
+        begin
+          raise e # Need to use the internal raise
+        rescue VirtualMonkey::TestCaseInterface::Retry
+        end
       end while @rerun_last_command.pop
 
       write_trace_log unless starts_with_set
@@ -260,22 +254,11 @@ module VirtualMonkey
           result = yield() if @done_resuming
           continue_test
         rescue VirtualMonkey::TestCaseInterface::Retry
-        rescue VirtualMonkey::TestCaseInterface::UnhandledException => e
-          begin
-            orig_raise e.exception
-          rescue Exception => e
-            orig_raise
-          end
         rescue Exception => e
+          orig_raise if e.uncaught
           begin
             raise e # Need to use the internal raise
           rescue VirtualMonkey::TestCaseInterface::Retry
-          rescue VirtualMonkey::TestCaseInterface::UnhandledException => e
-            begin
-              orig_raise e.exception
-            rescue Exception => e
-              orig_raise
-            end
           end
         end while @rerun_last_command.pop
 

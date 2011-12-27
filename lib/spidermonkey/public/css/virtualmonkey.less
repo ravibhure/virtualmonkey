@@ -131,8 +131,25 @@ select {
   width: auto;
 }
 
-.zebra li { background: #fff; clear: both; height: @baseline + 10; width: inherit; }
-.zebra li:nth-child(odd) { background: #efefef; clear: both; height: @baseline + 10; width: inherit; }
+.zebra {
+  li {
+    background: #fff;
+    clear: both;
+    height: @baseline + 10;
+    width: inherit;
+  }
+
+  li:nth-child(odd) {
+    background: #efefef;
+    clear: both;
+    height: @baseline + 10;
+    width: inherit;
+  }
+
+  &.ui-state-default {
+    li { background: transparent; }
+  }
+}
 
 li { display: list-item; }
 

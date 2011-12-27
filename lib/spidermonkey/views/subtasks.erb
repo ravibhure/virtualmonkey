@@ -1,8 +1,29 @@
 <script type="text/javascript">
   $(function() {
-    <% if (editing_task ||= nil) %>
-      <% editing_task["subtasks"].each do |subtask| %>
-        $("#subtasks ol").append("<li>"+<%= "<li>" %>+"</li>")
+    <% if (@edit ||= nil) %>
+      <% if @edit["subtask_hrefs"].is_a?(Array) %>
+        var subtasks = $("<div />");
+        <% @edit["subtask_hrefs"].each do |subtask_href| %>
+          <% subtask = VirtualMonkey::API::Task.get(subtask_href) %>
+          new_div = $("<div></div>").text(<%= subtask["name"].inspect %>);
+          new_div.appendTo(this);
+          new_div.attr("data-content", <%= subtask.render().inspect %>);
+          new_div.attr("title", <%= subtask["name"].inspect %>);
+          new_div.addClass("name_column");
+          new_div.wrapAll("<li data-uid='" + <%= subtask["uid"].inspect %> + "' ></li>");
+
+          new_actions = $("<div class='actions_column' />");
+          new_actions.append("<img src='/img/delete.png' class='action delete' />");
+          new_actions.appendTo(new_div.parent());
+          new_actions.find("img").unbind('click');
+          new_actions.find("img").bind('click', function(event) {
+            event.stopPropagation();
+            $(this).parent().parent().remove();
+          });
+          subtasks.append(new_div.parent());
+        <% end %>
+        $("#subtasks ol").append(subtasks.children())
+                         .find(".placeholder").remove();
       <% end %>
     <% end %>
     $("#tasks li").draggable({
@@ -18,15 +39,17 @@
         name_div = ui.draggable.find(".name_column");
         new_div = $("<div></div>").text(name_div.text());
         new_div.appendTo(this);
-        new_div.data("content", name_div.data("content"));
+        new_div.attr("data-content", name_div.attr("data-content"));
         new_div.attr("title", name_div.attr("title"));
         new_div.addClass("name_column");
-        new_div.wrapAll("<li></li>");
+        new_div.wrapAll("<li data-uid='" + ui.draggable.attr("data-uid") + "' ></li>");
 
-        new_actions = ui.draggable.find(".actions_column").clone();
+        new_actions = $("<div class='actions_column' />");
+        new_actions.append("<img src='/img/delete.png' class='action delete' />");
         new_actions.appendTo(new_div.parent());
         new_actions.find("img").unbind('click');
-        new_actions.find("img").bind('click', function() {
+        new_actions.find("img").bind('click', function(event) {
+          event.stopPropagation();
           $(this).parent().parent().remove();
         });
       }
@@ -48,6 +71,5 @@
 </div>
 <div id="tasks" class="resource_list">
   <h2>Tasks</h2>
-  <% locals = {:editing_task => editing_task, :actions => actions} %>
-  <%= erb :tasks, :layout => false, :locals => locals %>
+  <%= erb :tasks, :layout => false %>
 </div>

@@ -95,6 +95,14 @@ module VirtualMonkey
         @runner.write_readable_log("#{'*' * str.length}\n#{str}\n#{'*' * str.length}")
       end
 
+      def runner_exec_no_trace(block)
+        @runner.transaction(:do_not_trace) { @runner.instance_eval(&block) }
+      end
+
+      def runner_exec(block)
+        @runner.instance_exec(&block)
+      end
+
       @features_to_run = @features.keys
       check_for_resume
       if @completed_features.include?(@main_feature)
@@ -106,6 +114,9 @@ module VirtualMonkey
       end
       @features_to_run.each { |feature|
         # Create Runner, initialize VirtualMonkey::log files
+        if @options[:helpers]
+          @options[:helpers].each { |helper| @options[:runner].class_eval(&helper) }
+        end
         @runner = @options[:runner].new(@options[:deployment], @options)
         # Set up tests_to_run
         tests_to_run = @tests_to_resume if @tests_to_resume
@@ -126,53 +137,45 @@ module VirtualMonkey
         if @options[:no_resume] && feature == @main_feature
           if @blocks[:hard_reset][feature]
             print_to_readable_log(feature, :hard_reset, nil)
-            @runner.transaction(:do_not_trace) { @blocks[:hard_reset][feature].call }
+            runner_exec_no_trace(@blocks[:hard_reset][feature])
           end
         end
         if @features[feature]
-          if @features[feature] == :hard_reset
-            if @blocks[:hard_reset][feature]
-              print_to_readable_log(feature, :hard_reset, nil)
-              @runner.transaction(:do_not_trace) { @blocks[:hard_reset][feature].call }
-            elsif @blocks[:soft_reset][feature]
-              print_to_readable_log(feature, :soft_reset, nil)
-              @runner.transaction(:do_not_trace) { @blocks[:soft_reset][feature].call }
-            end
-          else
-            if @blocks[:soft_reset][feature]
-              print_to_readable_log(feature, :soft_reset, nil)
-              @runner.transaction(:do_not_trace) { @blocks[:soft_reset][feature].call }
-            elsif @blocks[:hard_reset][feature]
-              print_to_readable_log(feature, :hard_reset, nil)
-              @runner.transaction(:do_not_trace) { @blocks[:hard_reset][feature].call }
+          order = [:soft_reset, :hard_reset]
+          order.reverse! if @features[feature] == :hard_reset
+          order.each do |type|
+            if @blocks[type][feature]
+              print_to_readable_log(feature, type, nil)
+              runner_exec_no_trace(@blocks[type][feature])
+              break
             end
           end
         end
         if @blocks[:before][feature] and @blocks[:before][feature][:once]
           unless VirtualMonkey::trace_log.first["run_once"]
             print_to_readable_log(feature, :before_all, :run_once)
-            @runner.transaction(:do_not_trace) { @blocks[:before][feature][:once].call }
+            runner_exec_no_trace(@blocks[:before][feature][:once])
             VirtualMonkey::trace_log.first["run_once"] = true
             @runner.write_trace_log
           end
         end
         if @blocks[:before][feature] and @blocks[:before][feature][:all]
           print_to_readable_log(feature, :before, :all)
-          @blocks[:before][feature][:all].call
+          runner_exec(@blocks[:before][feature][:all])
         end
         # Test
         tests.each { |key|
           [:before, :test, :after].each { |stage|
             if @blocks[stage][feature] and @blocks[stage][feature][key]
               print_to_readable_log(feature, stage, key)
-              @blocks[stage][feature][key].call
+              runner_exec(@blocks[stage][feature][key])
             end
           }
         }
         # After
         if @blocks[:after][feature] and @blocks[:after][feature][:all]
           print_to_readable_log(feature, :after, :all)
-          @blocks[:after][feature][:all].call
+          runner_exec(@blocks[:after][feature][:all])
         end
         # Run completed, delete the resume file
         FileUtils.rm_rf @options[:resume_file]
@@ -309,9 +312,15 @@ module VirtualMonkey
       end
     end
 
+    def helpers(&block)
+      @options[:helpers] ||= []
+      @options[:helpers] << block
+    end
+
     def method_missing(sym, *args, &block)
       raise NoMethodError.new("undefined method '#{sym}' for #{inspect}:#{self.class}") unless @runner
       @runner.__send__(sym, *args, &block)
     end
   end
+  TestCase.freeze
 end

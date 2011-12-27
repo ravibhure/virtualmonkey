@@ -44,8 +44,8 @@ for FILE in `git diff-index --name-only HEAD --` ; do
       sed -i "s/\t/  /g" $FILE
     fi
 
-    # If a file is ruby, check for syntax errors
-    if [[ -n `find $FILE -regex ".*\.rb$"` ]]; then
+    # If a file is ruby, check for syntax errors using ruby
+    if [[ "$FILE" =~ .*\.rb$ ]]; then
       if [[ "$fail" -eq 0 || -z "$fail" ]]; then
         ruby -c "$FILE" 1> /dev/null; fail=$?
         if [[ "$fail" -ne 0 ]]; then echo "Syntax Error found in '$FILE'"; fi
@@ -55,8 +55,49 @@ for FILE in `git diff-index --name-only HEAD --` ; do
       fi
     fi
 
+    # If a file is javascript, check for syntax errors using js
+    if [[ "$FILE" =~ .*\.js$ ]]; then
+      if [[ -n `which js 2> /dev/null` ]]; then
+        if [[ "$fail" -eq 0 || -z "$fail" ]]; then
+          js -C "$FILE" 1> /dev/null; fail=$?
+          if [[ "$fail" -ne 0 ]]; then echo "Syntax Error found in '$FILE'"; fi
+        else
+          js -C "$FILE" 1> /dev/null
+          if [[ "$?" -ne 0 ]]; then echo "Syntax Error found in '$FILE'"; fi
+        fi
+      fi
+    fi
+
+    # If a file is css, check for syntax errors using lessc
+    if [[ "$FILE" =~ .*\.css$ ]]; then
+      if [[ -n `which lessc 2> /dev/null` ]]; then
+        if [[ "$fail" -eq 0 || -z "$fail" ]]; then
+          lessc "$FILE" 1> /dev/null; fail=$?
+          if [[ "$fail" -ne 0 ]]; then echo "Syntax Error found in '$FILE'"; fi
+        else
+          lessc "$FILE" 1> /dev/null
+          if [[ "$?" -ne 0 ]]; then echo "Syntax Error found in '$FILE'"; fi
+        fi
+      fi
+    fi
+
+    # If a file is "virtualmonkey.less", check for syntax errors using lessc
+    if [[ "$FILE" =~ .*virtualmonkey\.less$ ]]; then
+      if [[ -n `which lessc 2> /dev/null` ]]; then
+        pushd lib/spidermonkey 1> /dev/null
+        if [[ "$fail" -eq 0 || -z "$fail" ]]; then
+          lessc "../../$FILE" 1> /dev/null; fail=$?
+          if [[ "$fail" -ne 0 ]]; then echo "Syntax Error found in '$FILE'"; fi
+        else
+          lessc "../../$FILE" 1> /dev/null
+          if [[ "$?" -ne 0 ]]; then echo "Syntax Error found in '$FILE'"; fi
+        fi
+        popd 1> /dev/null
+      fi
+    fi
+
     # If a file is json, check for syntax errors
-    if [[ -n `find $FILE -regex ".*\.json$"` ]]; then
+    if [[ "$FILE" =~ .*\.json$ ]]; then
       if [[ "$fail" -eq 0 || -z "$fail" ]]; then
         ruby -e "require 'rubygems'; require 'json'; JSON::parse(IO.read('$FILE'))" 1> /dev/null; fail=$?
         if [[ "$fail" -ne 0 ]]; then echo "Syntax Error found in '$FILE'"; fi
@@ -67,7 +108,7 @@ for FILE in `git diff-index --name-only HEAD --` ; do
     fi
 
     # If a file is yaml, check for syntax errors
-    if [[ -n `find $FILE -regex ".*\.yaml$"` ]]; then
+    if [[ "$FILE" =~ .*\.yaml$ ]]; then
       if [[ "$fail" -eq 0 || -z "$fail" ]]; then
         ruby -e "require 'rubygems'; require 'yaml'; YAML::load(IO.read('$FILE'))" 1> /dev/null; fail=$?
         if [[ "$fail" -ne 0 ]]; then echo "Syntax Error found in '$FILE'"; fi

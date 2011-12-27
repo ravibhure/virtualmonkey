@@ -1,24 +1,24 @@
 require 'yaml'
 
 module VirtualMonkey
-  ROOTDIR = File.expand_path(File.join(File.dirname(__FILE__), ".."))
-  GENERATED_CLOUD_VAR_DIR = File.join(ROOTDIR, "cloud_variables")
-  TEST_STATE_DIR = File.join(ROOTDIR, "test_states")
+  ROOTDIR = File.expand_path(File.join(File.dirname(__FILE__), "..")).freeze
+  GENERATED_CLOUD_VAR_DIR = File.join(ROOTDIR, "cloud_variables").freeze
+  TEST_STATE_DIR = File.join(ROOTDIR, "test_states").freeze
 
-  LOG_DIR = File.join(ROOTDIR, "log")
-  BIN_DIR = File.join(ROOTDIR, "bin")
-  LIB_DIR = File.join(ROOTDIR, "lib", "virtualmonkey")
+  LOG_DIR = File.join(ROOTDIR, "log").freeze
+  BIN_DIR = File.join(ROOTDIR, "bin").freeze
+  LIB_DIR = File.join(ROOTDIR, "lib", "virtualmonkey").freeze
 
-  COMMAND_DIR = File.join(LIB_DIR, "command")
-  MANAGER_DIR = File.join(LIB_DIR, "manager")
-  UTILITY_DIR = File.join(LIB_DIR, "utility")
-  RUNNER_CORE_DIR = File.join(LIB_DIR, "runner_core")
-  PROJECT_TEMPLATE_DIR = File.join(LIB_DIR, "collateral_template")
+  COMMAND_DIR = File.join(LIB_DIR, "command").freeze
+  MANAGER_DIR = File.join(LIB_DIR, "manager").freeze
+  UTILITY_DIR = File.join(LIB_DIR, "utility").freeze
+  RUNNER_CORE_DIR = File.join(LIB_DIR, "runner_core").freeze
+  PROJECT_TEMPLATE_DIR = File.join(LIB_DIR, "collateral_template").freeze
 
-  WEB_APP_DIR = File.join(ROOTDIR, "lib", "spidermonkey")
+  WEB_APP_DIR = File.join(ROOTDIR, "lib", "spidermonkey").freeze
 
-  REGRESSION_TEST_DIR = File.join(ROOTDIR, "test")
-  COLLATERAL_TEST_DIR = File.join(ROOTDIR, "collateral")
+  REGRESSION_TEST_DIR = File.join(ROOTDIR, "test").freeze
+  COLLATERAL_TEST_DIR = File.join(ROOTDIR, "collateral").freeze
 
   @@rest_yaml = File.join(File.expand_path("~"), ".rest_connection", "rest_api_config.yaml")
   @@rest_yaml = File.join("", "etc", "rest_connection", "rest_api_config.yaml") unless File.exists?(@@rest_yaml)
@@ -27,9 +27,9 @@ module VirtualMonkey
   branch = (`git branch 2> /dev/null | grep \\*`.chomp =~ /\* ([^ ]+)/; $1) || "master"
   VERSION = (`cat "#{File.join(ROOTDIR, "VERSION")}"`.chomp + (branch == "master" ? "" : " #{branch.upcase}"))
 
-  ROOT_CONFIG = File.join(VirtualMonkey::ROOTDIR, ".config.yaml")
-  USER_CONFIG = File.join(File.expand_path("~"), ".virtualmonkey", "config.yaml")
-  SYS_CONFIG = File.join("", "etc", "virtualmonkey", "config.yaml")
+  ROOT_CONFIG = File.join(VirtualMonkey::ROOTDIR, ".config.yaml").freeze
+  USER_CONFIG = File.join(File.expand_path("~"), ".virtualmonkey", "config.yaml").freeze
+  SYS_CONFIG = File.join("", "etc", "virtualmonkey", "config.yaml").freeze
 
   def self.config
     @@virtual_monkey_config = {}

@@ -1,0 +1,11 @@
+<% datafields = 'data-uid="%s" data-uri="%s"' % [job.uid, url(job.href)] %>
+<li class="job <%= job["status"] %>" data-uid="<%= job.uid %>">
+  <div class="name" title="<%= job["name"] %>" data-content='<%= job.render() %>'>
+    <%= job["name"] %>
+  </div>
+  <div class="actions_row">
+    <% @actions.each do |action| %>
+      <img src="/img/<%= action %>.png" <%= datafields %> class="action <%= action %>" />
+    <% end %>
+  </div>
+</li>

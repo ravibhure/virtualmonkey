@@ -70,32 +70,40 @@ module VirtualMonkey
 
       # Makes this exception_handle available for all runners
       def deployment_base_exception_handle(e)
-        if e.message =~ /Insufficient capacity/i
+        case e.message
+        when /Insufficient capacity/i
           warn "Got \"Insufficient capacity\". Retrying...."
           sleep 60
           return true # Exception Handled
-        elsif e.message =~ /execution expired/i # Response timed out
+        when /execution expired/i # Response timed out
           warn "Got \"execution expired\". Retrying...."
           sleep 5
           return true # Exception Handled
-        elsif e.message =~ /Service Unavailable|Service Temporarily Unavailable/i # 503
+        when /Service Unavailable|Service Temporarily Unavailable/i # 503
           warn "Got \"Service Temporarily Unavailable\". Retrying...."
           sleep 30
           return true # Exception Handled
-        elsif e.message =~ /Bad Gateway/i     # 502: Rackspace sometimes forgets instances exist
+        when /Bad Gateway/i     # 502: Rackspace sometimes forgets instances exist
           warn "Got \"Bad Gateway\". Retrying...."
           sleep 90
           return true # Exception Handled
-        elsif e.message =~ /Internal error/i  # 500: For mysql deadlocks only
+        when /Internal error/i  # 500: For mysql deadlocks only
           warn "Got \"Internal Error\". Retrying...."
           sleep 10
           return true # Exception Handled
-        elsif e.message =~ /Another launch is in progress/i # 422: Rackspace seems to have gotten two launch commands
+        when /Another launch is in progress/i # 422: Rackspace seems to have gotten two launch commands
           warn "Got \"Another launch is in progress\". Continuing...."
           continue_test
           return true # Exception Handled
         else
-          return false # Exception Not Handled
+          case e
+          when EOFError
+            warn "Got #{e.class.inspect}. Retrying...."
+            sleep 0.1
+            return true #Exception Handled
+          else
+            return false # Exception Not Handled
+          end
         end
       end
 
@@ -128,13 +136,20 @@ module VirtualMonkey
           table.each { |a|
             st_id = resource_id(st)
             @scripts_to_run[st_id] ||= {}
-            warn "WARNING: Overwriting '#{a[0]}' for ServerTemplate #{st.nickname}" if @scripts_to_run[st_id][a[0]]
-            exec = ref_template.executables.detect { |ex| ex.name =~ /#{a[1]}/i or ex.recipe =~ /#{a[1]}/i }
+            overwriting_warning_msg = "WARNING: Overwriting '#{a[0]}' for ServerTemplate #{st.nickname}"
+            exec = ref_template.executables.detect do |ex|
+              ex.name =~ /#{a[1]}/i or ex.recipe =~ /#{a[1]}/i
+            end
             if exec
               if exec.recipe =~ /#{a[1]}/i
                 # Recipes can only be run on the template they are attached to
-                @scripts_to_run[st_id][a[0]] = exec if resource_id(ref_template) == st_id
+                if resource_id(ref_template) == st_id
+                  warn overwriting_warning_msg if @scripts_to_run[st_id][a[0]]
+                  @scripts_to_run[st_id][a[0]] = exec
+                end
               else
+                # RightScripts can be run on any server
+                warn overwriting_warning_msg if @scripts_to_run[st_id][a[0]]
                 @scripts_to_run[st_id][a[0]] = exec
               end
             else

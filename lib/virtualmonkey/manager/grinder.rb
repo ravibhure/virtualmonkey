@@ -318,12 +318,20 @@ module VirtualMonkey
       # * feature_name<~String> the feature filename
       def run_tests(deploys, features, set=[])
         features = [features].flatten
+        warn_msg = {}
         unless set.nil? || set.empty?
           features.reject! do |feature|
-            my_keys = VirtualMonkey::TestCase.new(feature, @options).get_keys & set
+            my_keys = VirtualMonkey::TestCase.new(feature, @options).get_keys
+            warn_msg[feature] = my_keys
+            my_keys &= set
             my_keys -= @options[:exclude_tests] unless @options[:exclude_tests].nil? || @options[:exclude_tests].empty?
             my_keys.empty?
           end
+        end
+
+        if features.empty?
+          warn warn_msg.pretty_inspect
+          error "No features match #{set.inspect}! (Did you mispell a test name?)"
         end
 
         test_cases = features.map_to_h { |feature| VirtualMonkey::TestCase.new(feature, @options) }
