@@ -98,9 +98,11 @@ module VirtualMonkey
         opts &= (fields | CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s })
 
         # Check for Schedule options
+        command = opts["command"]
         schedule_opts = opts & CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s }
         schedule_opts -= ["command"]
         opts -= CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s }
+        opts["command"] = command
 
         # Get user data
         opts["user"] ||= rest_config_yaml[:user]
@@ -132,9 +134,11 @@ module VirtualMonkey
         opts["updated_at"] = Time.now.utc.strftime("%Y/%m/%d %H:%M:%S +0000")
 
         # Check for Schedule options
+        command = opts["command"]
         schedule_opts = opts & CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s }
         schedule_opts -= ["command"]
         opts -= CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s }
+        opts["command"] = command
 
         # Get user data NOTE: this means the person who updated takes control
         opts["user"] ||= rest_config_yaml[:user]

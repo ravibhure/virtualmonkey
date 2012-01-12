@@ -34,7 +34,13 @@ module VirtualMonkey
 
 #  BOOTSTRAP_JS = [BOOTSTRAP_MODAL, BOOTSTRAP_TABS, BOOTSTRAP_POPOVER, BOOTSTRAP_BUTTONS].join("\n")
   BOOTSTRAP_JS = script_tag("/js/bootstrap.js")
-  BOOTSTRAP_RAW_JAVASCRIPT = Dir["public/js/bootstrap*"].map { |js| IO.read(js) }.join("\n")
+  BOOTSTRAP_RAW_JAVASCRIPT = lambda {
+    bootstraps = Dir["public/js/bootstrap*"]
+    if twipsy = bootstraps.detect { |f| f =~ /twipsy/ }
+      bootstraps.unshift(bootstraps.delete(twipsy))
+    end
+    return bootstraps.map { |js| IO.read(js) }.join("\n")
+  }.call
 
   ALL_JS = [
             JQUERY,
@@ -152,7 +158,8 @@ helpers do
   end
 
   def standard_handlers(&block)
-    data = (params.empty? ? JSON.parse(request.body) : params.dup)
+    data = (request.POST() || {})
+    data = params.dup unless params.empty?
     yield(data)
   rescue Excon::Errors::HTTPStatusError => e
     status((e.message =~ /Actual\(([0-9]+)\)/; $1.to_i))
@@ -381,6 +388,7 @@ end
 
 # Read
 get "#{VirtualMonkey::API::Report::PATH}/:report_uid" do |report_uid|
+  pass if report_uid == "autocomplete"
   standard_handlers do |data|
     body VirtualMonkey::API::Report.get(report_uid).to_json
     status 200
@@ -393,6 +401,18 @@ end
 
 # Details
 # TODO - later
+
+
+# ================
+# Autocomplete API
+# ================
+
+get "#{VirtualMonkey::API::Report::PATH}/autocomplete" do
+  standard_handlers do |data|
+    body VirtualMonkey::API::Report::autocomplete.to_json
+    status 200
+  end
+end
 
 # =========
 # Web Pages
@@ -425,7 +445,7 @@ end
 
 get "/tasks" do
   @actions = (params["actions"] || ["delete"])
-  erb :tasks, :layout => :false
+  erb :tasks, :layout => false
 end
 
 get "/jobs/:uid" do |uid|
@@ -435,7 +455,7 @@ end
 
 get "/jobs" do
   @actions = (params["actions"] || ["cancel"])
-  erb :tasks, :layout => :false
+  erb :jobs, :layout => false
 end
 
 get "/css/virtualmonkey.css" do

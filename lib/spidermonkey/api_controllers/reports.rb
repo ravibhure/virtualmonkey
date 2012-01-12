@@ -59,14 +59,14 @@ module VirtualMonkey
       private_class_method :fields
 
       def self.new_sdb_connection
-  #      Fog::AWS::SimpleDB.new() # Local Development
+        return Fog::AWS::SimpleDB.new() if VirtualMonkey::RACK_ENV == :development
         Fog::AWS::SimpleDB.new(:aws_access_key_id => Fog.credentials[:aws_access_key_id_test],
                                :aws_secret_access_key => Fog.credentials[:aws_secret_access_key_test])
       end
       private_class_method :new_sdb_connection
 
       def self.new_s3_connection
-  #      Fog::Storage.new(:provider => "AWS") # Local Development
+        return Fog::Storage.new(:provider => "AWS") if VirtualMonkey::RACK_ENV == :development
         Fog::Storage.new(:provider => "AWS",
                          :aws_access_key_id => Fog.credentials[:aws_access_key_id_test],
                          :aws_secret_access_key => Fog.credentials[:aws_secret_access_key_test])
@@ -158,13 +158,13 @@ module VirtualMonkey
 
       def self.previous_month_domain(current_domain=nil)
         y, m = Time.now.year, Time.now.month
-        y, m = (current_domain =~ /#{BASE_DOMAIN}([0-9]{4})([0-9]{2})/; [$1.to_i, $2.to_i]) if inStr
+        y, m = (current_domain =~ /#{BASE_DOMAIN}([0-9]{4})([0-9]{2})/; [$1.to_i, $2.to_i]) if current_domain
 
         y -= ((m == 1) ? 1 : 0)
         m = ((m + 10) % 12) + 1
         [BASE_DOMAIN, y, ("%02d" % m)].join("")
       end
-      private_class_method :this_month_domain
+      private_class_method :previous_month_domain
 
       #
       # Constructor and Instance Methods
@@ -308,6 +308,22 @@ var data = [{
       def self.details(uid)
         # This will grab the contents of the logs from s3
         not_implemented # TODO - later
+      end
+
+      def self.autocomplete(date_begin=nil, date_end=nil)
+        opts = {}
+        opts.merge!("from_date" => date_begin, "to_date" => date_end) if date_begin && date_end
+        listings = index(opts)
+
+        ret_hsh = {}
+        fields.each do |field|
+          ret_hsh[field] ||= []
+          ret_hsh[field] |= listings.map { |record| record[field] }
+        end
+
+        ret_hsh.each { |field,ary| ret_hsh[field].sort! }
+
+        return ret_hsh
       end
 
       #

@@ -207,7 +207,7 @@
               url: <%= [VirtualMonkey::API::Task::PATH, @edit.uid].join("/").inspect %>,
               data: nice_data,
               success: function(data) {
-                sendMsg({action: "refreshtasks"});
+                sendMsg({action: "refreshtasks", actions: ["run", "edit", "save", "delete"]});
                 $("#update_btn").button('reset');
                 sendMsg({action: "closeedit"});
               }

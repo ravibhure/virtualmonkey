@@ -64,7 +64,15 @@
     </div>
     </div>
 
-    <div style="margin: 20px;"><h2>Run Command: <%= VirtualMonkey::Command::last_command_line %></h2></div>
+    <div id="command_line" style="margin: 20px;">
+      <h2>Run Command: <%= VirtualMonkey::Command::last_command_line %></h2>
+      <% if report_on.detect { |job| job.deployment.servers.detect { |s| "#{s.tags}" =~ /rs_agent_dev/ } } %>
+        <style>
+          #command_line { background-color: #FFAA00; }
+        </style>
+        <h2>This troop was run with an rs_agent_dev tag: it is invalid for final testing.</h2>
+      <% end %>
+    </div>
     <div id="results">
     <% if running.size > 0 %>
       <p class="running"><%= running.size %> tests running</p>

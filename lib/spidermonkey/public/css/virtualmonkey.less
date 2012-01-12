@@ -237,3 +237,55 @@ ol {
 div#subtasks.resource_list { width: 49%; }
 
 a { text-decoration: none; }
+
+.super-huge-table {
+  margin: 2px auto;
+  display: table;
+  width: 100%;
+
+  &.tablesorter {
+    th {
+      cursor: pointer;
+      background-color: transparent;
+      background-position: right center;
+      background-repeat: no-repeat;
+
+      &.header {
+        &:hover { background-image: url("/img/desc.gif"); }
+        &.headerSortDown {
+          background-image: url("/img/desc.gif");
+          background-color: #bbf;
+        }
+        &.headerSortUp {
+          background-image: url("/img/asc.gif");
+          background-color: #bbf;
+          &:hover { background-image: url("/img/asc.gif"); }
+        }
+      }
+    }
+  }
+
+  tr {
+    display: table-row;
+    width: 100%;
+    margin: 2px auto;
+    td.row-header {
+    }
+  }
+
+  th { border: 1px solid #ccc; }
+
+  tr:nth-child(odd) {
+    td:nth-child(odd) { background: #fff; }
+    td:nth-child(even) { background: #efefef; }
+  }
+
+  tr:nth-child(even) {
+    td:nth-child(odd) { background: #efefef; }
+    td:nth-child(even) { background: #dfdfdf; }
+  }
+
+  &.highlighted tr:hover {
+    td:nth-child(n) { background: #bbf; }
+  }
+}

@@ -35,6 +35,12 @@ module VirtualMonkey
       def self.from_json_file(filepath, record=nil)
         file = JSON.parse(IO.read(filepath))
         self.new.deep_merge((record ? file[record] : file))
+      rescue Errno::ENOENT, JSON::ParserError
+        File.open(filepath, "w") { |f| f.write("{}") }
+        retry
+      rescue Errno::EBADF
+        sleep 0.1
+        retry
       end
 
       def self.normalize_uid(uid)

@@ -2,6 +2,7 @@
   <!-- Driving tool -->
   <div id="footer">
     <a class="btn" data-controls-modal="manager_modal" data-backdrop="static" data-keyboard="true" >Manage Tasks</a>
+    <button class="btn" id="autorefresh_toggle" data-toggle="toggle">Disable AJAX</button>
     <!-- TODO - later: edit max_daemons -->
 
     <div class="modal hide fade" id="manager_modal" style="display: none;">
@@ -70,31 +71,193 @@
 <!-- Graph and Data Tabs -->
 <div id="container" class="display_panel">
   <ul class="tabs" data-tabs="tabs">
-    <li class="active"><a href="#graph">Graph</a></li>
-    <li><a href="#burndown">Burndown</a></li>
-    <li><a href="#map">Map</a></li>
-    <li><a href="#data">Data</a></li>
+    <!--li><a href="#graph_tab">Graph</a></li>
+    <li><a href="#burndown_tab">Burndown</a></li-->
+    <li class="active"><a href="#spreadsheet_tab">Spreadsheet</a></li>
+    <li><a href="#data_tab">Data</a></li>
   </ul>
   <div class="tab-content">
-    <div class="active" id="graph">
+    <!--div id="graph_tab">
       Spider Graph Here...
     </div>
-    <div id="burndown">
+    <div id="burndown_tab">
       Burndown Graph Here...
+    </div-->
+    <div class="active" id="spreadsheet_tab">
+      <table class="super-huge-table highlighted" id="spreadsheet_table">
+        <thead>
+          <tr>
+            <th>Cloud &amp; Image \ Troop</th>
+            <th class="header">base.json</th>
+            <th class="header">base_chef.json</th>
+            <th class="header">php_suite.json</th>
+            <th class="header">php_suite_ssl.json</th>
+            <th class="header">dr_toolbox.json</th>
+            <th class="header">lamp_chef.json</th>
+            <th class="header">mysql_HAHAHA_chef.json</th>
+            <th class="header">passenger_rails_troop.json</th>
+            <th class="header">tomcat_troop.json</th>
+          </tr>
+          <tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="side-header">Cloud 1</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td class="side-header">Cloud 2</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td class="side-header">Cloud 3</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td class="side-header">Cloud 4</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td class="side-header">Cloud 5</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td class="side-header">Cloud 6</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td class="side-header">Cloud 7</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td class="side-header">Cloud 232</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td class="side-header">Cloud 1397</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-    <div id="map">
-      Map here...
-    </div>
-    <div id="data">
-      Data here...
+    <div id="data_tab">
+      <table class="super-huge-table tablesorter highlighted" id="raw_table">
+        <thead>
+          <tr>
+            <th class="header">Col 1</th>
+            <th class="header">Col 2</th>
+            <th class="header">Col 3</th>
+            <th class="header">Col 4</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>A</td>
+            <td>B</td>
+            <td>C</td>
+            <td>D</td>
+          </tr>
+          <tr>
+            <td>B</td>
+            <td>C</td>
+            <td>D</td>
+            <td>A</td>
+          </tr>
+          <tr>
+            <td>C</td>
+            <td>D</td>
+            <td>A</td>
+            <td>B</td>
+          </tr>
+          <tr>
+            <td>D</td>
+            <td>A</td>
+            <td>B</td>
+            <td>C</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </div>
 
 <!-- Load other scripts later for speed -->
-<script type="text/javascript" src="js/jquery.flot.min.js"></script>
-<!--script type="text/javascript" src="js/jquery.flot.navigate.min.js"></script>
-<script type="text/javascript" src="js/jquery.flot.resize.min.js"></script-->
-<script type="text/javascript" src="js/jquery.flot.highlighter.js"></script>
-<script type="text/javascript" src="js/jquery.flot.spider.js"></script>
+<script type="text/javascript" src="/js/jquery.flot.min.js"></script>
+<!--script type="text/javascript" src="/js/jquery.flot.navigate.min.js"></script>
+<script type="text/javascript" src="/js/jquery.flot.resize.min.js"></script-->
+<script type="text/javascript" src="/js/jquery.flot.highlighter.js"></script>
+<script type="text/javascript" src="/js/jquery.flot.spider.js"></script>
+<script type="text/javascript" src="/js/jquery.tablesorter.min.js"></script>
 <%= VirtualMonkey::MAIN_JS %>

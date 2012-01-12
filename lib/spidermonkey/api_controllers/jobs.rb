@@ -204,7 +204,7 @@ module VirtualMonkey
         cache = read_cache
         callback_jobs = []
         VirtualMonkey::daemons.each do |record|
-          unless record["daemon"].alive?
+          if record["daemon"] and not record["daemon"].alive?
             record["status"] = (record["daemon"].value.exitstatus == 0 ? "passed" : "failed")
             record.delete("daemon")
             record.delete("pid")
