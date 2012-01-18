@@ -11,10 +11,11 @@ module VirtualMonkey
         end
       end
       raise "FATAL: --config_file is required!" unless @@options[:config_file]
-      config = JSON::parse(IO.read(@@options[:config_file]))
+      config_file = File.expand_path(@@options[:config_file])
+      config = JSON::parse(IO.read(config_file))
 
       # Find Project that troop file is a part of
-      @@selected_project = VirtualMonkey::Manager::Collateral.get_project_from_file(@@options[:config_file])
+      @@selected_project = VirtualMonkey::Manager::Collateral.get_project_from_file(config_file)
 
       # Build Prefix
       @@options[:prefix] += "-" if @@options[:prefix]
@@ -125,7 +126,10 @@ module VirtualMonkey
       @@options[:runner] ||= get_runner_class
       raise "FATAL: Could not determine runner class" unless @@options[:runner]
 
-      EM.run {
+      # Ensure that we don't kill babies by trying to run EM within itself
+      @@already_in_em = EM.reactor_running?
+
+      evented_code = proc do
         @@gm ||= VirtualMonkey::Manager::Grinder.new
         @@dm ||= VirtualMonkey::Manager::DeploymentSet.new(@@options)
         @@options[:runner] ||= get_runner_class
@@ -136,39 +140,60 @@ module VirtualMonkey
         @@gm.run_tests(@@do_these, @@options[:feature], @@options[:tests])
         @@remaining_jobs = @@gm.jobs.dup
 
-        watch = EM.add_periodic_timer(10) {
-          begin
-            @@gm.watch_and_report
-            if @@gm.all_done?
-              watch.cancel
-            end
+        if @@already_in_em
+          while (1)
+            begin
+              sleep 10
+              @@gm.watch_and_report
+              break if @@gm.all_done?
 
-            if @@options[:terminate] and not (@@options[:list_trainer] or @@options[:qa])
-#   TODO: Daemons           destroy_job_set_logic(@@remaining_jobs.select { |job| job.status == 0 })
-              @@remaining_jobs.each do |job|
-                if job.status == 0
-                  destroy_job_logic(job)
+              if @@options[:terminate] and not (@@options[:list_trainer] or @@options[:qa])
+                @@remaining_jobs.each do |job|
+                  if job.status == 0
+                    destroy_job_logic(job)
+                  end
                 end
               end
+            rescue Interrupt, NameError, ArgumentError, TypeError => e
+              raise
+            rescue Exception => e
+              warn "WARNING: Got \"#{e.message}\" from #{e.backtrace.first}"
             end
-=begin
-            # TODO
-            if @@options[:list_trainer] or @@options[:qa]
-              @@remaining_jobs.each do |job|
-                if job.status == 0
-                  audit_log_deployment_logic(job.deployment, :interactive)
-                  destroy_job_logic(job) if @@options[:terminate]
-                end
-              end
-            end
-=end
-          rescue Interrupt, NameError, ArgumentError, TypeError => e
-            raise
-          rescue Exception => e
-            warn "WARNING: Got \"#{e.message}\" from #{e.backtrace.first}"
           end
-        }
-      }
+        else
+          watch = EM.add_periodic_timer(10) {
+            begin
+              @@gm.watch_and_report
+              watch.cancel if @@gm.all_done?
+
+              if @@options[:terminate] and not (@@options[:list_trainer] or @@options[:qa])
+#   TODO: Daemons           destroy_job_set_logic(@@remaining_jobs.select { |job| job.status == 0 })
+                @@remaining_jobs.each do |job|
+                  if job.status == 0
+                    destroy_job_logic(job)
+                  end
+                end
+              end
+=begin
+              # TODO
+              if @@options[:list_trainer] or @@options[:qa]
+                @@remaining_jobs.each do |job|
+                  if job.status == 0
+                    audit_log_deployment_logic(job.deployment, :interactive)
+                    destroy_job_logic(job) if @@options[:terminate]
+                  end
+                end
+              end
+=end
+            rescue Interrupt, NameError, ArgumentError, TypeError => e
+              raise
+            rescue Exception => e
+              warn "WARNING: Got \"#{e.message}\" from #{e.backtrace.first}"
+            end
+          }
+        end
+      end
+      (@@already_in_em ? evented_code[] : EM.run(&evented_code))
       unless @@gm.jobs.unanimous? { |job| job.status == 0 } and @@gm.jobs.first.status == 0
         error "Some jobs failed. Inspect the results at the given URL"
       end

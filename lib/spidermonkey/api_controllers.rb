@@ -34,7 +34,11 @@ module VirtualMonkey
 
       def self.from_json_file(filepath, record=nil)
         file = JSON.parse(IO.read(filepath))
-        self.new.deep_merge((record ? file[record] : file))
+        if record
+          return (file[record] ? self.new.deep_merge(file[record]) : nil)
+        else
+          return file.map { |json| self.new.deep_merge(json) }
+        end
       rescue Errno::ENOENT, JSON::ParserError
         File.open(filepath, "w") { |f| f.write("{}") }
         retry

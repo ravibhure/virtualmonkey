@@ -113,7 +113,7 @@ module VirtualMonkey
         settings_ary.each { |setting|
           if setting.is_a?(MultiCloudImageCloudSettingInternal)
             return (setting.image_name =~ regex; $3)
-          elsif setting.is_a?(McMultiCloudImageCloudSetting)
+          elsif setting.is_a?(McMultiCloudImageSetting)
             if image = McImage.find(setting.image)
               return (image.name =~ regex; $3)
             end
@@ -261,7 +261,7 @@ module VirtualMonkey
           #####################
 
           # Feature File Data
-          data["status"] = "pending" # status => "pending|running|failed|passed" (or, manually, "blocked" or "willnotdo")
+          data["status"] = "running" # status => "pending|running|failed|passed" (or, manually, "blocked" or "willnotdo")
           data["report_page"] = nil # nil until first upload
           data["started_at"] = @started_at.utc.strftime("%Y/%m/%d %H:%M:%S +0000")
           data["feature"] = [feature] # TODO: Gather runner info and runner option info?

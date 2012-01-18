@@ -82,6 +82,7 @@ require 'digest/sha1'
 #disable :run
 
 set :environment, VirtualMonkey::RACK_ENV
+set :server, %w[mongrel] # thin, awesome though it may be, uses EventMachine. And so do we.
 
 set :sessions, :domain => VirtualMonkey::PUBLIC_HOSTNAME # TODO Configure these cookies to work securely
 set :bind, '0.0.0.0'
@@ -340,7 +341,8 @@ end
 # Index
 get VirtualMonkey::API::Job::PATH do
   standard_handlers do |data|
-    body VirtualMonkey::API::Job.index()
+    VirtualMonkey::API::Job.garbage_collect()
+    body VirtualMonkey::API::Job.index().to_json
     status 200
     headers "Content-Type" => "#{VirtualMonkey::API::Job::CollectionContentType}"
   end
@@ -349,6 +351,7 @@ end
 # Create
 post VirtualMonkey::API::Job::PATH do
   standard_handlers do |data|
+    VirtualMonkey::API::Job.garbage_collect()
     uid = VirtualMonkey::API::Job.create(data)
     status 201
     headers "Location" => "#{VirtualMonkey::API::Job::PATH}/#{uid}"
@@ -358,6 +361,7 @@ end
 # Read
 get "#{VirtualMonkey::API::Job::PATH}/:uid" do |uid|
   standard_handlers do |data|
+    VirtualMonkey::API::Job.garbage_collect()
     body VirtualMonkey::API::Job.get(uid).to_json
     status 200
     headers "Content-Type" => "#{VirtualMonkey::API::Job::ContentType}"
@@ -373,6 +377,15 @@ delete "#{VirtualMonkey::API::Job::PATH}/:uid" do |uid|
   end
 end
 
+# Garbage Collect
+post "#{VirtualMonkey::API::Job::PATH}/garbage_collect" do
+  standard_handlers do |data|
+    VirtualMonkey::API::Job.garbage_collect()
+    body ""
+    status 204
+  end
+end
+
 # ==========
 # Report API
 # ==========
@@ -382,15 +395,15 @@ get VirtualMonkey::API::Report::PATH do
   standard_handlers do |data|
     body VirtualMonkey::API::Report.index(data).to_json
     status 200
-    headers "Content-Type" => "#{VirtualMonkey::API::Report::CollectionContentType}"
+#    headers "Content-Type" => "#{VirtualMonkey::API::Report::CollectionContentType}"
   end
 end
 
 # Read
-get "#{VirtualMonkey::API::Report::PATH}/:report_uid" do |report_uid|
-  pass if report_uid == "autocomplete"
+get "#{VirtualMonkey::API::Report::PATH}/:uid" do |uid|
+  pass if uid == "autocomplete"
   standard_handlers do |data|
-    body VirtualMonkey::API::Report.get(report_uid).to_json
+    body VirtualMonkey::API::Report.get(uid).to_json
     status 200
     headers "Content-Type" => "#{VirtualMonkey::API::Report::ContentType}"
   end
@@ -463,7 +476,8 @@ get "/css/virtualmonkey.css" do
 end
 
 get "/js/bootstrap.js" do
-  VirtualMonkey::BOOTSTRAP_RAW_JAVASCRIPT
+  body VirtualMonkey::BOOTSTRAP_RAW_JAVASCRIPT
+  status 200
 end
 
 # ============

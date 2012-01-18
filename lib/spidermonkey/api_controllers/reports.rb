@@ -122,31 +122,37 @@ module VirtualMonkey
         domains.each do |domain|
           begin
             current_items = sdb.select("SELECT * from #{domain}").body["Items"]
+            # Since all attributes in SDB have an array of values, get rid of the array
+            # if it is only of length 1
+            current_items.each do |key,hsh|
+              current_items[key].each { |k,v|
+                current_items[key][k] = v.first if v.is_a?(Array) && v.length < 2
+              }
+            end
           rescue Excon::Errors::ServiceUnavailable
             warn "Got \"ServiceUnavailable\", retrying..."
             sleep 2
             retry
           end
-          # Reject by created_at timestamps
+          # Reject by started_at timestamps
           if domain == start_domain
-            current_items.reject! { |key,hsh| hsh["created_at"] < start_stamp }
+            current_items.reject! { |key,hsh| hsh["started_at"] < start_stamp }
           end
           if domain == end_domain
             current_items.reject! do |key,hsh|
-              hsh["created_at"] > end_stamp && hsh["created_at"] !~ /^#{start_stamp}/
+              hsh["started_at"] > end_stamp && hsh["started_at"] !~ /^#{start_stamp}/
             end
           end
-          records << current_items.values
+          records += current_items.values
         end
 
         # Cache
         to_cache = records.reject { |record| record["status"] !~ /^(cancelled|failed|passed)$/ }
         unless to_cache.empty?
           cache = read_cache
-          cache.deep_merge(to_cache.map { |record| [record.uid, self.new.deep_merge(record)] }.to_h)
+          cache.deep_merge(to_cache.map { |record| [record["uid"], self.new.deep_merge(record)] }.to_h)
           write_cache(cache)
         end
-
         return records
       end
       private_class_method :read_range_sdb
@@ -226,7 +232,7 @@ module VirtualMonkey
         to_cache = records.reject { |record| record["status"] !~ /^(cancelled|failed|passed)$/ }
         unless to_cache.empty?
           cache = read_cache
-          cache.deep_merge(to_cache.map { |record| [record.uid, self.new.deep_merge(record)] }.to_h)
+          cache.deep_merge(to_cache.map { |record| [record["uid"], self.new.deep_merge(record)] }.to_h)
           write_cache(cache)
         end
         return records.map { |record| self.new.deep_merge(record) }
@@ -318,7 +324,7 @@ var data = [{
         ret_hsh = {}
         fields.each do |field|
           ret_hsh[field] ||= []
-          ret_hsh[field] |= listings.map { |record| record[field] }
+          ret_hsh[field] |= listings.map { |record| record[field] }.compact
         end
 
         ret_hsh.each { |field,ary| ret_hsh[field].sort! }

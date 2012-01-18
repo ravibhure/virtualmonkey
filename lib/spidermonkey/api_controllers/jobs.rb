@@ -41,8 +41,8 @@ module VirtualMonkey
 
       def self.daemon_child(&block)
         pid = Process.fork do
-          $stdout = File.new("/dev/null", "w")
-          $stderr = File.new("/dev/null", "w")
+          #$stdout = File.new("/dev/null", "w")
+          #$stderr = File.new("/dev/null", "w")
           yield
         end
         thread = Process.detach(pid)
@@ -129,7 +129,17 @@ module VirtualMonkey
         # Create record
         if VirtualMonkey::daemons.length < VirtualMonkey::config[:max_jobs]
           pid, app = daemon_child do
-            VirtualMonkey::Command.__send__(parent_task["command"], parent_task["options"].join(" "))
+            args = parent_task["options"].map do |k,v|
+              opt = "--#{k.gsub(/_/, '-')}"
+              opt += " #{[v].flatten.join(" ")}" unless v.nil? || v.empty?
+            end
+            args |= ["--yes"]
+            if parent_task['command'] =~ /^run|troop|clone$/
+              args |= ["--report-metadata"]
+            end
+            puts "\nlaunching command: #{parent_task['command']} #{args.join(' ')}\n\n"
+            VirtualMonkey::Command.__send__(parent_task["command"], args.join(" "))
+            exit 0
           end
           new_record.merge!("daemon" => app, "pid" => pid, "status" => "running")
           VirtualMonkey::daemons << new_record
@@ -156,14 +166,16 @@ module VirtualMonkey
         # First try in running daemons
         record = VirtualMonkey::daemons.detect { |d| d.uid == uid }
         if record
-          if record["daemon"].alive?
+          if record["daemon"] && record["daemon"].alive?
             record["daemon"].kill
             record["status"] = "cancelled"
             unless [0,1, $$].include?(record["pid"].to_i)
               Process.kill("TERM", record["pid"].to_i)
             end
-          else
+          elsif record["daemon"]
             record["status"] = (record["daemon"].value.exitstatus == 0 ? "passed" : "failed")
+          else
+            record["status"] = "unknown"
           end
           record.delete("daemon")
           record.delete("pid")

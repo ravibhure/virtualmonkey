@@ -73,7 +73,7 @@
   <ul class="tabs" data-tabs="tabs">
     <!--li><a href="#graph_tab">Graph</a></li>
     <li><a href="#burndown_tab">Burndown</a></li-->
-    <li class="active"><a href="#spreadsheet_tab">Spreadsheet</a></li>
+    <li class="active"><a href="#dynamic_spreadsheet_tab">Dynamic Spreadsheet</a></li>
     <li><a href="#data_tab">Data</a></li>
   </ul>
   <div class="tab-content">
@@ -83,11 +83,31 @@
     <div id="burndown_tab">
       Burndown Graph Here...
     </div-->
-    <div class="active" id="spreadsheet_tab">
-      <table class="super-huge-table highlighted" id="spreadsheet_table">
+    <div class="active" id="dynamic_spreadsheet_tab">
+      <div class="clearfix">
+        <label id="dynamic_spreadsheet_radio">Display options</label>
+        <div class="input">
+          <ul class="inputs-list">
+            <li>
+              <label>
+                <input type="radio" checked name="dynamic_spreadsheet_radios" value="any" />
+                <span>Any - If any record passed, that cell will be green</span>
+              </label>
+            </li>
+            <li>
+              <label>
+                <input type="radio" name="dynamic_spreadsheet_radios" value="latest" />
+                <span>Latest - Only if the latest record passed will that cell will be green</span>
+              </label>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <table class="super-huge-table highlighted" id="dynamic_spreadsheet_table">
         <thead>
           <tr>
-            <th>Cloud &amp; Image \ Troop</th>
+            <th>Cloud</th>
+            <th>MCI</th>
             <th class="header">base.json</th>
             <th class="header">base_chef.json</th>
             <th class="header">php_suite.json</th>
@@ -103,110 +123,119 @@
         <tbody>
           <tr>
             <td class="side-header">Cloud 1</td>
+            <td class="side-subheader">Ubuntu i386</td>
             <td></td>
             <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
+            <td class="passed"></td>
+            <td class="passed"></td>
+            <td class="failed"></td>
+            <td class="failed"></td>
+            <td class="running"></td>
+            <td class="running"></td>
             <td></td>
           </tr>
           <tr>
             <td class="side-header">Cloud 2</td>
+            <td class="side-subheader">Ubuntu i386</td>
             <td></td>
             <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
+            <td class="passed"></td>
+            <td class="passed"></td>
+            <td class="failed"></td>
+            <td class="failed"></td>
+            <td class="running"></td>
+            <td class="running"></td>
             <td></td>
           </tr>
           <tr>
             <td class="side-header">Cloud 3</td>
+            <td class="side-subheader">Ubuntu i386</td>
             <td></td>
             <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
+            <td class="passed"></td>
+            <td class="passed"></td>
+            <td class="failed"></td>
+            <td class="failed"></td>
+            <td class="running"></td>
+            <td class="running"></td>
             <td></td>
           </tr>
           <tr>
             <td class="side-header">Cloud 4</td>
+            <td class="side-subheader">Ubuntu i386</td>
             <td></td>
             <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
+            <td class="passed"></td>
+            <td class="passed"></td>
+            <td class="failed"></td>
+            <td class="failed"></td>
+            <td class="running"></td>
+            <td class="running"></td>
             <td></td>
           </tr>
           <tr>
             <td class="side-header">Cloud 5</td>
+            <td class="side-subheader">Ubuntu i386</td>
             <td></td>
             <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
+            <td class="passed"></td>
+            <td class="passed"></td>
+            <td class="failed"></td>
+            <td class="failed"></td>
+            <td class="running"></td>
+            <td class="running"></td>
             <td></td>
           </tr>
           <tr>
             <td class="side-header">Cloud 6</td>
+            <td class="side-subheader">Ubuntu i386</td>
             <td></td>
             <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
+            <td class="passed"></td>
+            <td class="passed"></td>
+            <td class="failed"></td>
+            <td class="failed"></td>
+            <td class="running"></td>
+            <td class="running"></td>
             <td></td>
           </tr>
           <tr>
             <td class="side-header">Cloud 7</td>
+            <td class="side-subheader">Ubuntu i386</td>
             <td></td>
             <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
+            <td class="passed"></td>
+            <td class="passed"></td>
+            <td class="failed"></td>
+            <td class="failed"></td>
+            <td class="running"></td>
+            <td class="running"></td>
             <td></td>
           </tr>
           <tr>
             <td class="side-header">Cloud 232</td>
+            <td class="side-subheader">Ubuntu x86_64</td>
             <td></td>
             <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
+            <td class="passed"></td>
+            <td class="passed"></td>
+            <td class="failed"></td>
+            <td class="failed"></td>
+            <td class="running"></td>
+            <td class="running"></td>
             <td></td>
           </tr>
           <tr>
             <td class="side-header">Cloud 1397</td>
+            <td class="side-subheader">Ubuntu x86_64</td>
             <td></td>
             <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
+            <td class="passed"></td>
+            <td class="passed"></td>
+            <td class="failed"></td>
+            <td class="failed"></td>
+            <td class="running"></td>
+            <td class="running"></td>
             <td></td>
           </tr>
         </tbody>

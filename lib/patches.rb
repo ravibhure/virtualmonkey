@@ -329,3 +329,7 @@ module Containers
     end
   end
 end
+
+class Exception
+  attr_accessor :uncaught
+end

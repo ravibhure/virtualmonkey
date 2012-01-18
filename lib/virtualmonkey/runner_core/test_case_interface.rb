@@ -272,7 +272,7 @@ module VirtualMonkey
         end
       end
       write_trace_log(call_str) unless option == :do_not_trace
-      write_readable_log(Time.duration(Time.now - timing), :include_usec)
+      write_readable_log(Time.duration(Time.now - timing, :include_usec))
       result
     end
 

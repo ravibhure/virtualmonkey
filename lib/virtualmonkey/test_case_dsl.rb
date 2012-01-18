@@ -90,16 +90,16 @@ module VirtualMonkey
     end
 
     def run(*tests_to_run)
-      def print_to_readable_log(feature, stage, test_name)
+      print_to_readable_log = lambda do |feature, stage, test_name|
         str = "**  #{File.basename(feature)}: #{stage.to_s.upcase.gsub(/_|-/, ' ')} #{test_name}  **"
         @runner.write_readable_log("#{'*' * str.length}\n#{str}\n#{'*' * str.length}")
       end
 
-      def runner_exec_no_trace(block)
+      runner_exec_no_trace = lambda do |block|
         @runner.transaction(:do_not_trace) { @runner.instance_eval(&block) }
       end
 
-      def runner_exec(block)
+      runner_exec = lambda do |block|
         @runner.instance_exec(&block)
       end
 
@@ -136,8 +136,8 @@ module VirtualMonkey
         # Before
         if @options[:no_resume] && feature == @main_feature
           if @blocks[:hard_reset][feature]
-            print_to_readable_log(feature, :hard_reset, nil)
-            runner_exec_no_trace(@blocks[:hard_reset][feature])
+            print_to_readable_log[feature, :hard_reset, nil]
+            runner_exec_no_trace[@blocks[:hard_reset][feature]]
           end
         end
         if @features[feature]
@@ -145,37 +145,37 @@ module VirtualMonkey
           order.reverse! if @features[feature] == :hard_reset
           order.each do |type|
             if @blocks[type][feature]
-              print_to_readable_log(feature, type, nil)
-              runner_exec_no_trace(@blocks[type][feature])
+              print_to_readable_log[feature, type, nil]
+              runner_exec_no_trace[@blocks[type][feature]]
               break
             end
           end
         end
         if @blocks[:before][feature] and @blocks[:before][feature][:once]
           unless VirtualMonkey::trace_log.first["run_once"]
-            print_to_readable_log(feature, :before_all, :run_once)
-            runner_exec_no_trace(@blocks[:before][feature][:once])
+            print_to_readable_log[feature, :before_all, :run_once]
+            runner_exec_no_trace[@blocks[:before][feature][:once]]
             VirtualMonkey::trace_log.first["run_once"] = true
             @runner.write_trace_log
           end
         end
         if @blocks[:before][feature] and @blocks[:before][feature][:all]
-          print_to_readable_log(feature, :before, :all)
-          runner_exec(@blocks[:before][feature][:all])
+          print_to_readable_log[feature, :before, :all]
+          runner_exec[@blocks[:before][feature][:all]]
         end
         # Test
         tests.each { |key|
           [:before, :test, :after].each { |stage|
             if @blocks[stage][feature] and @blocks[stage][feature][key]
-              print_to_readable_log(feature, stage, key)
-              runner_exec(@blocks[stage][feature][key])
+              print_to_readable_log[feature, stage, key]
+              runner_exec[@blocks[stage][feature][key]]
             end
           }
         }
         # After
         if @blocks[:after][feature] and @blocks[:after][feature][:all]
-          print_to_readable_log(feature, :after, :all)
-          runner_exec(@blocks[:after][feature][:all])
+          print_to_readable_log[feature, :after, :all]
+          runner_exec[@blocks[:after][feature][:all]]
         end
         # Run completed, delete the resume file
         FileUtils.rm_rf @options[:resume_file]
