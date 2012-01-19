@@ -422,21 +422,25 @@ var data = [{
           ensure_domain_exists
           current_items = sdb.select("SELECT * from #{this_month_domain}").body["Items"]
           data = {}
+          replace_data = {}
           jobs.each do |job|
             if current_items[job.metadata["uid"]]
               # Only need to update status and logs
               if current_items[job.metadata["uid"]]["status"] != job.metadata["status"]
                 data[job.metadata["uid"]] = {
                   "status" => job.metadata["status"],
-                  "logs" => job.metadata["logs"]
+                  "logs" => job.metadata["logs"],
+                  "report_page" => job.metadata["report_page"]
                 }
+                replace_data[job.metadata["uid"]] = ["status", "logs", "report_page"]
               end
             else
               # Send all metadata
               data[job.metadata["uid"]] = job.metadata
+              replace_data[job.metadata["uid"]] = job.metadata.keys
             end
           end
-          sdb.batch_put_attributes(this_month_domain, data)
+          sdb.batch_put_attributes(this_month_domain, data, replace_data)
         rescue Excon::Errors::ServiceUnavailable
           warn "Got \"ServiceUnavailable\", retrying..."
           sleep 5

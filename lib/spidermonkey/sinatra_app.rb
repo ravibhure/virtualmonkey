@@ -249,9 +249,9 @@ end
 # Index
 get VirtualMonkey::API::Task::PATH do
   standard_handlers do |data|
-    body VirtualMonkey::API::Task.index().to_json
-    status 200
     headers "Content-Type" => "#{VirtualMonkey::API::Task::CollectionContentType}"
+    status 200
+    body VirtualMonkey::API::Task.index().to_json
   end
 end
 
@@ -261,15 +261,16 @@ post VirtualMonkey::API::Task::PATH do
     uid = VirtualMonkey::API::Task.create(data.merge(get_user))
     status 201
     headers "Location" => "#{VirtualMonkey::API::Task::PATH}/#{uid}"
+    body ""
   end
 end
 
 # Read
 get "#{VirtualMonkey::API::Task::PATH}/:uid" do |uid|
   standard_handlers do |data|
-    body VirtualMonkey::API::Task.get(uid).to_json
-    status 200
     headers "Content-Type" => "#{VirtualMonkey::API::Task::ContentType}"
+    status 200
+    body VirtualMonkey::API::Task.get(uid).to_json
   end
 end
 
@@ -277,8 +278,8 @@ end
 put "#{VirtualMonkey::API::Task::PATH}/:uid" do |uid|
   standard_handlers do |data|
     VirtualMonkey::API::Task.update(uid, data.merge(get_user))
-    body ""
     status 204
+    body ""
   end
 end
 
@@ -286,8 +287,8 @@ end
 delete "#{VirtualMonkey::API::Task::PATH}/:uid" do |uid|
   standard_handlers do |data|
     VirtualMonkey::API::Task.delete(uid)
-    body ""
     status 204
+    body ""
   end
 end
 
@@ -295,8 +296,8 @@ end
 post "#{VirtualMonkey::API::Task::PATH}/:uid/save" do |uid|
   standard_handlers do |data|
     VirtualMonkey::API::Task.save(uid)
-    body ""
     status 204
+    body ""
   end
 end
 
@@ -304,8 +305,8 @@ end
 post "#{VirtualMonkey::API::Task::PATH}/:uid/purge" do |uid|
   standard_handlers do |data|
     VirtualMonkey::API::Task.purge(uid)
-    body ""
     status 204
+    body ""
   end
 end
 
@@ -313,8 +314,8 @@ end
 post "#{VirtualMonkey::API::Task::PATH}/:uid/schedule" do |uid|
   standard_handlers do |data|
     VirtualMonkey::API::Task.schedule(uid, data.merge(get_user))
-    body ""
     status 204
+    body ""
   end
 end
 
@@ -323,13 +324,14 @@ post "#{VirtualMonkey::API::Task::PATH}/:uid/start" do |uid|
   standard_handlers do |data|
     ret_val = VirtualMonkey::API::Task.start(uid, get_user)
     if ret_val.is_a?(Array)
-      status 201
       headers "Location" => "#{VirtualMonkey::API::Job::PATH}",
               "Content-Type" => "#{VirtualMonkey::API::Job::CollectionContentType}"
+      status 201
       body(ret_val.map { |uid| VirtualMonkey::API::Job.get(uid) }.to_json)
     else
-      status 201
       headers "Location" => "#{VirtualMonkey::API::Job::PATH}/#{ret_val}"
+      status 201
+      body ""
     end
   end
 end
@@ -342,9 +344,9 @@ end
 get VirtualMonkey::API::Job::PATH do
   standard_handlers do |data|
     VirtualMonkey::API::Job.garbage_collect()
-    body VirtualMonkey::API::Job.index().to_json
-    status 200
     headers "Content-Type" => "#{VirtualMonkey::API::Job::CollectionContentType}"
+    status 200
+    body VirtualMonkey::API::Job.index().to_json
   end
 end
 
@@ -362,9 +364,9 @@ end
 get "#{VirtualMonkey::API::Job::PATH}/:uid" do |uid|
   standard_handlers do |data|
     VirtualMonkey::API::Job.garbage_collect()
-    body VirtualMonkey::API::Job.get(uid).to_json
-    status 200
     headers "Content-Type" => "#{VirtualMonkey::API::Job::ContentType}"
+    status 200
+    body VirtualMonkey::API::Job.get(uid).to_json
   end
 end
 
@@ -372,8 +374,8 @@ end
 delete "#{VirtualMonkey::API::Job::PATH}/:uid" do |uid|
   standard_handlers do |data|
     VirtualMonkey::API::Job.delete(uid)
-    body ""
     status 204
+    body ""
   end
 end
 
@@ -381,8 +383,8 @@ end
 post "#{VirtualMonkey::API::Job::PATH}/garbage_collect" do
   standard_handlers do |data|
     VirtualMonkey::API::Job.garbage_collect()
-    body ""
     status 204
+    body ""
   end
 end
 
@@ -393,9 +395,9 @@ end
 # Index
 get VirtualMonkey::API::Report::PATH do
   standard_handlers do |data|
-    body VirtualMonkey::API::Report.index(data).to_json
+    headers "Content-Type" => "#{VirtualMonkey::API::Report::CollectionContentType}"
     status 200
-#    headers "Content-Type" => "#{VirtualMonkey::API::Report::CollectionContentType}"
+    body VirtualMonkey::API::Report.index(data).to_json
   end
 end
 
@@ -403,9 +405,9 @@ end
 get "#{VirtualMonkey::API::Report::PATH}/:uid" do |uid|
   pass if uid == "autocomplete"
   standard_handlers do |data|
-    body VirtualMonkey::API::Report.get(uid).to_json
-    status 200
     headers "Content-Type" => "#{VirtualMonkey::API::Report::ContentType}"
+    status 200
+    body VirtualMonkey::API::Report.get(uid).to_json
   end
 end
 
@@ -420,10 +422,10 @@ end
 # Autocomplete API
 # ================
 
-get "#{VirtualMonkey::API::Report::PATH}/autocomplete" do
+get "#{VirtualMonkey::API::Report::PATH}/autocomplete" do |uid| # uid == "autocomplete"
   standard_handlers do |data|
-    body VirtualMonkey::API::Report::autocomplete.to_json
     status 200
+    body VirtualMonkey::API::Report::autocomplete.to_json
   end
 end
 
@@ -472,12 +474,15 @@ get "/jobs" do
 end
 
 get "/css/virtualmonkey.css" do
+  headers "Content-Type" => "text/css"
+  status 200
   less :virtualmonkey, :views => File.join("public", "css")
 end
 
 get "/js/bootstrap.js" do
-  body VirtualMonkey::BOOTSTRAP_RAW_JAVASCRIPT
+  headers "Content-Type" => "application/javascript"
   status 200
+  body VirtualMonkey::BOOTSTRAP_RAW_JAVASCRIPT
 end
 
 # ============

@@ -47,34 +47,62 @@ module VirtualMonkey
     }
 
     Flags = {
-      :terminate       => %q{opt :terminate, 'Terminate if tests successfully complete. (No destroy)',            :short => '-a',   :type => :boolean},
-      :common_inputs   => %q{opt :common_inputs, 'Input JSON files to be set at Deployment AND Server levels',    :short => '-c',   :type => :strings},
-      :deployment      => %q{opt :deployment, 'regex string to use for matching deployment',                      :short => '-d',   :type => :string},
-      :exclude_tests   => %q{opt :exclude_tests, 'List of test names to exclude from running across Deployments', :short => '-e',   :type => :strings},
-      :config_file     => %q{opt :config_file, 'Troop Config JSON File',                                          :short => '-f',   :type => :string},
-      :clouds          => %q{opt :clouds, 'Space-separated list of cloud_ids to use',                             :short => '-i',   :type => :integers},
-      :keep            => %q{opt :keep, 'Do not delete servers or deployments after terminating',                 :short => '-k',   :type => :boolean},
-      :use_mci         => %q{opt :use_mci, 'List of MCI hrefs to substitute for the ST-attached MCIs',            :short => '-m',   :type => :string, :multi => true},
-      :n_copies        => %q{opt :n_copies, 'Number of clones to make',                                           :short => '-n',   :type => :integer, :default => 1},
-      :only            => %q{opt :only, 'Regex string to use for subselection matching on MCIs',                  :short => '-o',   :type => :string, :multi => true},
-      :no_spot         => %q{opt :no_spot, 'do not use spot instances',                                           :short => :none,  :type => :boolean, :default => true},
-      :no_resume       => %q{opt :no_resume, 'Do not use trace info to resume a previous test',                   :short => '-r',   :type => :boolean},
-      :tests           => %q{opt :tests, 'List of test names to run across Deployments (default is all)',         :short => '-t',   :type => :strings},
-      :verbose         => %q{opt :verbose, 'Print all output to STDOUT as well as the log files',                 :short => '-v',   :type => :boolean},
-      :revisions       => %q{opt :revisions, 'Specify a list of revision numbers for templates (0 = HEAD)',       :short => '-w',   :type => :integers},
-      :prefix          => %q{opt :prefix, 'Prefix of the Deployments',                                            :short => '-x',   :type => :string},
-      :yes             => %q{opt :yes, 'Turn off confirmation',                                                   :short => '-y',   :type => :boolean},
-      :one_deploy      => %q{opt :one_deploy, 'Load all variations of a single ST into one Deployment',           :short => '-z',   :type => :boolean},
+      :terminate        => {:opts => {:short => '-a',  :type => :boolean},
+                            :desc => 'Terminate if tests successfully complete. (No destroy)'},
+      :common_inputs    => {:opts => {:short => '-c',  :type => :strings},
+                            :desc => 'Input JSON files to be set at Deployment AND Server levels'},
+      :deployment       => {:opts => {:short => '-d',  :type => :string},
+                            :desc => 'regex string to use for matching deployment'},
+      :exclude_tests    => {:opts => {:short => '-e',  :type => :strings},
+                            :desc => 'List of test names to exclude from running across Deployments'},
+      :config_file      => {:opts => {:short => '-f',  :type => :string},
+                            :desc => 'Troop Config JSON File'},
+      :clouds           => {:opts => {:short => '-i',  :type => :integers},
+                            :desc => 'Space-separated list of cloud_ids to use'},
+      :keep             => {:opts => {:short => '-k',  :type => :boolean},
+                            :desc => 'Do not delete servers or deployments after terminating'},
+      :use_mci          => {:opts => {:short => '-m',  :type => :string,   :multi => true},
+                            :desc => 'List of MCI hrefs to substitute for the ST-attached MCIs'},
+      :n_copies         => {:opts => {:short => '-n',  :type => :integer,  :default => 1},
+                            :desc => 'Number of clones to make'},
+      :only             => {:opts => {:short => '-o',  :type => :string,   :multi => true},
+                            :desc => 'Regex string to use for subselection matching on MCIs'},
+      :no_spot          => {:opts => {:short => :none, :type => :boolean,  :default => true},
+                            :desc => 'do not use spot instances'},
+      :no_resume        => {:opts => {:short => '-r',  :type => :boolean},
+                            :desc => 'Do not use trace info to resume a previous test'},
+      :tests            => {:opts => {:short => '-t',  :type => :strings},
+                            :desc => 'List of test names to run across Deployments (default is all)'},
+      :verbose          => {:opts => {:short => '-v',  :type => :boolean},
+                            :desc => 'Print all output to STDOUT as well as the log files'},
+      :revisions        => {:opts => {:short => '-w',  :type => :integers},
+                            :desc => 'Specify a list of revision numbers for templates (0 = HEAD)'},
+      :prefix           => {:opts => {:short => '-x',  :type => :string},
+                            :desc => 'Prefix of the Deployments'},
+      :yes              => {:opts => {:short => '-y',  :type => :boolean},
+                            :desc => 'Turn off confirmation'},
+      :one_deploy       => {:opts => {:short => '-z',  :type => :boolean},
+                            :desc => 'Load all variations of a single ST into one Deployment'},
 
-      :force           => %q{opt :force, 'Forces command to attempt to continue even if an exception is raised',  :short => '-F', :type => :boolean},
-      :overwrite       => %q{opt :overwrite, 'Replace existing resources with fresh ones',                        :short => '-O', :type => :boolean},
-      :report_metadata => %q{opt :report_metadata, 'Report metadata to SimpleDB',                                 :short => '-R', :type => :boolean},
-      :report_tags     => %q{opt :report_tags, 'Additional tags to help database sorting (e.g. -T sprint28)',     :short => '-T', :type => :strings},
-      :project         => %q{opt :project, 'Specify which collateral project to use',                             :short => '-P', :type => :string},
+      # Capital Letters
+      :force            => {:opts => {:short => '-F',  :type => :boolean},
+                            :desc => 'Forces command to attempt to continue even if an exception is raised'},
+      :overwrite        => {:opts => {:short => '-O',  :type => :boolean},
+                            :desc => 'Replace existing resources with fresh ones'},
+      :report_metadata  => {:opts => {:short => '-R',  :type => :boolean},
+                            :desc => 'Report metadata to SimpleDB'},
+      :report_tags      => {:opts => {:short => '-T',  :type => :strings},
+                            :desc => 'Additional tags to help database sorting (e.g. -T sprint28)'},
+      :project          => {:opts => {:short => '-P',  :type => :string},
+                            :desc => 'Specify which collateral project to use'},
 
-      :security_group_name  => %q{opt :security_group_name, 'Populate the file with this security group',                                 :short => :none,  :type => :string},
-      :ssh_keys             => %q{opt :ssh_keys, 'Takes a JSON object of cloud ids mapped to ssh_key ids. (e.g. {1: 123456, 2: 789012})', :short => :none,  :type => :string},
-      :api_version          => %q{opt :api_version, 'Check to see if the monkey has RightScale API access',                               :short => '-a',   :type => :float}
+      # Additional Options
+      :security_group_name  => {:opts => {:short => :none,  :type => :string},
+                                :desc => 'Populate the file with this security group'},
+      :ssh_keys             => {:opts => {:short => :none,  :type => :string},
+                                :desc => 'Takes a JSON object of cloud ids mapped to ssh_key ids. (e.g. {1: 123456, 2: 789012})'},
+      :api_version          => {:opts => {:short => '-a',   :type => :float},
+                                :desc => 'Check to see if the monkey has RightScale API access'}
     }
 
     EnvironmentPresets = {
@@ -294,8 +322,13 @@ module VirtualMonkey
     end
 
     def self.use_options
-      ("text '  monkey #{@@command} [options...]\n\n #{@@available_commands[@@command.to_sym]}';" +
-      CommandFlags["#{@@command}"].map { |op| @@flags[op] }.join(";"))
+      #("text '  monkey #{@@command} [options...]\n\n #{@@available_commands[@@command.to_sym]}';" +
+      #CommandFlags["#{@@command}"].map { |op| @@flags[op] }.join(";"))
+      ret = "text ' monkey #{@@command} [options...]\n\n #{AvailableCommands[@@command.to_sym]}'; "
+      ret += CommandFlags["#{@@command}"].map { |op|
+        "opt #{op.to_sym.inspect}, #{Flags[op][:desc].inspect}, #{Flags[op][:opts].inspect}"
+      }.join("; ")
+      ret
     end
 
     def self.add_command(command_name, command_flags=[], more_opts=[], flagless=false, &block)

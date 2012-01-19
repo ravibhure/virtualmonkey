@@ -131,7 +131,7 @@ module VirtualMonkey
           pid, app = daemon_child do
             args = parent_task["options"].map do |k,v|
               opt = "--#{k.gsub(/_/, '-')}"
-              opt += " #{[v].flatten.join(" ")}" unless v.nil? || v.empty?
+              opt += " #{[v].flatten.join(" ")}" unless v.nil? || v.empty? || v.is_a?(Boolean)
             end
             args |= ["--yes"]
             if parent_task['command'] =~ /^run|troop|clone$/

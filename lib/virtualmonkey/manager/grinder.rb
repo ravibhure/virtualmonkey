@@ -112,10 +112,14 @@ module VirtualMonkey
         settings_ary = mci.multi_cloud_image_cloud_settings
         settings_ary.each { |setting|
           if setting.is_a?(MultiCloudImageCloudSettingInternal)
-            return (setting.image_name =~ regex; $3)
+            if version = (setting.image_name =~ regex && $3)
+              return version
+            end
           elsif setting.is_a?(McMultiCloudImageSetting)
             if image = McImage.find(setting.image)
-              return (image.name =~ regex; $3)
+              if version = (image.name =~ regex && $3)
+                return version
+              end
             end
           end
         }

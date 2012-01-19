@@ -264,7 +264,6 @@ a { text-decoration: none; }
   @green_dark:  darken(@green_medium,  @scale);
   @orange_dark: darken(@orange_medium, @scale);
 
-
   &.tablesorter {
     th {
       cursor: pointer;
@@ -297,6 +296,7 @@ a { text-decoration: none; }
     background: @white_base;
     border: 1px solid #ccc;
     font-weight: bold;
+    padding: 8px 24px;
   }
 
   td {
@@ -305,12 +305,7 @@ a { text-decoration: none; }
     white-space: nowrap;
     text-overflow: ellipsis;
     max-width: 250px;
-    z-index: 2;
-    &:hover {
-      overflow: visible;
-      text-overflow: inherit;
-      z-index: 3;
-    }
+    padding: 3px;
   }
 
   tr:nth-child(odd) {

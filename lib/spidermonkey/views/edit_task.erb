@@ -60,6 +60,22 @@
           // TODO - later: Display info in bootstrap pop-up on hover
         });
 
+        function booleanOptionHandler() {
+          self = $(this);
+          flag = self.find("option:selected").val();
+          if (all_flags[flag]) {
+            if (all_flags[flag].opts.type === "boolean") {
+              self.siblings("input").attr('disabled', 'true');
+            }
+          }
+        }
+        // Initialize Deferral
+        if ((/^1\.[7-9]/).test($.fn.jquery)) {
+          $("#command_edit").on("change", "div.command_option select", booleanOptionHandler);
+        } else {
+          $("#command_edit").delegate("div.command_option select", "change", booleanOptionHandler);
+        }
+
         // Set up
         $("#add_flag").click(function() {
           cmd = $("#command option:selected").text()
@@ -100,32 +116,48 @@
               case "command":
                 if ("options" in editing_task) { break; }
               case "affinity": case "month": case "weekday":
-                $("#"+field).find("option:contains("+editing_task[field]+")")
+                $("#"+field).find("option[value='"+editing_task[field]+"']")
                             .attr("selected", true);
                 break;
 
               // Options
               case "options":
                 if ("command" in editing_task) {
-                  $("#command").find("option:contains("+editing_task["command"]+")")
+                  $("#command").find("option[value='"+editing_task["command"]+"']")
                                .attr("selected", true);
                   opts = editing_task["options"];
                   for (flag_name in opts) {
                     switch(typeof opts[flag_name]) {
                       case "string":
                         $("#add_flag").click();
-                        optDiv = $("#option"+(num_options-1));
-                        optDiv.find("select option:contains("+flag_name+")").attr("selected", true);
-                        optDiv.find("input").attr("value", opts[flag_name]);
+                        optDiv = $("#option" + num_options);
+                        optDiv.find("select option[value='"+flag_name+"']").attr("selected", true);
+                        if (all_flags[flag_name]) {
+                          if (all_flags[flag_name].opts.type === "boolean") {
+                            optDiv.find("input").attr('disabled', 'true');
+                          } else {
+                            optDiv.find("input").attr("value", opts[flag_name]);
+                          }
+                        } else {
+                          console.error("Unknown flag: " + flag_name);
+                        }
                         break;
                       case "object":
                         if (opts[flag_name].length) {
                           var i = opts[flag_name].length;
                           while (i--) {
                             $("#add_flag").click();
-                            optDiv = $("#option"+(num_options-1));
-                            optDiv.find("select option:contains("+flag_name+")").attr("selected", true);
-                            optDiv.find("input").attr("value", opts[flag_name][i]);
+                            optDiv = $("#option" + num_options);
+                            optDiv.find("select option[value='"+flag_name+"']").attr("selected", true);
+                            if (all_flags[flag_name]) {
+                              if (all_flags[flag_name].opts.type === "boolean") {
+                                optDiv.find("input").attr('disabled', 'true');
+                              } else {
+                                optDiv.find("input").attr("value", opts[flag_name][i]);
+                              }
+                            } else {
+                              console.error("Unknown flag: " + flag_name);
+                            }
                           }
                         }
                         break;
@@ -146,9 +178,11 @@
         function serializeTaskForm() {
           var name_value_data = $("#task_edit").serializeArray();
           var raw_form_data = {};
+          console.log(name_value_data);
           for (index in name_value_data) {
-            if (name_value_data[index].value !== "") {
-              raw_form_data[name_value_data[index].name] = name_value_data[index].value;
+            obj = name_value_data[index];
+            if (obj.value !== "") {
+              raw_form_data[obj.name] = obj.value;
             }
           }
           console.log("raw_data:")
@@ -160,8 +194,12 @@
           if ($("#task_type").find("div.active").attr("id") === "command_edit") {
             for (field in raw_form_data) {
               // Transform option data
-              if (flag_regex.test(field)) {
-                // Ignore, will be grabbed by val_regex
+              if (flag_regex.test(field) && all_flags[raw_form_data[field]]) {
+                if (all_flags[raw_form_data[field]].opts.type === "boolean") {
+                  nice_data.options[raw_form_data[field]] = true;
+                } else {
+                  // Ignore, will be grabbed by val_regex
+                }
               } else if (val_regex.test(field)) {
                 optNum = val_regex.exec(field)[1];
                 optName = raw_form_data[optFlag + optNum];
