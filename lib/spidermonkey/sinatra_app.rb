@@ -229,9 +229,9 @@ end
 VirtualMonkey::Command::NonInteractiveCommands.keys.each do |cmd|
   post "#{VirtualMonkey::API::ROOT}/#{cmd.to_s}" do
     standard_handlers do |data|
+      # TODO - later: Sanitize...
       opts = get_cmd_flags(cmd, data)
       opts |= ["--report_metadata"] if cmd == "run" || cmd == "troop"
-      # TODO - later: Sanitize...
 
       uid = VirtualMonkey::API::Task.create("command" => cmd, "options" => opts)
 
@@ -401,9 +401,16 @@ get VirtualMonkey::API::Report::PATH do
   end
 end
 
+# Report Autocomplete Fields
+get "#{VirtualMonkey::API::Report::PATH}/autocomplete" do
+  standard_handlers do |data|
+    status 200
+    body VirtualMonkey::API::Report::autocomplete.to_json
+  end
+end
+
 # Read
 get "#{VirtualMonkey::API::Report::PATH}/:uid" do |uid|
-  pass if uid == "autocomplete"
   standard_handlers do |data|
     headers "Content-Type" => "#{VirtualMonkey::API::Report::ContentType}"
     status 200
@@ -412,20 +419,90 @@ get "#{VirtualMonkey::API::Report::PATH}/:uid" do |uid|
 end
 
 # Delete
-# TODO - later
+delete "#{VirtualMonkey::API::Report::PATH}/:uid" do |uid|
+  standard_handlers do |data|
+  end
+end
 
 # Details
-# TODO - later
+post "#{VirtualMonkey::API::Report::PATH}/:uid/details" do |uid|
+  standard_handlers do |data|
+  end
+end
 
+# ============
+# DataView API
+# ============
 
-# ================
-# Autocomplete API
-# ================
+# Index
+get VirtualMonkey::API::DataView::PATH do
+  standard_handlers do |data|
+    headers "Content-Type" => "#{VirtualMonkey::API::DataView::CollectionContentType}"
+    status 200
+    body VirtualMonkey::API::DataView.index().to_json
+  end
+end
 
-get "#{VirtualMonkey::API::Report::PATH}/autocomplete" do |uid| # uid == "autocomplete"
+# Create
+post VirtualMonkey::API::DataView::PATH do
+  standard_handlers do |data|
+    uid = VirtualMonkey::API::DataView.create(data.merge(get_user))
+    status 201
+    headers "Location" => "#{VirtualMonkey::API::DataView::PATH}/#{uid}"
+    body ""
+  end
+end
+
+# DataView Autocomplete Fields
+get "#{VirtualMonkey::API::DataView::PATH}/autocomplete" do
   standard_handlers do |data|
     status 200
-    body VirtualMonkey::API::Report::autocomplete.to_json
+    body VirtualMonkey::API::DataView::autocomplete.to_json
+  end
+end
+
+# Read
+get "#{VirtualMonkey::API::DataView::PATH}/:uid" do |uid|
+  standard_handlers do |data|
+    headers "Content-Type" => "#{VirtualMonkey::API::DataView::ContentType}"
+    status 200
+    body VirtualMonkey::API::DataView.get(uid).to_json
+  end
+end
+
+# Update
+put "#{VirtualMonkey::API::DataView::PATH}/:uid" do |uid|
+  standard_handlers do |data|
+    VirtualMonkey::API::DataView.update(uid, data.merge(get_user))
+    status 204
+    body ""
+  end
+end
+
+# Delete
+delete "#{VirtualMonkey::API::DataView::PATH}/:uid" do |uid|
+  standard_handlers do |data|
+    VirtualMonkey::API::DataView.delete(uid)
+    status 204
+    body ""
+  end
+end
+
+# Save
+post "#{VirtualMonkey::API::DataView::PATH}/:uid/save" do |uid|
+  standard_handlers do |data|
+    VirtualMonkey::API::DataView.save(uid)
+    status 204
+    body ""
+  end
+end
+
+# Purge
+post "#{VirtualMonkey::API::DataView::PATH}/:uid/purge" do |uid|
+  standard_handlers do |data|
+    VirtualMonkey::API::DataView.purge(uid)
+    status 204
+    body ""
   end
 end
 

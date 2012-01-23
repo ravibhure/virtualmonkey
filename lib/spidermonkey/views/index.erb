@@ -2,9 +2,7 @@
   <!-- Driving tool -->
   <div id="footer">
     <a class="btn" data-controls-modal="manager_modal" data-backdrop="static" data-keyboard="true" >Manage Tasks</a>
-    <button class="btn" id="autorefresh_toggle" data-toggle="toggle">Disable AJAX</button>
-    <!-- TODO - later: edit max_daemons -->
-
+    <button class="btn danger" id="autorefresh_toggle">Disable AJAX</button>
     <div class="modal hide fade" id="manager_modal" style="display: none;">
       <div class="modal-header">
         <a class="close" href="javascript:void(0)"><img src="/img/delete.png" /></a>
@@ -73,7 +71,7 @@
   <ul class="tabs" data-tabs="tabs">
     <!--li><a href="#graph_tab">Graph</a></li>
     <li><a href="#burndown_tab">Burndown</a></li-->
-    <li class="active"><a href="#dynamic_spreadsheet_tab">Dynamic Spreadsheet</a></li>
+    <li class="active"><a href="#dynamic_map_tab">Dynamic Map</a></li>
     <li><a href="#data_tab">Data</a></li>
   </ul>
   <div class="tab-content">
@@ -83,27 +81,27 @@
     <div id="burndown_tab">
       Burndown Graph Here...
     </div-->
-    <div class="active" id="dynamic_spreadsheet_tab">
+    <div class="active" id="dynamic_map_tab">
       <div class="clearfix">
-        <label id="dynamic_spreadsheet_radio">Display options</label>
+        <label id="dynamic_map_radio">Display options</label>
         <div class="input">
           <ul class="inputs-list">
             <li>
               <label>
-                <input type="radio" checked name="dynamic_spreadsheet_radios" value="any" />
+                <input type="radio" checked name="dynamic_map_radios" value="any" />
                 <span>Any - If any record passed, that cell will be green</span>
               </label>
             </li>
             <li>
               <label>
-                <input type="radio" name="dynamic_spreadsheet_radios" value="latest" />
+                <input type="radio" name="dynamic_map_radios" value="latest" />
                 <span>Latest - Only if the latest record passed will that cell will be green</span>
               </label>
             </li>
           </ul>
         </div>
       </div>
-      <table class="super-huge-table highlighted" id="dynamic_spreadsheet_table">
+      <table class="super-huge-table highlighted" id="dynamic_map_table">
         <thead>
         </thead>
         <tbody>
@@ -111,12 +109,8 @@
       </table>
     </div>
     <div id="data_tab">
-      <table class="super-huge-table tablesorter highlighted" id="raw_table">
-        <thead>
-        </thead>
-        <tbody>
-        </tbody>
-      </table>
+      <div id="raw_table">
+      </div>
     </div>
   </div>
 </div>
@@ -127,5 +121,10 @@
 <script type="text/javascript" src="/js/jquery.flot.resize.min.js"></script-->
 <script type="text/javascript" src="/js/jquery.flot.highlighter.js"></script>
 <script type="text/javascript" src="/js/jquery.flot.spider.js"></script>
-<script type="text/javascript" src="/js/jquery.tablesorter.min.js"></script>
+<% if VirtualMonkey::RACK_ENV == :production %>
+  <script type="text/javascript" src="/js/jquery.tablesorter.min.js"></script>
+<% else %>
+  <script type="text/javascript" src="/js/jquery.tablesorter.js"></script>
+<% end %>
+<script type="text/javascript" src="/js/jquery.tablesorter.widget.stickyheaders.js"></script>
 <%= VirtualMonkey::MAIN_JS %>

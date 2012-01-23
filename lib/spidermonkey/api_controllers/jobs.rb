@@ -226,7 +226,7 @@ module VirtualMonkey
           end
         end
         write_cache(cache)
-        VirtualMonkey::daemons.reject! { |d| d["status"] =~ /^(pending|running)$/ }
+        VirtualMonkey::daemons.reject! { |d| d["status"] !~ /^(pending|running)$/ }
 
         # Callback tasks take priority
         callback_jobs.each do |record|

@@ -141,25 +141,23 @@ module VirtualMonkey
         @@remaining_jobs = @@gm.jobs.dup
 
         if @@already_in_em
-          while (1)
-            begin
-              sleep 10
-              @@gm.watch_and_report
-              break if @@gm.all_done?
+          begin
+            sleep 10
+            @@gm.watch_and_report
+            break if @@gm.all_done?
 
-              if @@options[:terminate] and not (@@options[:list_trainer] or @@options[:qa])
-                @@remaining_jobs.each do |job|
-                  if job.status == 0
-                    destroy_job_logic(job)
-                  end
+            if @@options[:terminate] and not (@@options[:list_trainer] or @@options[:qa])
+              @@remaining_jobs.each do |job|
+                if job.status == 0
+                  destroy_job_logic(job)
                 end
               end
-            rescue Interrupt, NameError, ArgumentError, TypeError => e
-              raise
-            rescue Exception => e
-              warn "WARNING: Got \"#{e.message}\" from #{e.backtrace.first}"
             end
-          end
+          rescue Interrupt, NameError, ArgumentError, TypeError => e
+            raise
+          rescue Exception => e
+            warn "WARNING: Got \"#{e.message}\" from #{e.backtrace.first}"
+          end while true
         else
           watch = EM.add_periodic_timer(10) {
             begin

@@ -293,10 +293,12 @@ module VirtualMonkey
     end
 
     def match_servers_by_st(ref)
+      return [] unless ServerTemplate === ref || McServerTemplate === ref
       @st_table.select { |s,st| st.href == ref.href }.map { |s,st| s }
     end
 
     def match_st_by_server(ref)
+      return [] unless Server === ref || McServer === ref || ServerInterface === ref
       @st_table.select { |s,st| s.href == ref.href }.last.last
     end
 
@@ -408,8 +410,10 @@ EOS
       set = match_servers_by_st(set) if set.is_a?(ServerTemplate)
       set = __send__(set) if set.is_a?(Symbol)
       set = [ set ] unless set.is_a?(Array)
-      raise "FATAL: No servers found for passed #{passed_param.class}: #{passed_param.inspect}" if set.empty?
+      warn "WARNING: No servers found for passed #{passed_param.class}: #{passed_param.inspect}" if set.empty?
       return set
+    rescue
+      return []
     end
 
     # Encapsulates the logic necessary for retrying a function

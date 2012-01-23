@@ -59,17 +59,23 @@ module VirtualMonkey
       private_class_method :fields
 
       def self.new_sdb_connection
-        return Fog::AWS::SimpleDB.new() if VirtualMonkey::RACK_ENV == :development
-        Fog::AWS::SimpleDB.new(:aws_access_key_id => Fog.credentials[:aws_access_key_id_test],
-                               :aws_secret_access_key => Fog.credentials[:aws_secret_access_key_test])
+        if Fog.credentials[:aws_access_key_id_test] && Fog.credentials[:aws_secret_access_key_test]
+          return Fog::AWS::SimpleDB.new(:aws_access_key_id => Fog.credentials[:aws_access_key_id_test],
+                                        :aws_secret_access_key => Fog.credentials[:aws_secret_access_key_test])
+        else
+          return Fog::AWS::SimpleDB.new()
+        end
       end
       private_class_method :new_sdb_connection
 
       def self.new_s3_connection
-        return Fog::Storage.new(:provider => "AWS") if VirtualMonkey::RACK_ENV == :development
-        Fog::Storage.new(:provider => "AWS",
-                         :aws_access_key_id => Fog.credentials[:aws_access_key_id_test],
-                         :aws_secret_access_key => Fog.credentials[:aws_secret_access_key_test])
+        if Fog.credentials[:aws_access_key_id_test] && Fog.credentials[:aws_secret_access_key_test]
+          return Fog::Storage.new(:provider => "AWS",
+                                  :aws_access_key_id => Fog.credentials[:aws_access_key_id_test],
+                                  :aws_secret_access_key => Fog.credentials[:aws_secret_access_key_test])
+        else
+          return Fog::Storage.new(:provider => "AWS")
+        end
       end
       private_class_method :new_s3_connection
 
@@ -236,34 +242,6 @@ module VirtualMonkey
           write_cache(cache)
         end
         return records.map { |record| self.new.deep_merge(record) }
-=begin
-var d1 = [ [0,10], [1,20], [2,80], [3,70], [4,60] ];
-var d2 = [ [0,30], [1,25], [2,50], [3,60], [4,95] ];
-var d3 = [ [0,50], [1,40], [2,60], [3,95], [4,30] ];
-
-var data = [{
-              label: "Goal",
-              color: "rgb(0,0,0)",
-              data: d1,
-              spider: {
-                show: true,
-                lineWidth: 12
-              }
-            },
-            {
-              label: "Complete",
-              color: "rgb(0,255,0)",
-              data: d3,
-              spider: {
-                show: true
-              }
-            }];
-
-        ret = {"autocomplete_values" => {}, "raw_data" => []}
-        domains.each do |domain|
-          # TODO - later :Return in the above format
-        end
-=end
       end
 
       #####################################################

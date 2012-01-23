@@ -24,8 +24,18 @@ module VirtualMonkey
   @@rest_yaml = File.join("", "etc", "rest_connection", "rest_api_config.yaml") unless File.exists?(@@rest_yaml)
   REST_YAML = @@rest_yaml
 
-  branch = (`git branch 2> /dev/null | grep \\*`.chomp =~ /\* ([^ ]+)/; $1) || "master"
-  VERSION = (`cat "#{File.join(ROOTDIR, "VERSION")}"`.chomp + (branch == "master" ? "" : " #{branch.upcase}"))
+  VERSION = lambda {
+    branch = (`git branch 2> /dev/null | grep \\*`.chomp =~ /\* ([^ ]+)/ && $1) || "master"
+    (`cat "#{File.join(ROOTDIR, "VERSION")}"`.chomp + (branch == "master" ? "" : " #{branch.upcase}"))
+  }.call
+
+  unless const_defined?(RUNNING_AS_GEM)
+    RUNNING_AS_GEM = lambda {
+      gem_dirs = `gem environment | grep -A9999 "GEM PATHS" | grep -B9999 "GEM CONFIGURATION"`.chomp.split("\n")
+      gem_dirs = gem_dirs.map { |s| s =~ /(#{File::SEPARATOR}.*)/ && $1 }.compact
+      gem_dirs.detect { |s| File.dirname(__FILE__) =~ Regexp.new(s) && $1 } && true || false
+    }
+  end
 
   ROOT_CONFIG = File.join(VirtualMonkey::ROOTDIR, ".config.yaml").freeze
   USER_CONFIG = File.join(File.expand_path("~"), ".virtualmonkey", "config.yaml").freeze

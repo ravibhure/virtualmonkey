@@ -106,10 +106,10 @@ module VirtualMonkey
     }
 
     EnvironmentPresets = {
-      "development" => {"description" => "ServerTemplate Developers need to work efficiently. These " +
-                                         "presets are designed to encourage small, independent tests " +
-                                         "that can be run in any order. Developers should also primarily " +
-                                         "use the grinder tool, to enable inline debugging.",
+      "development" => {"desc" => "ServerTemplate Developers need to work efficiently. These " +
+                                  "presets are designed to encourage small, independent tests " +
+                                  "that can be run in any order. Developers should also primarily " +
+                                  "use the grinder tool, to enable inline debugging.",
                         "values" => {
                           "environment"         => "development",
                           "test_permutation"    => "distributive",
@@ -119,9 +119,9 @@ module VirtualMonkey
                           "max_retries"         => 3,
                         }
       },
-      "testing"     => {"description" => "ServerTemplate Testers need to be thorough, and must produce " +
-                                         "reports. These presets are designed to make runs repeatable, " +
-                                         "accountable, and--most importantly--thorough.",
+      "testing"     => {"desc" => "ServerTemplate Testers need to be thorough, and must produce " +
+                                  "reports. These presets are designed to make runs repeatable, " +
+                                  "accountable, and--most importantly--thorough.",
                         "values" => {
                           "environment"         => "testing",
                           "test_permutation"    => "exhaustive",
@@ -131,10 +131,10 @@ module VirtualMonkey
                           "max_retries"         => 10,
                         }
       },
-      "sixsigma"    => {"description" => "SixSigma is a concept from manufacturing meant to minimize " +
-                                         "the rate of defects to 3.4 per million. Due to the nature of " +
-                                         "distributed systems, it is highly unlikely that this testing " +
-                                         "mode will ever pass, but it can be useful in identifying problems.",
+      "sixsigma"    => {"desc" => "SixSigma is a concept from manufacturing meant to minimize " +
+                                  "the rate of defects to 3.4 per million. Due to the nature of " +
+                                  "distributed systems, it is highly unlikely that this testing " +
+                                  "mode will ever pass, but it can be useful in identifying problems.",
                         "values" => {
                           "environment"         => "sixsigma",
                           "test_permutation"    => "exhaustive",
@@ -147,95 +147,95 @@ module VirtualMonkey
     }
 
     ConfigOptions = {
-      "set"     => {"description" => "Set a configurable variable",
-                    "usage"       => "'monkey config (-s|--set|set) <name> <value>'"},
+      "set"     => {"desc"  => "Set a configurable variable",
+                    "usage" => "'monkey config (-s|--set|set) <name> <value>'"},
 
-      "edit"    => {"description" => "Open config file in your git editor",
-                    "usage"       => "'monkey config (-e|--edit|edit)'"},
+      "edit"    => {"desc"  => "Open config file in your git editor",
+                    "usage" => "'monkey config (-e|--edit|edit)'"},
 
-      "unset"   => {"description" => "Unset a configurable variable",
-                    "usage"       => "'monkey config (-u|--unset|unset) <name>'"},
+      "unset"   => {"desc"  => "Unset a configurable variable",
+                    "usage" => "'monkey config (-u|--unset|unset) <name>'"},
 
-      "list"    => {"description" => "List current config variables",
-                    "usage"       => "'monkey config (-l|--list|list)'"},
+      "list"    => {"desc"  => "List current config variables",
+                    "usage" => "'monkey config (-l|--list|list)'"},
 
-      "catalog" => {"description" => "List all possible configurable variables",
-                    "usage"       => "'monkey config (-c|--catalog|catalog)'"},
+      "catalog" => {"desc"  => "List all possible configurable variables",
+                    "usage" => "'monkey config (-c|--catalog|catalog)'"},
 
-      "get"     => {"description" => "Get the value of one variable",
-                    "usage"       => "'monkey config (-g|--get|get) <name>'"},
+      "get"     => {"desc"  => "Get the value of one variable",
+                    "usage" => "'monkey config (-g|--get|get) <name>'"},
 
-      "help"    => {"description" => "Print this help message",
-                    "usage"       => "'monkey config (-h|--help|help)'"}
+      "help"    => {"desc"  => "Print this help message",
+                    "usage" => "'monkey config (-h|--help|help)'"}
     }
 
     ConfigVariables = {
-      "test_permutation"    => {"description" => "Controls how individual test cases in a feature file get assigned per deployment",
-                                "default"     => "exhaustive",
-                                "values"      => ["distributive", "exhaustive"]},
+      "test_permutation"    => {"desc"    => "Controls how individual test cases in a feature file get assigned per deployment",
+                                "default" => "exhaustive",
+                                "values"  => ["distributive", "exhaustive"]},
 
-      "test_ordering"       => {"description" => "Controls how individual test cases in a feature file are ordered for execution",
-                                "default"     => "strict",
-                                "values"      => ["random", "strict"]},
+      "test_ordering"       => {"desc"    => "Controls how individual test cases in a feature file are ordered for execution",
+                                "default" => "strict",
+                                "values"  => ["random", "strict"]},
 
-      "feature_mixins"      => {"description" => "Controls how multiple features are distributed amongst available deployments",
-                                "default"     => "spanning",
-                                "values"      => ["spanning", "parallel"]},
+      "feature_mixins"      => {"desc"    => "Controls how multiple features are distributed amongst available deployments",
+                                "default" => "spanning",
+                                "values"  => ["spanning", "parallel"]},
 
-      "load_progress"       => {"description" => "Turns on/off the display of load progress info for 'monkey' commands",
-                                "default"     => "show",
-                                "values"      => ["show", "hide"]},
+      "load_progress"       => {"desc"    => "Turns on/off the display of load progress info for 'monkey' commands",
+                                "default" => "show",
+                                "values"  => ["show", "hide"]},
 
-      "colorized_text"      => {"description" => "Turns on/off colorized console text",
-                                "default"     => "show",
-                                "values"      => ["show", "hide"]},
+      "colorized_text"      => {"desc"    => "Turns on/off colorized console text",
+                                "default" => "show",
+                                "values"  => ["show", "hide"]},
 
-      "max_jobs"            => {"description" => "Controls how many simultaneous jobs can be started through the SpiderMonkey Web App",
-                                "default"     => 2,
-                                "values"      => Integer},
+      "max_jobs"            => {"desc"    => "Controls how many simultaneous jobs can be started through the SpiderMonkey Web App",
+                                "default" => 2,
+                                "values"  => Integer},
 
-      "max_retries"         => {"description" => "Controls how many retries to attempt in a scope stack before giving up",
-                                "default"     => 10,
-                                "values"      => Integer},
+      "max_retries"         => {"desc"    => "Controls how many retries to attempt in a scope stack before giving up",
+                                "default" => 10,
+                                "values"  => Integer},
 
-      "default_timeout"     => {"description" => "Controls the default timeout for server actions",
-                                "default"     => (20*60),
-                                "values"      => Integer},
+      "default_timeout"     => {"desc"    => "Controls the default timeout for server actions",
+                                "default" => (20*60),
+                                "values"  => Integer},
 
-      "enable_log_auditor"  => {"description" => "Enables log auditing for logfiles defined in lists/*.json",
-                                "default"     => "false",
-                                "values"      => [false, true]},
+      "enable_log_auditor"  => {"desc"    => "Enables log auditing for logfiles defined in lists/*.json",
+                                "default" => "false",
+                                "values"  => [false, true]},
 
-      "environment"         => {"description" => "Allows different behaviors in runners based on the environment",
-                                "default"     => "testing",
-                                "values"      => EnvironmentPresets.keys},
+      "environment"         => {"desc"    => "Allows different behaviors in runners based on the environment",
+                                "default" => "testing",
+                                "values"  => EnvironmentPresets.keys},
 
-      "grinder_subprocess"  => {"description" => "Turns on/off the ability of Grinder to load into the current process",
-                                "default"     => "force_subprocess",
-                                "values"      => ["allow_same_process", "force_subprocess"]}
+      "grinder_subprocess"  => {"desc"    => "Turns on/off the ability of Grinder to load into the current process",
+                                "default" => "force_subprocess",
+                                "values"  => ["allow_same_process", "force_subprocess"]}
     }
 
     CollateralOptions = {
-      "clone"     => {"description" => "Clone a remote repository into the local collateral",
-                      "usage"       => "'monkey collateral (-c|--clone|clone) <repository> <project> [--bare] [--depth <i>]'"},
+      "clone"     => {"desc"  => "Clone a remote repository into the local collateral",
+                      "usage" => "'monkey collateral (-c|--clone|clone) <repository> <project> [--bare] [--depth <i>]'"},
 
-      "init"      => {"description" => "Create a new local collateral project",
-                      "usage"       => "'monkey collateral (-i|--init|init) <project>'"},
+      "init"      => {"desc"  => "Create a new local collateral project",
+                      "usage" => "'monkey collateral (-i|--init|init) <project>'"},
 
-      "checkout"  => {"description" => "Checkout a branch or paths to the working tree of the specified collateral project",
-                      "usage"       => "'monkey collateral (-k|--checkout|checkout) <project> <name> [-f|--force]'"},
+      "checkout"  => {"desc"  => "Checkout a branch or paths to the working tree of the specified collateral project",
+                      "usage" => "'monkey collateral (-k|--checkout|checkout) <project> <name> [-f|--force]'"},
 
-      "pull"      => {"description" => "Fetch from and merge with a local collateral project",
-                      "usage"       => "'monkey collateral (-p|--pull|pull) <project> [<remote> [<branch>]]'"},
+      "pull"      => {"desc"  => "Fetch from and merge with a local collateral project",
+                      "usage" => "'monkey collateral (-p|--pull|pull) <project> [<remote> [<branch>]]'"},
 
-      "list"      => {"description" => "List the local collateral projects, origin repositories, and current branches",
-                      "usage"       => "'monkey collateral (-l|--list|list)'"},
+      "list"      => {"desc"  => "List the local collateral projects, origin repositories, and current branches",
+                      "usage" => "'monkey collateral (-l|--list|list)'"},
 
-      "delete"    => {"description" => "Delete a local collateral project",
-                      "usage"       => "'monkey collateral (-d|--delete|delete) <project>'"},
+      "delete"    => {"desc"  => "Delete a local collateral project",
+                      "usage" => "'monkey collateral (-d|--delete|delete) <project>'"},
 
-      "help"      => {"description" => "Print this help message",
-                      "usage"       => "'monkey collateral (-h|--help|help)'"}
+      "help"      => {"desc"  => "Print this help message",
+                      "usage" => "'monkey collateral (-h|--help|help)'"}
     }
 
     CommandFlags = {}
@@ -364,7 +364,7 @@ EOS
     CommandFlags.merge!("help" => [])
     def self.help(*args)
       self.init(*args)
-      case ARGV.shift
+      case subcommand = ARGV.shift
       when nil then puts @@simple_usage_msg
       when "--all", "-a", "all", "commands", "help", "-h", "--help" then puts @@usage_msg
       else
@@ -404,9 +404,9 @@ EOS
         message = sorted_content_ary.map do |k,v|
           fmt_string_ary = []
           wrapped_ary = []
-          if v["description"]
+          if v["desc"]
             fmt_string_ary << base_format_string
-            text = v["description"]
+            text = v["desc"]
             if text.size <= remaining_width
               wrapped_ary << text
             else
@@ -418,7 +418,7 @@ EOS
           v.keys.sort.each { |type|
             text = ""
             case type
-            when "description" then next
+            when "desc" then next
             when "values", "origin", "branch" then text = "#{type.titlecase}: #{v[type].inspect}"
             when "usage" then text = "#{type.titlecase}: #{v[type]}"
             end
@@ -431,12 +431,12 @@ EOS
               wrapped_ary += wrapped_val_ary
             end
           }
-          unless v["description"]
+          unless v["desc"]
             fmt_string_ary.shift
             fmt_string_ary.unshift(field_format_string)
           end
           fmt_string = fmt_string_ary.join("\n")
-          fmt_string = key_format_string + fmt_string unless v["description"]
+          fmt_string = key_format_string + fmt_string unless v["desc"]
           fmt_string % ([k] + wrapped_ary)
         end
       else

@@ -428,14 +428,15 @@ module VirtualMonkey
       def status_change_hook
         begin
           generate_reports
-          if all_done?
-            puts "monkey done."
-            EM.stop
-          end
         rescue Interrupt => e
           raise
         rescue Exception => e
           warn "#{e}\n#{e.backtrace.join("\n")}"
+        ensure
+          if all_done?
+            puts "monkey done."
+            EM.stop
+          end
         end
       end
 
@@ -446,18 +447,18 @@ module VirtualMonkey
 
       # Generates monkey reports and uploads to S3
       def generate_reports
-        report_uid = VirtualMonkey::API::Report.create({
-          "jobs" => @jobs,
-          "log_started" => @log_started,
-          "report_metadata" => @options[:report_metadata],
-        }).first
-        report_url = VirtualMonkey::API::Report.get(report_uid)["report_page"]
-#        report_url = VirtualMonkey::API::Report.update_s3(@jobs, @log_started)
+        report_url = ""
+        if @options[:report_metadata]
+          report_uid = VirtualMonkey::API::Report.create({
+            "jobs" => @jobs,
+            "log_started" => @log_started,
+            "report_metadata" => @options[:report_metadata],
+          }).first
+          report_url = VirtualMonkey::API::Report.get(report_uid)["report_page"]
+        else
+          report_url = VirtualMonkey::API::Report.update_s3(@jobs, @log_started)
+        end
         puts "\n    New results available at #{report_url}\n\n"
-#        if @options[:report_metadata]
-#          VirtualMonkey::API::Report.update_sdb(@jobs)
-#          puts "SimpleDB updated"
-#        end
       end
 
 =begin

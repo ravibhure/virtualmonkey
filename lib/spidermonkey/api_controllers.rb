@@ -138,7 +138,6 @@ module VirtualMonkey
 
       def render()
         self.pretty_inspect
-        # TODO - later
       end
     end
   end

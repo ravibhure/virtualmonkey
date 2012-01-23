@@ -57,15 +57,16 @@
               div.remove();
             }
           });
-          // TODO - later: Display info in bootstrap pop-up on hover
         });
 
         function booleanOptionHandler() {
-          self = $(this);
-          flag = self.find("option:selected").val();
+          elem = $(this);
+          flag = elem.find("option:selected").val();
           if (all_flags[flag]) {
             if (all_flags[flag].opts.type === "boolean") {
-              self.siblings("input").attr('disabled', 'true');
+              elem.siblings("input").attr('disabled', 'true');
+            } else {
+              elem.siblings("input").removeAttr('disabled');
             }
           }
         }
@@ -80,11 +81,13 @@
         $("#add_flag").click(function() {
           cmd = $("#command option:selected").text()
           if (cmd === "") return alert("Please select a command first");
+          // TODO - check if cmd === "collateral", "config", or "environment"
           // Add option div
           num_options++;
           var div = $("<div data-label='Option' id='option" + num_options + "' />");
           var select = $("<select name='" + optFlag + num_options + "' />");
           var input = $("<input type='text' class='large' name='" + optVal + num_options + "' />");
+          var tooltip = $("<img src='/img/tooltip.png' class='action tooltip' />");
           var del = $("<img src='/img/delete.png' class='action delete_option' />");
           del.click(function() { $(this).parent().remove(); });
           select.append("<option value=''></option>");
@@ -93,18 +96,16 @@
             select.append("<option value='" + flag + "'>" + flag + "</option>");
           }
           div.addClass("inline-inputs command_option")
-             .append(select).append(input).append(del)
+             .append(select).append(input).append(tooltip).append(del)
              .wrap("<div class='clearfix' />")
              .wrap("<div class='input' />")
              .attr("name", function(index,old) { return this.id; })
              .before(function(index) { return "<label>" + $(this).attr("data-label") + "</label>"; })
              .insertBefore($(this));
-          // TODO - later: hide the text input when a flag is a boolean type of empty
         });
 
         <% if @edit %>
           var editing_task = <%= @edit.to_json() %>;
-          console.log(editing_task)
           for (field in editing_task) {
             switch(field) {
               // Text Fields
@@ -178,15 +179,12 @@
         function serializeTaskForm() {
           var name_value_data = $("#task_edit").serializeArray();
           var raw_form_data = {};
-          console.log(name_value_data);
           for (index in name_value_data) {
             obj = name_value_data[index];
             if (obj.value !== "") {
               raw_form_data[obj.name] = obj.value;
             }
           }
-          console.log("raw_data:")
-          console.log(raw_form_data);
           var nice_data = {options: {}};
           var flag_regex = new RegExp(optFlag + "(\\d+)", "i");
           var val_regex = new RegExp(optVal + "(\\d+)", "i");
@@ -238,8 +236,6 @@
         <% if @edit %>
           $("#update_btn").click(function() {
             nice_data = serializeTaskForm();
-            console.log("nice_data:");
-            console.log(nice_data);
             $.ajax({
               type: 'PUT',
               url: <%= [VirtualMonkey::API::Task::PATH, @edit.uid].join("/").inspect %>,
@@ -255,8 +251,6 @@
 
         $("#create_btn").click(function() {
           nice_data = serializeTaskForm();
-          console.log("nice_data:");
-          console.log(nice_data);
           $.ajax({
             type: 'POST',
             url: <%= VirtualMonkey::API::Task::PATH.inspect %>,
@@ -292,6 +286,92 @@
             }
           });
         <% end %>
+
+        /************
+         * Tooltips *
+         ************/
+
+        function displayTooltip(help_type) {
+          return (function() {
+            elem = $(this);
+            var index = (elem.is("select") ? elem.val() : elem.parent().find("select").val());
+            var help_wrap = $("<div />");
+            if (help_type === "command") {
+              help_wrap.append($("<h3 />").text(index.toUpperCase()));
+              help_wrap.append($("<p />").text(commands[index]));
+              list = $("<ul />");
+              switch (index) {
+                case "collateral":
+                  help_wrap.append($("<h4 />").text("SUBCOMMANDS"));
+                  for (subcmd in collateral_opts) {
+                    obj = collateral_opts[subcmd];
+                    txt = "<u>" + subcmd + "</u>: " + obj.desc + "<br />Usage: ";
+                    span = $("<span />").text(obj.usage);
+                    list.append($("<li />").html(txt).append(span));
+                  }
+                  break;
+                case "config":
+                  help_wrap.append($("<h4 />").text("SUBCOMMANDS"));
+                  for (subcmd in config_opts) {
+                    obj = config_opts[subcmd];
+                    txt = "<u>" + subcmd + "</u>: " + obj.desc + "<br />Usage: "
+                    span = $("<span />").text(obj.usage);
+                    list.append($("<li />").html(txt).append(span));
+                  }
+                  help_wrap.append(list).append($("<h4 />").text("CONFIGURABLE VARIABLES"));
+                  list = $("<ul />");
+                  for (variable in config_vars) {
+                    obj = config_vars[variable];
+                    txt = "<u>" + variable + "</u>: " + obj.desc + "<br />";
+                    txt += "Valid Values: " + obj.values.toString() + "<br />";
+                    txt += "Default Value: " + obj["default"];
+                    list.append($("<li />").html(txt));
+                  }
+                  break;
+                case "environment":
+                  help_wrap.append($("<h4 />").text("PRESETS"));
+                  for (preset in environment_presets) {
+                    obj = environment_presets[preset];
+                    txt = "<u>" + preset + "</u>: " + obj.desc + "<br />Usage: ";
+                    span = $("<span />").text(obj.usage);
+                    list.append($("<li />").html(txt).append(span));
+                  }
+                  break;
+                default:
+                  help_wrap.append($("<h4 />").text("FLAGS"));
+                  for (idx in command_flags[index]) {
+                    flag = command_flags[index][idx];
+                    if (all_flags[flag]) {
+                      txt = "<u>" + flag + "</u>: " + all_flags[flag].desc;
+                      if (all_flags[flag].opts.type) {
+                        txt += "<br />Type: " + all_flags[flag].opts.type;
+                      }
+                      if (all_flags[flag].opts["default"]) {
+                        txt += "<br />Default Value: " + all_flags[flag].opts["default"];
+                      }
+                      list.append($("<li />").html(txt));
+                    }
+                  }
+                  break;
+              }
+              help_wrap.append(list);
+            } else if (help_type === "flag") {
+            }
+            $("#help_info").html(help_wrap.html());
+          });
+        }
+
+        if ((/^1\.[7-9]/).test($.fn.jquery)) {
+          $("#command_edit").on("click", "#command + img.tooltip", displayTooltip("command"));
+          $("#command_edit").on("click", "command_option > img.tooltip", displayTooltip("flag"));
+          $("#command_edit").on("change", "#command", displayTooltip("command"));
+        } else {
+          $("#command_edit").delegate("#command + img.tooltip", "click", displayTooltip("command"));
+          $("#command_edit").delegate("command_option > img.tooltip", "click", displayTooltip("flag"));
+          $("#command_edit").delegate("#command", "change", displayTooltip("command"));
+        }
+
+        $("#command").trigger("change");
       });
     </script>
   </head>
@@ -300,25 +380,37 @@
     <fieldset>
       <legend class="legend">Edit Task</legend>
       <input type="text" class="large init" data-label="Name" id="name" />
-      <div id="task_type">
-        <ul class="tabs" data-tabs="tabs">
-          <li class="active"><a href="#command_edit">Command</a></li>
-          <li><a href="#subtask_edit">Other Tasks</a></li>
-        </ul>
-        <div class="tab-content" id="task_type">
-          <div class="active" id="command_edit">
-            <select class="init" data-label="Command" id="command">
-              <option value=""></option>
-            </select>
-            <a href="javascript:void(0)" id="add_flag">+ Add Flag...</a>
-          </div>
-          <div id="subtask_edit">
-            <select class="init" data-label="Subtask Affinity" id="affinity">
-              <option value="parallel">Parallel Enqueue</option>
-              <option value="stop">Stop if one subtask fails</option>
-              <option value="continue">Continue even if any subtask fails</option>
-            </select>
-            <%= yield %>
+      <div class="clearfix">
+        <div id="task_type">
+          <ul class="tabs" data-tabs="tabs">
+            <li class="active"><a href="#command_edit">Command</a></li>
+            <li><a href="#subtask_edit">Other Tasks</a></li>
+          </ul>
+          <div class="tab-content" id="task_type">
+            <div class="active" id="command_edit">
+              <div class="column_two_third">
+                <div class="inline-inputs init" data-label="Command" />
+                  <select id="command">
+                    <option value=""></option>
+                  </select>
+                  <img src='/img/tooltip.png' class='action tooltip' />
+                </div>
+                <a href="javascript:void(0)" id="add_flag">+ Add Flag...</a>
+              </div>
+              <div class="column_one_third">
+                <h2>Help Infomation</h2>
+                <div id="help_info">
+                </div>
+              </div>
+            </div>
+            <div id="subtask_edit">
+              <select class="init" data-label="Subtask Affinity" id="affinity">
+                <option value="parallel">Parallel Enqueue</option>
+                <option value="stop">Stop if one subtask fails</option>
+                <option value="continue">Continue even if any subtask fails</option>
+              </select>
+              <%= yield %>
+            </div>
           </div>
         </div>
       </div>

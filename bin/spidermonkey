@@ -7,6 +7,13 @@ $LOAD_PATH.unshift(File.expand_path(File.join(File.dirname(__FILE__), '..', 'lib
 
 ENV['ENTRY_COMMAND'] = File.basename(__FILE__, ".rb")
 
+module VirtualMonkey
+  RUNNING_AS_GEM = lambda {
+    bin_dir = (`gem environment | grep "EXECUTABLE DIRECTORY"`.chomp =~ /DIRECTORY: (.*)$/ && $1)
+    File.dirname(__FILE__) =~ Regexp.new(bin_dir) && true || false
+  }
+end
+
 require 'rubygems'
 =begin
 require 'daemons'

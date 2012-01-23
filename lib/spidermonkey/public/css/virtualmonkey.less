@@ -40,6 +40,7 @@
 
 body {
   font-family: "Helvetica", "Arial", sans-serif;
+  overflow: hidden;
 }
 
 div.display_panel {
@@ -68,6 +69,7 @@ div.display_panel {
   border-top-width: 0px;
   width: 100%;
   height: 100%;
+  overflow: auto;
   * { position: relative; }
 }
 
@@ -161,11 +163,29 @@ ol {
 
 #manager_modal {
   width: 75%;
-  margin-left: -37.5%;
+  min-width: 768px;
+  left: 12.5%;
+  top: 12.5%;
+  max-height: 75%;
+  height: 75%;
+  .modal-body {
+//    height: 1000px;
+  }
+  margin: auto;
+  overflow: hidden;
   .close {
     margin-top: 0px;
     z-index: 11001;
     .opacity(100);
+  }
+
+  &.fade {
+    .transition(e('opacity .3s linear'));
+  }
+
+  .modal-footer {
+    cursor: move;
+    bottom: 0px;
   }
 }
 
@@ -189,7 +209,7 @@ ol {
       width: 100%;
 
       iframe {
-        height: @slider_height;
+        height: 100%;
         width: 100%;
         border: 0px;
       }
@@ -209,14 +229,43 @@ ol {
   h2 { padding-top: 8px; padding-bottom: 8px; }
 }
 
-#command_edit .command_option img.delete_option {
-  position: absolute;
-  margin: 3px;
+#command_edit {
+  > div.column_one_third {
+    width: 33%;
+    float: left;
+  }
+  > div.column_two_third {
+    width: 66%;
+    float: left;
+  }
+  img.delete_option, img.tooltip {
+    vertical-align: middle;
+    display: inline-block;
+    margin: 3px;
+  }
+}
+
+#help_info {
+  padding: 1em 0.5em;
+
+  ul, p {
+    padding: 0.5em 0px;
+    list-style-type: square;
+    text-align: left;
+    li {
+      text-align: left;
+      margin: 0.6em 0px;
+      line-height: 1.3em;
+    }
+  }
+  h3 { font-weight: 600; }
 }
 
 #task_edit {
   position: relative;
+  margin-top: 18px;
   .input { margin-left: 15px; }
+  select { height: 24px; }
 
   #task_type {
     background: white;
@@ -361,11 +410,11 @@ a { text-decoration: none; }
   }
 }
 
-#dynamic_spreadsheet_radio {
+#dynamic_map_radio {
   padding-top: 6px;
 }
 
-#dynamic_spreadsheet_radio + div.input {
+#dynamic_map_radio + div.input {
   margin-left: 190px;
   margin-bottom: 20px;
 }
