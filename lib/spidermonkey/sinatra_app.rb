@@ -82,7 +82,7 @@ require 'digest/sha1'
 #disable :run
 
 set :environment, VirtualMonkey::RACK_ENV
-set :server, %w[mongrel] # thin, awesome though it may be, uses EventMachine. And so do we.
+set :server, %w[thin]
 
 set :sessions, :domain => VirtualMonkey::PUBLIC_HOSTNAME # TODO Configure these cookies to work securely
 set :bind, '0.0.0.0'

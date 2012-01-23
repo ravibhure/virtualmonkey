@@ -169,7 +169,7 @@ class String
   end
 
   def colorized?
-    !(self =~ /\e\[0[;0-9]*m/).nil?
+    self =~ /\e\[0[;0-9]*m/ && true || false
   end
 
   def apply_color(*color_symbols)

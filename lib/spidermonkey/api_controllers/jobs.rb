@@ -39,17 +39,6 @@ module VirtualMonkey
       end
       private_class_method :fields
 
-      def self.daemon_child(&block)
-        pid = Process.fork do
-          #$stdout = File.new("/dev/null", "w")
-          #$stderr = File.new("/dev/null", "w")
-          yield
-        end
-        thread = Process.detach(pid)
-        [pid, thread]
-      end
-      private_class_method :daemon_child
-
       #
       # Constructor
       #
@@ -127,21 +116,12 @@ module VirtualMonkey
         end
 
         # Create record
+        new_record["daemon"] = Daemon.new(new_record, parent_task)
+        new_record["console_output"] = new_record["daemon"].output
+
         if VirtualMonkey::daemons.length < VirtualMonkey::config[:max_jobs]
-          pid, app = daemon_child do
-            args = parent_task["options"].map do |k,v|
-              opt = "--#{k.gsub(/_/, '-')}"
-              opt += " #{[v].flatten.join(" ")}" unless v.nil? || v.empty? || v.is_a?(Boolean)
-            end
-            args |= ["--yes"]
-            if parent_task['command'] =~ /^run|troop|clone$/
-              args |= ["--report-metadata"]
-            end
-            puts "\nlaunching command: #{parent_task['command']} #{args.join(' ')}\n\n"
-            VirtualMonkey::Command.__send__(parent_task["command"], args.join(" "))
-            exit 0
-          end
-          new_record.merge!("daemon" => app, "pid" => pid, "status" => "running")
+          new_record["daemon"].run
+          new_record["status"] = "running"
           VirtualMonkey::daemons << new_record
         else
           new_record["status"] = "pending"
@@ -169,16 +149,12 @@ module VirtualMonkey
           if record["daemon"] && record["daemon"].alive?
             record["daemon"].kill
             record["status"] = "cancelled"
-            unless [0,1, $$].include?(record["pid"].to_i)
-              Process.kill("TERM", record["pid"].to_i)
-            end
           elsif record["daemon"]
-            record["status"] = (record["daemon"].value.exitstatus == 0 ? "passed" : "failed")
+            record["status"] = (record["daemon"].status == 0 ? "passed" : "failed")
           else
             record["status"] = "unknown"
           end
           record.delete("daemon")
-          record.delete("pid")
 
           cache = read_cache
           cache[record.uid] = record
@@ -217,9 +193,8 @@ module VirtualMonkey
         callback_jobs = []
         VirtualMonkey::daemons.each do |record|
           if record["daemon"] and not record["daemon"].alive?
-            record["status"] = (record["daemon"].value.exitstatus == 0 ? "passed" : "failed")
+            record["status"] = (record["daemon"].status == 0 ? "passed" : "failed")
             record.delete("daemon")
-            record.delete("pid")
             callback_jobs << record if record.links.to_h("rel", "href")["callback"]
 
             cache[record.uid] = record
@@ -242,15 +217,96 @@ module VirtualMonkey
         (VirtualMonkey::config[:max_jobs] - VirtualMonkey::daemons.size).times do |i|
           job = VirtualMonkey::daemon_queue.pop
           if job
-            parent_task = VirtualMonkey::API::Task.get(job.links.to_h("rel", "href")["parent"])
-            pid, thread = daemon_child do
-              VirtualMonkey::Command.__send__(parent_task["command"], *parent_task["options"])
-            end
-            job.merge!("daemon" => thread, "pid" => pid, "status" => "running")
+            job["daemon"].run
+            job["status"] = "running"
             VirtualMonkey::daemons << job
           end
         end
         return nil
+      end
+    end
+
+    class Daemon
+      attr_accessor :status, :stdout, :stderr, :output, :pid, :metadata
+
+      def value
+        @status
+      end
+
+      def alive?
+        @status.nil?
+      end
+
+      def kill
+        Process.kill("TERM", @pid.to_i) unless [0,1,$$].include?(@pid.to_i)
+        @status = 1
+      end
+
+      def initialize(parent_job, parent_task)
+        @stdout, @stderr, @output = "", "", ""
+        @status = nil
+
+        # First get command line syntax
+        args = parent_task["options"].map do |k,v|
+          opt = "--#{k.gsub(/_/, '-')}"
+          opt += " #{[v].flatten.join(" ")}" unless v.nil? || v.empty? || v.is_a?(Boolean)
+        end
+        args |= ["--yes"]
+        if parent_task['command'] =~ /^run|troop|clone$/
+          args |= ["--report-metadata"]
+        end
+        @command_argv = [parent_task['command'], args].flatten.join(" ")
+        @cmd = "#{File.join(VirtualMonkey::BIN_DIR, "monkey").inspect} #{@command_argv}"
+
+        # Then get list of deployments based on that
+        # TODO: modify VirtualMonkey::Command::list to handle this
+
+        # Collate that list and gather metadata
+        # TODO: modify Manager::Grinder to handle this
+
+        @metadata = {}
+        self
+      end
+
+      # stdout_handler hook for popen3
+      def on_read_stdout(data)
+        data_no_color = data.uncolorize
+        @stdout += data_no_color
+        @output += data_no_color
+        STDOUT.print data
+      end
+
+      # stderr_handler hook for popen3
+      def on_read_stderr(data)
+        data_no_color = data.uncolorize
+        @stderr += data_no_color
+        @output += data_no_color
+        STDERR.print data
+      end
+
+      # exit_handler hook for popen3
+      def on_exit(status)
+        @status = status.exitstatus
+        STDOUT.puts "\nDaemon exited with status #{@status}\n\n"
+      end
+
+      # pid_handler hook for popen3
+      def set_pid(pid)
+        @pid = pid
+      end
+
+      # Launch an asynchronous process
+      def run
+        puts "\nlaunching command: #{@cmd}\n\n"
+        RightScale.popen3({
+          :command        => @cmd,
+          :target         => self,
+          :environment    => {"MONKEY_NO_DEBUG" => "true"},
+          :stdout_handler => :on_read_stdout,
+          :stderr_handler => :on_read_stderr,
+          :exit_handler   => :on_exit,
+          :pid_handler    => :set_pid,
+        })
       end
     end
   end

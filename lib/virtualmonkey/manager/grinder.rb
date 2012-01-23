@@ -38,9 +38,6 @@ module VirtualMonkey
     attr_accessor :metadata
 
     def link_to_rightscale
-  #    i = deployment.href.split(/\//).last
-  #    d = deployment.href.split(/\./).first.split(/\//).last
-  #    "https://#{d}.rightscale.com/deployments/#{i}#auditentries"
       deployment.href.gsub(/api\//,"") + "#auditentries"
     end
 
@@ -169,7 +166,7 @@ module VirtualMonkey
 
               # Extra Info
               if mci.name =~ /RightImage/i
-                regex = /(.)*/
+                regex = nil
                 if mci.name =~ /CentOS/i
                   data["mci_os"] |= ["CentOS"]
                   #        CentOS  Version   Arch    RightLink
@@ -187,9 +184,9 @@ module VirtualMonkey
                   #        Windows  Version   ServicePack  Arch    App    RightLink
                   regex = /Windows_([0-9A-Za-z]*[_SP0-9]*)_([^_]*)[\w.]*_v([.0-9]*)/i
                 end
-                data["mci_os_version"] |= [(mci.name =~ regex; $1)]
-                data["mci_arch"] |= [(mci.name =~ regex; $2)]
-                data["mci_rightlink"] |= [determine_rightlink_version(mci, regex)]
+                data["mci_os_version"] |= [(mci.name =~ regex && $1 || nil)].compact
+                data["mci_arch"] |= [(mci.name =~ regex && $2 || nil)].compact
+                data["mci_rightlink"] |= [determine_rightlink_version(mci, regex) || nil].compact
               else
                 data["mci_os_version"] |= ["unknown"]
                 data["mci_arch"] |= ["unknown"]
@@ -402,8 +399,6 @@ module VirtualMonkey
         old_passed,  @passed  = @passed,  @jobs.select { |s| s.status == 0 }
         old_failed,  @failed  = @failed,  @jobs.select { |s| s.status != 0 && s.status != nil }
         old_running, @running = @running, @jobs.select { |s| s.status == nil }
-#        old_sum = old_passed.size + old_failed.size + old_running.size
-#        new_sum = @passed.size + @failed.size + @running.size
 
         passed_string = " #{@passed.size} features passed. "
         passed_string = passed_string.apply_color(:green) if @passed.size > 0
@@ -416,12 +411,6 @@ module VirtualMonkey
         running_string += "for #{Time.duration(Time.now - @started_at)}"
 
         puts(passed_string + failed_string + running_string)
-#        if new_sum < old_sum and new_sum < @jobs.size
-#          warn "WARNING: Jobs Lost! Finding...".apply_color(:yellow)
-#          report_lost_deployments({ :old_passed => old_passed, :passed => @passed,
-#                                    :old_failed => old_failed, :failed => @failed,
-#                                    :old_running => old_running, :running => @running })
-#        end
         status_change_hook if old_passed != @passed || old_failed != @failed
       end
 
@@ -460,25 +449,6 @@ module VirtualMonkey
         end
         puts "\n    New results available at #{report_url}\n\n"
       end
-
-=begin
-      # Prints information on jobs that didn't have an exit code of 0 or 1
-      def report_lost_deployments(jobs = {})
-        running_change = jobs[:old_running] - jobs[:running]
-        passed_change = jobs[:passed] - jobs[:old_passed]
-        failed_change = jobs[:failed] - jobs[:old_failed]
-        lost_jobs = running_change - passed_change - failed_change
-        lost_jobs.each do |j|
-          warn "LOST JOB---------------------------------"
-          warn "Deployment Name: #{j.deployment.nickname}"
-          warn "Status Code: #{j.status}"
-          warn "Audit Entries: #{j.link_to_rightscale}"
-          warn "Log File: #{j.logfile}"
-          warn "Rest_Connection Log File: #{j.rest_log}"
-          warn "-----------------------------------------"
-        end
-      end
-=end
 
       def describe_metadata_fields(type=nil)
          fields = {

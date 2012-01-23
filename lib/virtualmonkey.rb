@@ -29,7 +29,7 @@ module VirtualMonkey
     (`cat "#{File.join(ROOTDIR, "VERSION")}"`.chomp + (branch == "master" ? "" : " #{branch.upcase}"))
   }.call
 
-  unless const_defined?(RUNNING_AS_GEM)
+  unless const_defined?("RUNNING_AS_GEM")
     RUNNING_AS_GEM = lambda {
       gem_dirs = `gem environment | grep -A9999 "GEM PATHS" | grep -B9999 "GEM CONFIGURATION"`.chomp.split("\n")
       gem_dirs = gem_dirs.map { |s| s =~ /(#{File::SEPARATOR}.*)/ && $1 }.compact
