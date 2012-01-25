@@ -4,8 +4,15 @@
     <%= job["name"] %>
   </div>
   <div class="actions_column">
+    <% @actions -= ["console"] if job["status"] != "running" %>
     <% @actions.each do |action| %>
+      <% if action == "console" %>
+        <a href="/jobs/<%= job.uid %>/console" target="_blank">
+      <% end %>
       <img src="/img/<%= action %>.png" <%= datafields %> class="action <%= action %>" />
+      <% if action == "console" %>
+        </a>
+      <% end %>
     <% end %>
   </div>
 </li>

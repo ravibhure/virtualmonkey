@@ -17,7 +17,7 @@ module VirtualMonkey
       rescue Errno::ENOENT, JSON::ParserError
         File.open(TEMP_STORE, "w") { |f| f.write("{}") }
         return {}
-      rescue Errno::EBADF
+      rescue Errno::EBADF, IOError
         sleep 0.1
         retry
       end
@@ -225,11 +225,11 @@ module VirtualMonkey
 
           case key
           when /_(id|href|rev)$/
-            records.reject! { |uid,hsh| hsh[key] != val }
+            records.reject! { |hsh| hsh[key] != val }
           when "tags"
-            records.reject! { |uid,hsh| !val.include?(hsh[key]) }
+            records.reject! { |hsh| !val.include?(hsh[key]) }
           else
-            records.reject! { |uid,hsh| hsh[key] !~ /#{val}/ }
+            records.reject! { |hsh| hsh[key] !~ /#{val}/ }
           end
         end
         return [] if records.empty?

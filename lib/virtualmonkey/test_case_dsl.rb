@@ -124,7 +124,9 @@ module VirtualMonkey
         tests = get_keys(feature)
         tests.shuffle! if ::VirtualMonkey::config[:test_ordering] == "random"
         tests &= tests_to_run unless tests_to_run.empty?
-        tests -= @options[:exclude_tests] unless @options[:exclude_tests].nil? || @options[:exclude_tests].empty?
+        unless @tests_to_resume
+          tests -= @options[:exclude_tests] unless @options[:exclude_tests].nil? || @options[:exclude_tests].empty?
+        end
         # Add the tests to the tracelog
         VirtualMonkey::trace_log.first["tests"] = tests_to_run
         VirtualMonkey::trace_log.first["feature"] = feature

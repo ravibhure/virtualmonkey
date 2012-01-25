@@ -16,7 +16,7 @@ module VirtualMonkey
       rescue Errno::ENOENT, JSON::ParserError
         File.open(TEMP_STORE, "w") { |f| f.write("{}") }
         return {}
-      rescue Errno::EBADF
+      rescue Errno::EBADF, IOError
         sleep 0.1
         retry
       end
@@ -133,6 +133,7 @@ module VirtualMonkey
       def self.get(uid)
         uid = normalize_uid(uid)
         record = VirtualMonkey::daemons.detect { |d| d.uid == uid }
+        record["console_output"] = record["daemon"].output if record
         record ||= VirtualMonkey::daemon_queue.detect { |d| d.uid == uid }
         record ||= self.from_json_file(TEMP_STORE, uid)
         raise IndexError.new("#{self} #{uid} not found") unless record
@@ -244,18 +245,18 @@ module VirtualMonkey
 
       def initialize(parent_job, parent_task)
         @stdout, @stderr, @output = "", "", ""
+        @buffer = {"stdout" => "", "stderr" => ""}
         @status = nil
+        @parent_job, @parent_task = parent_job, parent_task
 
         # First get command line syntax
-        args = parent_task["options"].map do |k,v|
+        args = @parent_task["options"].map do |k,v|
           opt = "--#{k.gsub(/_/, '-')}"
           opt += " #{[v].flatten.join(" ")}" unless v.nil? || v.empty? || v.is_a?(Boolean)
         end
-        args |= ["--yes"]
-        if parent_task['command'] =~ /^run|troop|clone$/
-          args |= ["--report-metadata"]
-        end
-        @command_argv = [parent_task['command'], args].flatten.join(" ")
+        args |= (@parent_task['command'] == "help" ? ["--all"] : ["--yes"])
+        args |= ["--report-metadata"] if @parent_task['command'] =~ /^run|troop|clone$/
+        @command_argv = [@parent_task['command'], args].flatten.join(" ")
         @cmd = "#{File.join(VirtualMonkey::BIN_DIR, "monkey").inspect} #{@command_argv}"
 
         # Then get list of deployments based on that
@@ -268,12 +269,23 @@ module VirtualMonkey
         self
       end
 
+      def console_output(type, data)
+        io = (type == "stderr" ? STDERR : STDOUT)
+        @buffer[type] += data
+        if @buffer[type] =~ /\n/
+          console_out, ignore, @buffer[type] = @buffer[type].rpartition("\n")
+          io.puts console_out.split("\n").map { |line| "<#{@parent_job["uid"]}> #{line}" }.join("\n")
+        end
+      end
+
       # stdout_handler hook for popen3
       def on_read_stdout(data)
         data_no_color = data.uncolorize
         @stdout += data_no_color
         @output += data_no_color
-        STDOUT.print data
+        @parent_job["console_output"] += data_no_color
+
+        console_output("stdout", data)
       end
 
       # stderr_handler hook for popen3
@@ -281,13 +293,15 @@ module VirtualMonkey
         data_no_color = data.uncolorize
         @stderr += data_no_color
         @output += data_no_color
-        STDERR.print data
+        @parent_job["console_output"] += data_no_color
+
+        console_output("stderr", data)
       end
 
       # exit_handler hook for popen3
       def on_exit(status)
         @status = status.exitstatus
-        STDOUT.puts "\nDaemon exited with status #{@status}\n\n"
+        STDOUT.puts "\nDaemon <#{@parent_job["uid"]}> exited with status #{@status}\n\n"
       end
 
       # pid_handler hook for popen3

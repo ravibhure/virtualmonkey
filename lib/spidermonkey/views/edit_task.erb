@@ -188,6 +188,7 @@
           var nice_data = {options: {}};
           var flag_regex = new RegExp(optFlag + "(\\d+)", "i");
           var val_regex = new RegExp(optVal + "(\\d+)", "i");
+          console.log(raw_form_data);
 
           if ($("#task_type").find("div.active").attr("id") === "command_edit") {
             for (field in raw_form_data) {
@@ -229,6 +230,7 @@
               nice_data["subtask_hrefs"].push(href);
             });
           }
+          console.log(nice_data);
           return nice_data;
         }
 
@@ -390,7 +392,7 @@
             <div class="active" id="command_edit">
               <div class="column_two_third">
                 <div class="inline-inputs init" data-label="Command" />
-                  <select id="command">
+                  <select id="command" name="command">
                     <option value=""></option>
                   </select>
                   <img src='/img/tooltip.png' class='action tooltip' />

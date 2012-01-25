@@ -17,7 +17,7 @@ module VirtualMonkey
       rescue Errno::ENOENT, JSON::ParserError
         File.open(TEMP_STORE, "w") { |f| f.write("{}") }
         return {}
-      rescue Errno::EBADF
+      rescue Errno::EBADF, IOError
         sleep 0.1
         retry
       end

@@ -78,30 +78,30 @@ require 'erb'
 require 'less'
 require 'digest/sha1'
 
-# disable sinatra's auto-application starting
-#disable :run
+configure do
+  set :environment, VirtualMonkey::RACK_ENV
+  set :server, %w[thin]
 
-set :environment, VirtualMonkey::RACK_ENV
-set :server, %w[thin]
+  set :bind, '0.0.0.0' # Bind to all interfaces
+  set :static_cache_control, [:public, {:max_age => 300}]
+  set :dump_errors, (VirtualMonkey::RACK_ENV == :development)
+  set :threaded, true
+  set :logging, true
+  set :views, 'views'
+end
 
-set :sessions, :domain => VirtualMonkey::PUBLIC_HOSTNAME # TODO Configure these cookies to work securely
-set :bind, '0.0.0.0'
-set :port, (VirtualMonkey::RACK_ENV == :production ? 443 : 8888)
-#set :static, false
-set :static_cache_control, [:public, {:max_age => 300}]
-set :threaded, true
-set :dump_errors, (VirtualMonkey::RACK_ENV == :development)
-set :logging, true
-set :views, 'views'
-#set :public_folder, VirtualMonkey::WEB_APP_PUBLIC_DIR
+configure :development do
+  set :port, 8888
+end
 
-# Due to the reading/writing of JSON cache files, this application is not thread-safe.
-# Disable :lock after installing redis or another similar caching mechanism
-#set :lock, true
+# TODO Add production-worthy caching mechanism
 
-#set :ssl, lambda { !development? }
-#use Rack::SSL, :exclude => lambda { !ssl? }
-#use Rack::Session::Cookie, :expire_after => 1.week, :secret => ''
+configure :production do
+  set :port, 443
+  #set :ssl, lambda { !development? }
+  #use Rack::SSL, :exclude => lambda { !ssl? }
+  #use Rack::Session::Cookie, :expire_after => 1.week, :secret => ''
+end
 
 use Rack::Auth::Basic, "Restricted Area" do |username, password|
   hash = Digest::SHA1.hexdigest(password)
@@ -541,12 +541,18 @@ get "/tasks" do
 end
 
 get "/jobs/:uid" do |uid|
-  @actions = (params["actions"] || ["cancel"])
+  @actions = (params["actions"] || ["console", "cancel"])
   partial :job, :collection => [VirtualMonkey::API::Job.get(uid)]
 end
 
+get "/jobs/:uid/console" do |uid|
+  @job = VirtualMonkey::API::Job.get(uid)
+  @title = "Console Output for '#{@job["name"]}'"
+  erb :console
+end
+
 get "/jobs" do
-  @actions = (params["actions"] || ["cancel"])
+  @actions = (params["actions"] || ["console", "cancel"])
   erb :jobs, :layout => false
 end
 

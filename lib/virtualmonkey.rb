@@ -47,7 +47,7 @@ module VirtualMonkey
       if File.exists?(config_file)
         begin
           @@virtual_monkey_config.merge!(YAML::load(IO.read(config_file)) || {})
-        rescue Errno::EBADF
+        rescue Errno::EBADF, IOError
           retry
         end
         if VirtualMonkey.const_defined?("Command")

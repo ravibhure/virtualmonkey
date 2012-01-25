@@ -118,6 +118,17 @@ select {
   position: static;
 }
 
+.job_list {
+  .job {
+    padding-left: 16px;
+    &.running {
+      background-image: url("/img/loading.gif");
+      background-repeat: no-repeat;
+      background-position: center left;
+    }
+  }
+}
+
 .actions_column {
   text-align: right;
   float: right;
@@ -183,10 +194,7 @@ ol {
     .transition(e('opacity .3s linear'));
   }
 
-  .modal-footer {
-    cursor: move;
-    bottom: 0px;
-  }
+  .modal-footer, .modal-header { cursor: move; }
 }
 
 #manager_slider {
@@ -222,7 +230,7 @@ ol {
   padding-top: 8px;
   padding-bottom: 8px;
   float: left;
-  max-height: 300px;
+  max-height: 500px;
   overflow: auto;
 
   li { margin: 3px; }
@@ -417,4 +425,23 @@ a { text-decoration: none; }
 #dynamic_map_radio + div.input {
   margin-left: 190px;
   margin-bottom: 20px;
+}
+
+#console {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background: black;
+  color: #888888;
+  font-family: monospace;
+  padding: 0px;
+  margin: 0px;
+  .box_size();
+  border: 16px solid black;
+}
+
+#console_loading_img {
+  position: relative;
+  margin-top: 3px;
 }
