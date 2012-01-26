@@ -357,7 +357,7 @@ module VirtualMonkey
     def self.get_runner_class #returns class string
       return @@options[:runner] if @@options[:runner]
       features = [@@options[:feature]].flatten
-      test_cases = features.map { |feature| VirtualMonkey::TestCase.new(feature) }
+      test_cases = features.map { |feature| VirtualMonkey::TestCase.new(feature, @@options) }
       unless test_cases.unanimous? { |tc| tc.options[:runner] }
         raise ":runner options MUST match for multiple feature files"
       end
@@ -377,7 +377,7 @@ module VirtualMonkey
       features = [config['feature']].flatten.map do |feature|
         File.join(@@selected_project.paths["features"], feature)
       end
-      test_cases = features.map { |feature| VirtualMonkey::TestCase.new(feature) }
+      test_cases = features.map { |feature| VirtualMonkey::TestCase.new(feature, @@options) }
       unless test_cases.unanimous? { |tc| tc.options[:runner] }
         raise ":runner options MUST match for multiple feature files"
       end
