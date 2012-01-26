@@ -186,16 +186,14 @@ module VirtualMonkey
         end
 
         if script.is_a?(RightScript) or script.is_a?(Executable)
-          script_ref = script
+          script_ref = Executable.new(script.params)
           script_ref.reload
         elsif script.is_a?(Fixnum)
-          begin
-            script_ref = RightScript.find(script)
-          rescue
-            script_ref = Executable.find(script)
-          end
+          script_ref = RightScript.find(script)
+          script_ref = Executable.new(script_ref.params) if script_ref
         elsif script.is_a?(String)
           script_ref = RightScript.find_by(:nickname) { |n| n =~ /#{Regexp.escape(script)}/i }.first
+          script_ref = Executable.new(script_ref.params) if script_ref
         end
         raise "FATAL: Script '#{script}' not found" unless script_ref
 
@@ -740,6 +738,13 @@ module VirtualMonkey
           error "#{options[:runner]} doesn't extend VirtualMonkey::RunnerCore::CommandHooks"
         end
         self.class.assert_integrity!
+      end
+
+      def is_rackspace?(*servers)
+        servers = @servers if servers.empty?
+        clouds = ::VirtualMonkey::Toolbox::get_available_clouds
+        rackclouds = clouds.select { |c| c["name"] =~ /rackspace/i }.map { |c| c["cloud_id"] }
+        servers.reduce(false) { |b,s| b || (rackclouds | [232, 1868]).include?(s.cloud_id.to_i) }
       end
     end
   end
