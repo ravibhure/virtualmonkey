@@ -477,6 +477,7 @@ module VirtualMonkey
               raise "No script registered with friendly_name #{friendly_name} for server_template #{match_st_by_server(server).inspect}" unless ret
             end
           else
+            st = @server_templates.detect { |t| t.rs_id.to_s == resource_id(server.server_template_href).to_s }
             raise "No scripts registered for server_template #{st.inspect}"
           end
         end
