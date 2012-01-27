@@ -137,7 +137,8 @@ module VirtualMonkey
       end
 
       def render()
-        self.pretty_inspect
+        # TODO - hate base64 encoding stuff just cuz it doesn't render nicely
+        Base64.encode64(self.pretty_inspect)
       end
     end
   end

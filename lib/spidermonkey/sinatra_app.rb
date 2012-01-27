@@ -77,6 +77,7 @@ require 'partials'
 require 'erb'
 require 'less'
 require 'digest/sha1'
+require 'etc'
 
 configure do
   set :environment, VirtualMonkey::RACK_ENV
@@ -92,6 +93,7 @@ end
 
 configure :development do
   set :port, 8888
+  enable :sessions
 end
 
 # TODO Add production-worthy caching mechanism
@@ -104,27 +106,31 @@ configure :production do
 end
 
 use Rack::Auth::Basic, "Restricted Area" do |username, password|
-  hash = Digest::SHA1.hexdigest(password)
-  #session[:username] = username
-  success = (VirtualMonkey::RACK_ENV == :development)
-  if success || VirtualMonkey::CachedLogins[username] == password
+  hashed_pw = Digest::SHA1.hexdigest(password)
+  success = false && (VirtualMonkey::RACK_ENV == :development)
+  if success || VirtualMonkey::CachedLogins[username] == hashed_pw
     success = true
   else
-    headers = {'Authorization' => "Basic #{["#{username}:#{password}"].pack('m').delete("\r\n")}",
-               'X_API_VERSION' => '1.0'}
-    connection = Excon.new('https://my.rightscale.com', :headers => headers)
+    auth_header = {'Authorization' => "Basic #{["#{username}:#{password}"].pack('m').delete("\r\n")}"}
     settings = YAML::load(IO.read(VirtualMonkey::REST_YAML))
+    base_path = URI.parse(settings[:api_url]).path
 
     begin
-      resp = connection.get(:path => "#{settings[:api_url].split(/\//)[-3,3].join('/')}/credentials.js?")
-      success = (resp.status == 200)
+      connection = Excon.new('https://my.rightscale.com', :headers => {'X_API_VERSION' => '1.0'})
+      resp = connection.get(:path => base_path + "/login.js", :headers => auth_header)
+      if (200..204) === resp.status
+        resp2 = connection.put({
+          :path => (base_path + "/tags/unset"),
+          :headers => {"Cookie" => resp.headers["Set-Cookie"]},
+          :body => {}.to_json,
+        })
+        success = (((200..204).map | [422]).include? resp2.status)
+      end
     rescue Exception => e
       STDERR.puts(e)
     end
 
-    VirtualMonkey::CachedLogins[username] = password if success
-
-    #session[:virutalmonkey_id] = rand(1000000)
+    VirtualMonkey::CachedLogins[username] = hashed_pw if success
   end
   success
 end
@@ -218,6 +224,13 @@ template :layout do
       </body>
     </html>
   EOS
+end
+
+# Before filters
+
+before do
+  auth = request.env["HTTP_AUTHORIZATION"].split(/ /, 2).last
+  session[:username] ||= auth.unpack("m*").last.split(/:/, 2).first
 end
 
 # ==========================

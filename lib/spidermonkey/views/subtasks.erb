@@ -7,7 +7,7 @@
           <% subtask = VirtualMonkey::API::Task.get(subtask_href) %>
           new_div = $("<div></div>").text(<%= subtask["name"].inspect %>);
           new_div.appendTo(this);
-          new_div.attr("data-content", <%= subtask.render().inspect %>);
+          new_div.attr("data-content", <%= subtask.render() %>);
           new_div.attr("title", <%= subtask["name"].inspect %>);
           new_div.addClass("name_column");
           new_div.wrapAll("<li data-uid='" + <%= subtask["uid"].inspect %> + "' ></li>");
