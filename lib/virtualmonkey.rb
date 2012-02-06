@@ -1,6 +1,8 @@
 require 'yaml'
 
+#
 # Virtual Monkey Module
+#
 
 module VirtualMonkey
   ROOTDIR = File.expand_path(File.join(File.dirname(__FILE__), "..")).freeze
