@@ -237,7 +237,7 @@ ol {
   h2 { padding-top: 8px; padding-bottom: 8px; }
 }
 
-#command_edit {
+#command_edit, #sche {
   > div.column_one_third {
     width: 33%;
     float: left;
@@ -288,6 +288,14 @@ ol {
     position: static;
     * { position: relative; }
     .input { margin-left: 15px; }
+    > div.column_one_third {
+      width: 33%;
+      float: left;
+    }
+    > div.column_two_third {
+      width: 66%;
+      float: left;
+    }
   }
 }
 
@@ -444,4 +452,19 @@ a { text-decoration: none; }
 #console_loading_img {
   position: relative;
   margin-top: 3px;
+}
+
+#shell_command {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+#shell {
+  .box_size();
+  resize: none;
+  width: 100%;
+  min-height: 300px;
+  position: relative;
+  text-align: left;
+  padding: 8px;
 }

@@ -248,24 +248,32 @@ module VirtualMonkey
         @buffer = {"stdout" => "", "stderr" => ""}
         @status = nil
         @parent_job, @parent_task = parent_job, parent_task
+        @type = (parent_task["shell"] ? "shell" : "command")
 
-        # First get command line syntax
-        args = @parent_task["options"].map do |k,v|
-          opt = "--#{k.gsub(/_/, '-')}"
-          opt += " #{[v].flatten.join(" ")}" unless v.nil? || v.empty? || v.is_a?(Boolean)
+        if @type == "command"
+          # First get command line syntax
+          args = @parent_task["options"].map do |k,v|
+            opt = "--#{k.gsub(/_/, '-')}"
+            opt += " #{[v].flatten.join(" ")}" unless v.nil? || v.empty? || v.is_a?(Boolean)
+          end
+          args |= (@parent_task['command'] == "help" ? ["--all"] : ["--yes"])
+          args |= ["--report-metadata"] if @parent_task['command'] =~ /^run|troop|clone$/
+          @command_argv = [@parent_task['command'], args].flatten.join(" ")
+          @cmd = "#{File.join(VirtualMonkey::BIN_DIR, "monkey").inspect} #{@command_argv}"
+
+          # Then get list of deployments based on that
+          # TODO: modify VirtualMonkey::Command::list to handle this
+
+          # Collate that list and gather metadata
+          # TODO: modify Manager::Grinder to handle this
+
+          @metadata = {}
+        else
+          @cmd = "set -x; "
+          @cmd += @parent_task["shell"].gsub(/\r/, "")
+          @cmd += "; set +x"
+          @metadata = {}
         end
-        args |= (@parent_task['command'] == "help" ? ["--all"] : ["--yes"])
-        args |= ["--report-metadata"] if @parent_task['command'] =~ /^run|troop|clone$/
-        @command_argv = [@parent_task['command'], args].flatten.join(" ")
-        @cmd = "#{File.join(VirtualMonkey::BIN_DIR, "monkey").inspect} #{@command_argv}"
-
-        # Then get list of deployments based on that
-        # TODO: modify VirtualMonkey::Command::list to handle this
-
-        # Collate that list and gather metadata
-        # TODO: modify Manager::Grinder to handle this
-
-        @metadata = {}
         self
       end
 

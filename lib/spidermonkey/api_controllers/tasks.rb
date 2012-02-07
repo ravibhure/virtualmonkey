@@ -33,6 +33,7 @@ module VirtualMonkey
           "command",
           "options",
           "subtask_hrefs",
+          "shell",
 #          "scheduled",
           "affinity",
           "name",
@@ -46,6 +47,24 @@ module VirtualMonkey
         ["parallel", "continue", "stop"]
       end
       private_class_method :valid_affinities
+
+      def self.validate_parameters(hsh)
+        unless (String === hsh["command"]) or (Array === hsh["subtask_hrefs"]) or (String === hsh["shell"])
+          STDERR.puts(hsh.pretty_inspect)
+          raise ArgumentError.new("#{PATH} requires a 'command' String, a 'subtask_hrefs' Array, or a 'shell' String")
+        end
+        if [hsh["subtask_hrefs"], hsh["command"], hsh["shell"]].count { |o| o } > 1
+          STDERR.puts(hsh.pretty_inspect)
+          raise ArgumentError.new("The 'command', 'subtask_hrefs', and 'shell' parameters are mutually exclusive")
+        end
+        if hsh["subtask_hrefs"] and not valid_affinities.include?(hsh["affinity"])
+          STDERR.puts(hsh.pretty_inspect)
+          msg = "#{PATH} requires a valid 'affinity' String when passing a 'subtask_hrefs' Array"
+          raise ArgumentError.new(msg)
+        end
+        true
+      end
+      private_class_method :validate_parameters
 
       #
       # Constructor
@@ -80,19 +99,7 @@ module VirtualMonkey
 
       def self.create(opts={})
         # Check for required Arguments
-        unless opts["command"].is_a?(String) or opts["subtask_hrefs"].is_a?(Array)
-          STDERR.puts(opts.pretty_inspect)
-          raise ArgumentError.new("#{PATH} requires a 'command' String or a 'subtask_hrefs' Array")
-        end
-        if opts["subtask_hrefs"] and opts["command"]
-          STDERR.puts(opts.pretty_inspect)
-          raise ArgumentError.new("The 'command' String and 'subtask_hrefs' Array are mutually exclusive")
-        end
-        if opts["subtask_hrefs"] and not valid_affinities.include?(opts["affinity"])
-          STDERR.puts(opts.pretty_inspect)
-          msg = "#{PATH} requires an 'affinity' String when passing a 'subtask_hrefs' Array"
-          raise ArgumentError.new(msg)
-        end
+        validate_parameters(opts)
 
         # Sanitize
         opts &= (fields | CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s })
@@ -129,6 +136,9 @@ module VirtualMonkey
       def self.update(uid, opts={})
         uid = normalize_uid(uid)
 
+        # Check for required Arguments
+        validate_parameters(opts)
+
         # Sanitize
         opts &= (fields | CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s })
         opts["updated_at"] = Time.now.utc.strftime("%Y/%m/%d %H:%M:%S +0000")
@@ -148,17 +158,13 @@ module VirtualMonkey
         raise IndexError.new("#{self} #{uid} not found") unless cache[uid]
         cache[uid].deep_merge!(opts)
 
+        # Reject old options if type has changed
+        cache[uid] -= ["subtask_hrefs", "affinity", "shell"] if opts["command"]
+        cache[uid] -= ["command", "options", "shell"] if opts["subtask_hrefs"]
+        cache[uid] -= ["subtask_hrefs", "affinity", "command", "options"] if opts["shell"]
+
         # Check that the Update is valid
-        unless cache[uid]["command"].is_a?(String) or cache[uid]["subtask_hrefs"].is_a?(Array)
-          raise ArgumentError.new("#{PATH} requires a 'command' String or a 'subtask_hrefs' Array")
-        end
-        if cache[uid]["subtask_hrefs"] and cache[uid]["command"]
-          raise ArgumentError.new("The 'command' String and 'subtask_hrefs' Array are mutually exclusive")
-        end
-        if cache[uid]["subtask_hrefs"] and not valid_affinities.include?(cache[uid]["affinity"])
-          msg = "#{PATH} requires an 'affinity' String when using a 'subtask_hrefs' Array"
-          raise ArgumentError.new(msg)
-        end
+        validate_parameters(cache[uid])
 
         # Update Cache
         write_cache(cache)
