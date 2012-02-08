@@ -30,6 +30,16 @@ class Hash
     other = other.keys if Hash === other
     self.reject { |key,val| other.include?(key) }
   end
+
+  def chunk(max_length)
+    raise TypeError.new("can't convert #{max_length.class} into Integer") unless Integer === max_length
+    ret = []
+    ary = to_a
+    (self.length.to_f / max_length.to_i).ceil.times do |i|
+      ret << ary[(max_length*i)...(max_length*(i+1))].to_h
+    end
+    ret
+  end
 end
 
 # Array Patches
@@ -122,6 +132,15 @@ class Array
     each_with_index { |e,i| ret << block[e,i] }
     ret
   end
+
+  def chunk(max_length)
+    raise TypeError.new("can't convert #{max_length.class} into Integer") unless Integer === max_length
+    ret = []
+    (self.length.to_f / max_length.to_i).ceil.times do |i|
+      ret << self[(max_length*i)...(max_length*(i+1))]
+    end
+    ret
+  end
 end
 
 module Math
@@ -186,6 +205,11 @@ class String
 
   def word_wrap!(width=(tty_width || 80).to_i)
     self.gsub!(/(.{1,#{width}})( +|$\n?)|(.{1,#{width}})/, "\\1\\3\n")
+  end
+
+  def chunk(max_length)
+    raise TypeError.new("can't convert #{max_length.class} into Integer") unless Integer === max_length
+    split(/(.{#{max_length.to_i}})/).reject { |s| s.empty? }
   end
 end
 
@@ -332,4 +356,48 @@ end
 
 class Exception
   attr_accessor :uncaught
+end
+
+class Dir
+  def self.relative_path(abs_path)
+    unless File.expand_path(abs_path) == abs_path
+      abs_path = File.expand_path("./#{abs_path}")
+    end
+    ary1 = abs_path.split(File::SEPARATOR)
+    ary2 = Dir.pwd.split(File::SEPARATOR)
+    pairs = (ary2 + ([nil] * (ary1.size - ary2.size))).zip(ary1)
+    common = pairs.take_while { |a,b| a == b }.map { |a,b| a }
+    pairs.reject! { |a,b| a == b }
+    path_ary = pairs.map { |p,a| p ? ".." : nil }.compact
+    if path_ary.empty? || path_ary.include?("..")
+      path_ary += ary1.zip(common).drop_while { |a,b| a == b }.map { |a,b| a }
+    end
+    File.join(*path_ary)
+  end
+end
+
+class Numeric
+  def weeks
+    self.days * 7
+  end
+
+  def days
+    self.hours * 24
+  end
+
+  def hours
+    self.minutes * 60
+  end
+
+  def minutes
+    self * 60
+  end
+
+  def seconds
+    self
+  end
+
+  def useconds
+    self / 1000000.0
+  end
 end
