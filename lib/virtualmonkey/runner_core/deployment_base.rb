@@ -1,3 +1,6 @@
+#
+# DeploymentBase is the base (include) module mixin for all runners (written by test engineers)
+#
 module VirtualMonkey
   module RunnerCore
     module DeploymentBase
@@ -5,6 +8,19 @@ module VirtualMonkey
       include VirtualMonkey::TestCaseInterface
       attr_accessor :deployment, :servers, :server_templates
       attr_accessor :scripts_to_run
+      
+      # Test for instance throttling
+      before_run do
+        cloud_id = @deployment.cloud_id.to_s
+        throttling_values = ::VirtualMonkey::config[:throttling_values]
+        throttling_values[cloud_id] ||= {}
+        max_instances = throttling_values[cloud_id][:max_instances] || 1024
+        if @servers.size + McInstance.find_all(cloud_id).size > max_instances
+          "Maximum number of server instances exceeded for cloud #{cloud_id}"
+        else
+          false
+        end
+      end
 
       def initialize(deployment, opts = {})
         @scripts_to_run = {}

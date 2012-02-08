@@ -1,8 +1,7 @@
 require 'yaml'
 
 #
-# Virtual Monkey Module
-#
+# Virtual Monkey Main Module
 #
 
 module VirtualMonkey

@@ -1,0 +1,16 @@
+--- 
+:enable_log_auditor: "false"
+:default_timeout: 1200
+:grinder_subprocess: force_subprocess
+:test_ordering: strict
+:max_jobs: 2
+:environment: testing
+:colorized_text: show
+:load_progress: show
+:feature_mixins: spanning
+:max_retries: 10
+:throttling_values:
+  "1":
+    :max_instances: 1
+
+:test_permutation: exhaustive
