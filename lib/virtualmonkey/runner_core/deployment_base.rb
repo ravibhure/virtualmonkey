@@ -1,3 +1,6 @@
+#
+# DeploymentBase is the base (include) module mixin for all runners (written by test engineers)
+#
 module VirtualMonkey
   module RunnerCore
     module DeploymentBase
@@ -5,6 +8,24 @@ module VirtualMonkey
       include VirtualMonkey::TestCaseInterface
       attr_accessor :deployment, :servers, :server_templates
       attr_accessor :scripts_to_run
+
+      # Test for instance throttling
+      before_run do
+        ret = false
+        cloud_id = @servers.first.cloud_id.to_s
+        throttling_values = ::VirtualMonkey::config[:throttling_values]
+        throttling_values[cloud_id] ||= {}
+        max_instances = throttling_values[cloud_id][:max_instances] || 1024
+        if cloud_id.to_i <= 10 # Handle AWS API 1.0
+          instance_count = Server.find_by(:state) {|s| s != "stopped"}.size
+        else # Handle non-AWS API 1.5
+          instance_count = McInstance.find_all(cloud_id).size
+        end
+        if @servers.size + instance_count > max_instances
+          ret = "Maximum number of server instances exceeded for cloud #{cloud_id}"
+        end
+        ret
+      end
 
       def initialize(deployment, opts = {})
         @scripts_to_run = {}

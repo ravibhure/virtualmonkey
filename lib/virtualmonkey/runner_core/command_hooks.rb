@@ -13,20 +13,28 @@ module VirtualMonkey
         @@before_create[self.to_s]
       end
 
-      def before_destroy(*args, &block)
-        @@before_destroy ||= {}
-        @@before_destroy[self.to_s] ||= []
-        @@before_destroy[self.to_s] |= args
-        @@before_destroy[self.to_s] << block if block_given?
-        @@before_destroy[self.to_s]
-      end
-
       def after_create(*args, &block)
         @@after_create ||= {}
         @@after_create[self.to_s] ||= []
         @@after_create[self.to_s] |= args
         @@after_create[self.to_s] << block if block_given?
         @@after_create[self.to_s]
+      end
+
+      def before_run(*args, &block)
+        @@before_run ||= {}
+        @@before_run[self.to_s] ||= []
+        @@before_run[self.to_s] |= args
+        @@before_run[self.to_s] << block if block_given?
+        @@before_run[self.to_s]
+      end
+
+      def before_destroy(*args, &block)
+        @@before_destroy ||= {}
+        @@before_destroy[self.to_s] ||= []
+        @@before_destroy[self.to_s] |= args
+        @@before_destroy[self.to_s] << block if block_given?
+        @@before_destroy[self.to_s]
       end
 
       def after_destroy(*args, &block)

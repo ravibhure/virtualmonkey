@@ -175,7 +175,27 @@ module VirtualMonkey
       # runs a feature on an array of deployments
       # * deployments<~Array> array of strings containing the nicknames of the deployments
       # * feature_name<~String> the feature filename
+      #
+      # Analyzes the configuration of the monkey, configuration of the features files,
+      # the set of tests to run and the available deployments.
       def run_tests(deploys, features, set=[])
+
+        # proc to handle reporting throttling blocked status
+        report_blocked_status = proc do |ret,d,feature,options,started_at|
+          # Handle reporting back "blocked" status
+          data = {
+            "annotation" => ret,
+            "status" => "blocked"
+          }
+          # Update SimpleDB
+          meta_data = ::VirtualMonkey::Metadata.get_report_metadata(d, feature, options, started_at)
+          meta_data.deep_merge! data
+          report = ::VirtualMonkey::API::Report.new.deep_merge meta_data
+          ::VirtualMonkey::API::Report.update_sdb report
+          warn ret
+        end
+
+        # Validate that we can divide up teature tests amung deployments
         features = [features].flatten
         warn_msg = {}
         unless set.nil? || set.empty?
@@ -193,6 +213,7 @@ module VirtualMonkey
           error "No features match #{set.inspect}! (Did you mispell a test name?)"
         end
 
+        # Divide up the features and tests amung the deployments
         test_cases = features.map_to_h { |feature| VirtualMonkey::TestCase.new(feature, @options) }
         deployment_hsh = {}
         if VirtualMonkey::config[:feature_mixins] == "parallel" or features.length < 2
@@ -213,6 +234,7 @@ module VirtualMonkey
         end
 
         if deploys.size == 1 && VirtualMonkey::Command::last_command_line !~ /^troop/ && !@options[:report_metadata]
+          # handle a single deployment
           feature = deployment_hsh.first.first
           d = deployment_hsh.first.last.last
           total_keys = test_cases[feature].get_keys
@@ -224,12 +246,46 @@ module VirtualMonkey
             deployment_tests = [total_keys].map { |ary| ary.shuffle }
           end
 
+          if @options[:report_metadata]
+            # Using the mappings of deployments to tests we will make sure the deployment can be run.
+            # Create a new runner instance for the feature's test case
+            runner = test_cases[feature].options[:runner].new(d.nickname)
+
+            # Call the before_run code for the runner and if it fails bail out
+            if ret = before_run_logic(runner)
+              # Handle reporting back "blocked" status
+              report_blocked_status[ret, d, feature, @options, @started_at]
+              exit 1
+            end
+          end
+
           exec_test(d, feature, deployment_tests[0], test_cases[feature].options[:additional_logs])
-        else
+
+        else # multiple deployments handled here
           deployment_hsh.each { |feature,deploy_ary|
             total_keys = test_cases[feature].get_keys
             total_keys &= set unless set.nil? || set.empty?
             total_keys -= @options[:exclude_tests] unless @options[:exclude_tests].nil? || @options[:exclude_tests].empty?
+
+            if @options[:report_metadata]
+              # Using the mappings of deployments to tests we will make sure the deployment can be run
+              #
+              # Create a new runner instance for the feature's test case
+              deploy_ary.reject! do |d|
+                runner = test_cases[feature].options[:runner].new(d.nickname)
+                ret = before_run_logic(runner)
+                # Call the before_run code for the runner and if it fails bail out
+                if ret
+                  # Handle reporting back "blocked" status
+                  report_blocked_status[ret, d, feature, @options, @started_at]
+                end
+                ret
+              end
+
+              exit 1 if deploy_ary.empty?
+            end
+
+            # Pick which tests are assigned to which deployments
             unless VirtualMonkey::config[:test_permutation] == "distributive"
               deployment_tests = [total_keys] * deploy_ary.length
             else
@@ -243,13 +299,40 @@ module VirtualMonkey
               }
             end
 
+            # Pick the order in which the tests will execute (per deployment)
             deployment_tests.map! { |ary| ary.shuffle } unless VirtualMonkey::config[:test_ordering] == "strict"
 
+            # Execute the tests
             deploy_ary.each_with_index { |d,i|
               run_test(d, feature, deployment_tests[i], test_cases[feature].options[:additional_logs])
             }
           }
         end
+      end
+
+      # Encapsulates the logic for executing the before_run hooks for a particular runner
+      def before_run_logic(runner)
+        if runner.class.respond_to?(:before_run)
+          runner.class.ancestors.select { |a| a.respond_to?(:before_run) }.each do |ancestor|
+            if not ancestor.before_run.empty?
+              puts "Executing before_run hooks..."
+              ancestor.before_run.each { |fn|
+                ret = false
+                begin
+                  ret = (fn.is_a?(Proc) ? runner.instance_eval(&fn) : runner.__send__(fn))
+                rescue Exception => e
+                  warn "WARNING: Got \"#{e.message}\" from #{e.backtrace.join("\n")}"
+                end
+                return ret if ret
+              }
+              puts "Finished executing before_run hooks."
+            end
+          end
+        else
+          warn "#{runner.class} doesn't extend VirtualMonkey::RunnerCore::CommandHooks"
+          return true
+        end
+        return false
       end
 
       # Print status of jobs. Also watches for jobs that had exit statuses other than 0 or 1
