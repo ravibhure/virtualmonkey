@@ -77,9 +77,10 @@ module VirtualMonkey
       end
 
       def sdb_index
+        ensure_domain_exists(self::SDB_STORE)
         sdb = new_sdb_connection
         begin
-          current_raw_items = sdb.select("SELECT * from #{SDB_STORE}").body["Items"]
+          current_raw_items = sdb.select("SELECT * from #{self::SDB_STORE}").body["Items"]
         rescue Excon::Errors::ServiceUnavailable
           warn "Got \"ServiceUnavailable\", retrying..."
           sleep 5
@@ -111,7 +112,7 @@ module VirtualMonkey
         data_to_write.flatten!
         sdb = new_sdb_connection
         begin
-          ensure_domain_exists(SDB_STORE)
+          ensure_domain_exists(self::SDB_STORE)
           current_items = sdb_index
           data = {}
           replace_data = {}
@@ -135,7 +136,7 @@ module VirtualMonkey
           # Partition Data into 25-item chunks
           data.chunk(25).each do |chunked_data|
             begin
-              sdb.batch_put_attributes(SDB_STORE, chunked_data, (replace_data & chunked_data.keys))
+              sdb.batch_put_attributes(self::SDB_STORE, chunked_data, (replace_data & chunked_data.keys))
             rescue Excon::Errors::ServiceUnavailable
               warn "Got \"ServiceUnavailable\", retrying..."
               sleep 5
@@ -153,10 +154,11 @@ module VirtualMonkey
       end
 
       def sdb_delete(*uids)
+        ensure_domain_exists(self::SDB_STORE)
         sdb = new_sdb_connection
         uids.each do |uid|
           begin
-            sdb.delete_attributes(SDB_STORE, uid)
+            sdb.delete_attributes(self::SDB_STORE, uid)
           rescue Excon::Errors::ServiceUnavailable
             warn "Got \"ServiceUnavailable\", retrying..."
             sleep 5

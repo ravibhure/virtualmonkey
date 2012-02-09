@@ -1,6 +1,7 @@
 module VirtualMonkey
   module API
     class Task < VirtualMonkey::API::BaseResource
+      extend VirtualMonkey::API::StandardSimpleDBHelpers
       PATH = "#{VirtualMonkey::API::ROOT}/tasks".freeze
       ContentType = "application/vnd.rightscale.virtualmonkey.task"
       CollectionContentType = ContentType + ";type=collection"
@@ -25,11 +26,14 @@ module VirtualMonkey
 
       def self.write_cache(json_hash)
         File.open(TEMP_STORE, "w") { |f| f.write(json_hash.to_json) }
+      rescue Errno::EBADF, IOError
+        sleep 0.1
+        retry
       end
       private_class_method :write_cache
 
       def self.fields
-        [
+        @@fields ||= [
           "command",
           "options",
           "subtask_hrefs",
@@ -42,6 +46,11 @@ module VirtualMonkey
         ]
       end
       private_class_method :fields
+
+      def self.cron_edit_fields
+        @@cron_edit_fields ||= CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s }
+      end
+      private_class_method :cron_edit_fields
 
       def self.valid_affinities
         ["parallel", "continue", "stop"]
@@ -60,6 +69,7 @@ module VirtualMonkey
         if hsh["subtask_hrefs"] and not valid_affinities.include?(hsh["affinity"])
           STDERR.puts(hsh.pretty_inspect)
           msg = "#{PATH} requires a valid 'affinity' String when passing a 'subtask_hrefs' Array"
+          msg += "\nValid affinities are: #{valid_affinities.join(", ")}"
           raise ArgumentError.new(msg)
         end
         true
@@ -94,7 +104,7 @@ module VirtualMonkey
       public
 
       def self.index
-        read_cache.map { |uid,item_hash| new.deep_merge(item_hash) }
+        read_cache.map { |uid,item_hash| new.deep_merge(item_hash) } | sdb_index
       end
 
       def self.create(opts={})
@@ -102,13 +112,13 @@ module VirtualMonkey
         validate_parameters(opts)
 
         # Sanitize
-        opts &= (fields | CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s })
+        opts &= (fields | cron_edit_fields)
 
         # Check for Schedule options
         command = opts["command"]
-        schedule_opts = opts & CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s }
+        schedule_opts = opts & cron_edit_fields
         schedule_opts -= ["command"]
-        opts -= CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s }
+        opts -= cron_edit_fields
         opts["command"] = command
 
         # Get user data
@@ -129,6 +139,7 @@ module VirtualMonkey
       def self.get(uid)
         uid = normalize_uid(uid)
         record = self.from_json_file(TEMP_STORE, uid)
+        record ||= sdb_read(uid)
         raise IndexError.new("#{self} #{uid} not found") unless record
         record
       end
@@ -140,14 +151,14 @@ module VirtualMonkey
         validate_parameters(opts)
 
         # Sanitize
-        opts &= (fields | CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s })
+        opts &= (fields | cron_edit_fields)
         opts["updated_at"] = Time.now.utc.strftime("%Y/%m/%d %H:%M:%S +0000")
 
         # Check for Schedule options
         command = opts["command"]
-        schedule_opts = opts & CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s }
+        schedule_opts = opts & cron_edit_fields
         schedule_opts -= ["command"]
-        opts -= CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s }
+        opts -= cron_edit_fields
         opts["command"] = command
 
         # Get user data NOTE: this means the person who updated takes control
@@ -155,6 +166,7 @@ module VirtualMonkey
 
         # Read Cache
         cache = read_cache
+        cache[uid] ||= sdb_read(uid)
         raise IndexError.new("#{self} #{uid} not found") unless cache[uid]
         cache[uid].deep_merge!(opts)
 
@@ -175,6 +187,7 @@ module VirtualMonkey
         return nil
       end
 
+      # Deletes only from Cache
       def self.delete(uid)
         uid = normalize_uid(uid)
         cache = read_cache
@@ -183,16 +196,20 @@ module VirtualMonkey
         nil
       end
 
+      # Saves to SimpleDB NOTE: don't save "schedule" field
       def self.save(uid)
         uid = normalize_uid(uid)
-        # Saves to SimpleDB NOTE: don't save "schedule" field
-        not_implemented # TODO - later
+        record = get(uid)
+
+        record -= ["schedule"]
+        sdb_write(record)
       end
 
+      # Deletes from SimpleDB and Cache
       def self.purge(uid)
         uid = normalize_uid(uid)
-        # Deletes from SimpleDB and Cache
-        not_implemented # TODO - later
+        sdb_delete(uid)
+        delete(uid)
       end
 
       def self.schedule(uid, opts={})
@@ -202,7 +219,7 @@ module VirtualMonkey
         raise IndexError.new("#{self} #{uid} not found") unless cache[uid]
 
         # Sanitize
-        opts &= CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s }
+        opts &= cron_edit_fields
         opts["updated_at"] = Time.now.utc.strftime("%Y/%m/%d %H:%M:%S +0000")
         opts["scheduled"] = true
         opts.delete("command")

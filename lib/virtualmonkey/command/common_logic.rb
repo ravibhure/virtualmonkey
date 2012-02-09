@@ -130,12 +130,10 @@ module VirtualMonkey
       @@already_in_em = EM.reactor_running?
 
       evented_code = proc do
-        @@gm ||= VirtualMonkey::Manager::Grinder.new
+        @@gm ||= VirtualMonkey::Manager::Grinder.new(@@options)
         @@dm ||= VirtualMonkey::Manager::DeploymentSet.new(@@options)
         @@options[:runner] ||= get_runner_class
         select_only_logic("Run tests on")
-
-        @@gm.options = @@options
 
         @@gm.run_tests(@@do_these, @@options[:feature], @@options[:tests])
         @@remaining_jobs = @@gm.jobs.dup

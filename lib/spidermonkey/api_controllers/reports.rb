@@ -1,6 +1,7 @@
 module VirtualMonkey
   module API
     class Report < VirtualMonkey::API::BaseResource
+      extend VirtualMonkey::API::StandardSimpleDBHelpers
       PATH = "#{VirtualMonkey::API::ROOT}/reports".freeze
       ContentType = "application/vnd.rightscale.virtualmonkey.report"
       CollectionContentType = ContentType + ";type=collection"
@@ -69,6 +70,7 @@ module VirtualMonkey
         @@update_fields ||= [
           "annotation",
           "tags",
+          "user",
         ]
       end
       private_class_method :update_fields
@@ -326,8 +328,6 @@ module VirtualMonkey
       end
 
       def self.details(uid)
-        not_implemented
-=begin
         # This will grab the contents of the logs from s3
         uid = normalize_uid(uid)
 
@@ -344,7 +344,6 @@ module VirtualMonkey
           end
           RestClient.get(uri.to_s)
         end
-=end
       end
 
       def self.autocomplete(date_begin=nil, date_end=nil)

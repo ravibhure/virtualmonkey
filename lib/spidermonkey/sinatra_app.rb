@@ -100,9 +100,8 @@ end
 
 configure :production do
   set :port, 443
-  #set :ssl, lambda { !development? }
-  #use Rack::SSL, :exclude => lambda { !ssl? }
-  #use Rack::Session::Cookie, :expire_after => 1.week, :secret => ''
+  use Rack::SSL
+  use Rack::Session::Cookie, :expire_after => 1.day, :secret => 'monkeyman'
 end
 
 use Rack::Auth::Basic, "Restricted Area" do |username, password|
@@ -165,8 +164,11 @@ helpers do
   end
 
   def standard_handlers(&block)
-    data = (request.POST() || {})
-    data = params.dup unless params.empty?
+    if request.content_type =~ %r{(?:application|text)/(?:javascript|json)}i
+      data = JSON.parse(request.body().read)
+    end
+    data ||= params.dup unless params.empty?
+    data ||= (request.POST() || {})
     yield(data)
   rescue Excon::Errors::HTTPStatusError => e
     status((e.message =~ /Actual\(([0-9]+)\)/; $1.to_i))
@@ -431,15 +433,30 @@ get "#{VirtualMonkey::API::Report::PATH}/:uid" do |uid|
   end
 end
 
+# Update
+put "#{VirtualMonkey::API::Report::PATH}/:uid" do |uid|
+  standard_handlers do |data|
+    VirtualMonkey::API::Report.update(uid, data.merge(get_user))
+    status 204
+    body ""
+  end
+end
+
 # Delete
 delete "#{VirtualMonkey::API::Report::PATH}/:uid" do |uid|
   standard_handlers do |data|
+    VirtualMonkey::API::Report.delete(uid)
+    status 204
+    body ""
   end
 end
 
 # Details
 post "#{VirtualMonkey::API::Report::PATH}/:uid/details" do |uid|
   standard_handlers do |data|
+    headers "Content-Type" => "application/json"
+    status 200
+    body VirtualMonkey::API::Report.details(uid)
   end
 end
 

@@ -153,7 +153,9 @@
         $("#add_flag").click(function() {
           cmd = $("#command option:selected").text()
           if (cmd === "") return alert("Please select a command first");
-          // TODO - check if cmd === "collateral", "config", or "environment"
+          if (cmd === "collateral" || cmd === "config" || cmd === "environment") {
+            if ($("#command_edit .command_option").length >= 1) return null;
+          }
           // Add option div
           num_options++;
           var div = $("<div data-label='Option' id='option" + num_options + "' />");
@@ -420,7 +422,7 @@
             </div>
             <div id="shell_command">
               <h2>Run a command as user: "<%= Etc.getlogin %>"</h2><br />
-              <h3>Pwd: "<%= Dir.pwd %>"</h3><br />
+              <h3>Pwd: "<%= VirtualMonkey::ROOTDIR %>"</h3><br />
               <textarea id="shell" name="shell"></textarea>
             </div>
             <div id="subtask_edit">

@@ -380,24 +380,30 @@ class Numeric
   def weeks
     self.days * 7
   end
+  alias_method :week, :weeks
 
   def days
     self.hours * 24
   end
+  alias_method :day, :days
 
   def hours
     self.minutes * 60
   end
+  alias_method :hour, :hours
 
   def minutes
     self * 60
   end
+  alias_method :minute, :minutes
 
   def seconds
     self
   end
+  alias_method :second, :seconds
 
   def useconds
     self / 1000000.0
   end
+  alias_method :usecond, :useconds
 end

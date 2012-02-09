@@ -3,7 +3,7 @@ module VirtualMonkey
     # This command does all the steps create/run/conditionaly destroy
     add_command("troop", [:config_file, :no_spot, :prefix, :use_mci, :verbose, :yes, :one_deploy, :keep,
                           :clouds, :only, :tests, :no_resume, :revisions, :report_tags, :report_metadata,
-                          :exclude_tests]) do
+                          :exclude_tests, :started_at]) do
       # Execute Main
       load_config_file
 

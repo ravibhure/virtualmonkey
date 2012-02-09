@@ -23,16 +23,33 @@ module VirtualMonkey
       end
 
       # Lists the nicknames of Array of Deployment objects whose nicknames start with prefix
-      def self.list(prefix, verbose = false)
-        deployments = Deployment.find_by_tags("info:prefix=#{prefix}")
-        deployments = from_name(prefix) if deployments.empty?
-        if verbose
-          pp deployments.map { |d| { d.nickname => d.servers.map { |s| s.state } } }
-        else
-          pp deployments.map { |d| d.nickname }
+      def self.list(opts={})
+        opts.keys.each { |k| opts[k.to_sym] = opts[k] if String === k }
+
+        deployments = Deployment.find_by_tags("info:prefix=#{opts[:prefix]}")
+        deployments = from_name(opts[:prefix]) if deployments.empty?
+
+        # XXX This selection criteria has been copied from common_logic.rb
+        do_these = deployments
+        [opts[:only]].flatten.compact.each do |filter|
+          do_these = do_these.select { |d| d.nickname =~ /#{filter}/ }
         end
-        puts "Found #{deployments.length} deployment#{deployments.one? ? nil : "s"} with " +
-             "#{deployments.reduce(0) { |sum,d| sum + d.servers_no_reload.length } } servers."
+        all_clouds = VirtualMonkey::Toolbox::get_available_clouds.map { |hsh| hsh["cloud_id"].to_i }
+        (all_clouds - opts[:clouds]).each { |cid|
+          do_these.reject! { |d| d.nickname =~ /-cloud_#{cid}-/ }
+        }
+        if %w{run clone troop}.include?(opts[:command]) and not opts[:no_resume] and opts[:feature]
+          temp = do_these.select do |d|
+            files_to_check = opts[:feature] + [VirtualMonkey::Manager::Grinder.combo_feature_name(opts[:feature])]
+            files_to_check.any? { |feature|
+              File.exist?(File.join(VirtualMonkey::TEST_STATE_DIR, d.nickname, File.basename(feature)))
+            }
+          end
+          do_these = temp if temp.length > 0
+        end
+        # XXX
+
+        return do_these
       end
 
       # Lists the nicknames of Array of Deployment objects whose nicknames start with @prefix
@@ -44,9 +61,9 @@ module VirtualMonkey
         end
         puts "Found #{@deployments.length} deployment#{@deployments.one? ? nil : "s"} with " +
              "#{@deployments.reduce(0) { |sum,d| sum + d.servers_no_reload.length } } servers."
+        return @deployments
       end
 
-#      def initialize(prefix, server_templates = [], extra_images = [], allow_meta_monkey = false, single_deployment = false)
       def initialize(opts = {})
         raise ArgumentError.new("no :prefix option passed") unless opts[:prefix]
         @options = opts

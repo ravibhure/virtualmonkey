@@ -2,7 +2,7 @@ module VirtualMonkey
   module Command
     # monkey clone --deployment name --feature testcase.rb --breakpoint 4 --copies 7
     add_command("clone", [:deployment, :config_file, :n_copies, :yes, :verbose, :terminate,
-                          :tests, :exclude_tests]) do
+                          :tests, :exclude_tests, :started_at]) do
       deployments = Deployment.find_by_nickname_speed(@@options[:deployment])
       if deployments.length > 1
         raise "FATAL: Ambiguous Regex; more than one deployment matched /#{@@options[:deployment]}/"

@@ -49,6 +49,8 @@ GEM
     rack-ssl (1.3.2)
       rack
     rake (0.8.7)
+    rest-client (1.6.7)
+      mime-types (>= 1.16)
     rest_connection (0.1.0)
       activesupport (= 2.3.10)
       highline
@@ -93,6 +95,7 @@ DEPENDENCIES
   json
   less
   rack-ssl
+  rest-client
   rest_connection (>= 0.1)
   right_popen (= 1.0.11)
   ruby-debug

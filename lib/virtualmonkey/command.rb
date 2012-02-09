@@ -102,7 +102,9 @@ module VirtualMonkey
       :ssh_keys             => {:opts => {:short => :none,  :type => :string},
                                 :desc => 'Takes a JSON object of cloud ids mapped to ssh_key ids. (e.g. {1: 123456, 2: 789012})'},
       :api_version          => {:opts => {:short => '-a',   :type => :float},
-                                :desc => 'Check to see if the monkey has RightScale API access'}
+                                :desc => 'Check to see if the monkey has RightScale API access'},
+      :started_at           => {:opts => {:short => :none,  :type => :string},
+                                :desc => 'Override started_at variable (requires base64-encoded, marshalled Time object)'},
     }
 
     EnvironmentPresets = {

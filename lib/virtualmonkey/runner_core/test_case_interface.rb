@@ -179,7 +179,8 @@ module VirtualMonkey
 
       write_trace_log unless starts_with_set
       write_readable_log("Duration: #{Time.duration(Time.now - timing, :include_usec)}")
-      @retry_loop.pop
+      num_retries = @retry_loop.pop
+      @retry_loop.map! { |i| i - num_retries }
       result
     end
 
