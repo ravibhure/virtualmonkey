@@ -321,7 +321,7 @@ module VirtualMonkey
       # Analyzes the configuration of the monkey, configuration of the features files,
       # the set of tests to run and the available deployments.
       def run_tests(deploys, features, set=[])
-      
+
         # proc to handle reporting throttling blocked status
         report_blocked_status = proc do |ret,d,feature,options,started_at|
           # Handle reporting back "blocked" status
@@ -336,7 +336,7 @@ module VirtualMonkey
           ::VirtualMonkey::API::Report.update_sdb report
           warn ret
         end
-        
+
         # Validate that we can divide up teature tests amung deployments
         features = [features].flatten
         warn_msg = {}
@@ -392,7 +392,7 @@ module VirtualMonkey
             # Using the mappings of deployments to tests we will make sure the deployment can be run.
             # Create a new runner instance for the feature's test case
             runner = test_cases[feature].options[:runner].new(d.nickname)
-            
+
             # Call the before_run code for the runner and if it fails bail out
             if ret = before_run_logic(runner)
               # Handle reporting back "blocked" status
@@ -400,15 +400,15 @@ module VirtualMonkey
               exit 1
             end
           end
-                   
+
           exec_test(d, feature, deployment_tests[0], test_cases[feature].options[:additional_logs])
-          
+
         else # multiple deployments handled here
           deployment_hsh.each { |feature,deploy_ary|
             total_keys = test_cases[feature].get_keys
             total_keys &= set unless set.nil? || set.empty?
             total_keys -= @options[:exclude_tests] unless @options[:exclude_tests].nil? || @options[:exclude_tests].empty?
-            
+
             if @options[:report_metadata]
               # Using the mappings of deployments to tests we will make sure the deployment can be run
               #
@@ -476,7 +476,7 @@ module VirtualMonkey
         end
         return false
       end
-      
+
       # Print status of jobs. Also watches for jobs that had exit statuses other than 0 or 1
       def watch_and_report
         old_passed,  @passed  = @passed,  @jobs.select { |s| s.status == 0 }

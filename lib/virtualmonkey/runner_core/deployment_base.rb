@@ -8,7 +8,7 @@ module VirtualMonkey
       include VirtualMonkey::TestCaseInterface
       attr_accessor :deployment, :servers, :server_templates
       attr_accessor :scripts_to_run
-      
+
       # Test for instance throttling
       before_run do
         ret = false
