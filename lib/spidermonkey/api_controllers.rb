@@ -92,10 +92,13 @@ module VirtualMonkey
             ret = false
             if field =~ /JSON\((\w*)\)\[([0-9]*)\]/ && $1 && $2
               json_mapping[$1] ||= []
-              json_mapping[$1][$2.to_i] = val
+              json_mapping[$1][$2.to_i] = val.first
               ret = true
             end
             ret
+          end
+          hsh.keys.each do |field|
+            hsh[field] = hsh[field].first if hsh[field].is_a? Array
           end
 
           item = self.new.deep_merge(hsh)
@@ -105,7 +108,7 @@ module VirtualMonkey
       end
 
       def sdb_read(*uids)
-        sdb_index & uids
+        sdb_index.map{|item| [item["uid"], item]}.to_h & uids
       end
 
       def sdb_write(*data_to_write)
@@ -113,13 +116,17 @@ module VirtualMonkey
         sdb = new_sdb_connection
         begin
           ensure_domain_exists(self::SDB_STORE)
-          current_items = sdb_index
+          current_items = sdb_index.map{|item| [item["uid"], item]}.to_h
           data = {}
           replace_data = {}
           data_to_write.each do |hsh|
             # Send all metadata that is a string (no arrays like "links" or "actions")
             current_item = current_items[hsh["uid"]]
-            record = self.new.deep_merge(current_item).deep_merge(hsh)
+            if current_item
+              record = self.new.deep_merge(current_item).deep_merge(hsh)
+            else
+              record = self.new.deep_merge(hsh)
+            end
             record.reject! { |field,val| val.is_a?(Array) || val.is_a?(Hash) }
             hsh.each do |field,val|
               if val.is_a?(Array) || val.is_a?(Hash)

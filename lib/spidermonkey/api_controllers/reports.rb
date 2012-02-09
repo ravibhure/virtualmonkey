@@ -468,7 +468,7 @@ module VirtualMonkey
           replace_data = {}
           data_ary.each do |job_metadata|
             report = self.new.deep_merge(job_metadata)
-            report.reject! { |field,val| val.is_a?(Array) || val.is_a?(Hash) }
+            report-= ["links", "actions"]
             if current_items[report["uid"]]
               # Only need to update stuff that has changed
               data[report["uid"]] = report.reject { |key,val| val == current_items[report["uid"]][key] }
