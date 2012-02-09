@@ -183,13 +183,13 @@ module VirtualMonkey
       # Switch on possible inputs
       if RightScale::Api::Base === opts["servertemplate"]
         extract_data[opts["servertemplate"]]
-      elsif RightScale::Api::Base === opts["server"]
+      elsif RightScale::Api::Base === opts["server"] || ServerInterface === opts["server"]
         opts["server"].settings unless opts["server"].server_template_href
         st = ServerTemplate.find(opts["server"].server_template_href.split("/").last.to_i)
         extract_data[st]
       elsif RightScale::Api::Base === opts["deployment"]
         opts["deployment"].servers.each do |s|
-          data.deep_merge!(send(this_method, opts.merge({"server" => s})))
+          data.deep_merge!(get_servertemplate_metadata("server" => s))
         end
       else
         raise ArgumentError.new("#{this_method} requires a 'deployment', 'server', or 'servertemplate'")
@@ -215,7 +215,7 @@ module VirtualMonkey
       # Switch on possible inputs
       if RightScale::Api::Base === opts["cloud"]
         extract_data[opts["cloud"].rs_id]
-      elsif RightScale::Api::Base === opts["server"]
+      elsif RightScale::Api::Base === opts["server"] || ServerInterface === opts["server"]
         extract_data[opts["server"].cloud_id]
       elsif RightScale::Api::Base === opts["deployment"]
         cloud_identifier = opts["deployment"].get_info_tags["self"]["cloud"]
@@ -271,17 +271,17 @@ module VirtualMonkey
         extract_data[opts["instancetype"]]
       elsif RightScale::Api::Base === opts["instance"]
         extract_data[McInstanceType.find(opts["instance"].instance_type)]
-      elsif RightScale::Api::Base === opts["server"]
+      elsif RightScale::Api::Base === opts["server"] || ServerInterface === opts["server"]
         s = opts["server"]
-        if server.multicloud
+        if s.multicloud
           hsh = {"instance" => (s.current_instance ? s.current_instance : s.next_instance)}
-          data.deep_merge!(send(this_method, opts.merge(hsh)))
+          data.deep_merge!(get_instancetype_metadata(hsh))
         else
           extract_data[s.ec2_instance_type]
         end
       elsif RightScale::Api::Base === opts["deployment"]
         opts["deployment"].servers.each do |s|
-          data.deep_merge!(send(this_method, opts.merge("server" => s)))
+          data.deep_merge!(get_instancetype_metadata("server" => s))
         end
       else
         raise ArgumentError.new("#{this_method} requires a 'deployment', 'server', 'instance', or 'instancetype'")
@@ -308,13 +308,13 @@ module VirtualMonkey
         extract_data[opts["datacenter"]]
       elsif RightScale::Api::Base === opts["instance"]
         extract_data[McDatacenter.find(opts["instance"].datacenter)]
-      elsif RightScale::Api::Base === opts["server"]
+      elsif RightScale::Api::Base === opts["server"] || ServerInterface === opts["server"]
         if opts["server"].multicloud
           extract_data[McDatacenter.find(opts["server"].datacenter)]
         end
       elsif RightScale::Api::Base === opts["deployment"]
         opts["deployment"].servers.each do |s|
-          data.deep_merge!(send(this_method, opts.merge({"server" => s})))
+          data.deep_merge!(get_datacenter_metadata("server" => s))
         end
       else
         raise ArgumentError.new("#{this_method} requires a 'deployment', 'server', 'instance', or 'datacenter'")

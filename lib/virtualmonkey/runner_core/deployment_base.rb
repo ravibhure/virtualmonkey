@@ -11,15 +11,20 @@ module VirtualMonkey
       
       # Test for instance throttling
       before_run do
-        cloud_id = @deployment.cloud_id.to_s
+        ret = false
+        cloud_id = @servers.first.cloud_id.to_s
         throttling_values = ::VirtualMonkey::config[:throttling_values]
         throttling_values[cloud_id] ||= {}
         max_instances = throttling_values[cloud_id][:max_instances] || 1024
-        if @servers.size + McInstance.find_all(cloud_id).size > max_instances
-          "Maximum number of server instances exceeded for cloud #{cloud_id}"
-        else
-          false
+        if cloud_id.to_i <= 10 # Handle AWS API 1.0
+          instance_count = Server.find_by(:state) {|s| s != "stopped"}.size
+        else # Handle non-AWS API 1.5
+          instance_count = McInstance.find_all(cloud_id).size
         end
+        if @servers.size + instance_count > max_instances
+          ret = "Maximum number of server instances exceeded for cloud #{cloud_id}"
+        end
+        ret
       end
 
       def initialize(deployment, opts = {})

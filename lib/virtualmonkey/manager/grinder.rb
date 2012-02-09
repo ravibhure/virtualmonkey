@@ -397,6 +397,7 @@ module VirtualMonkey
             if ret = before_run_logic(runner)
               # Handle reporting back "blocked" status
               report_blocked_status[ret, d, feature, @options, @started_at]
+              exit 1
             end
           end
                    
@@ -407,6 +408,26 @@ module VirtualMonkey
             total_keys = test_cases[feature].get_keys
             total_keys &= set unless set.nil? || set.empty?
             total_keys -= @options[:exclude_tests] unless @options[:exclude_tests].nil? || @options[:exclude_tests].empty?
+            
+            if @options[:report_metadata]
+              # Using the mappings of deployments to tests we will make sure the deployment can be run
+              #
+              # Create a new runner instance for the feature's test case
+              deploy_ary.reject! do |d|
+                runner = test_cases[feature].options[:runner].new(d.nickname)
+                ret = before_run_logic(runner)
+                # Call the before_run code for the runner and if it fails bail out
+                if ret
+                  # Handle reporting back "blocked" status
+                  report_blocked_status[ret, d, feature, @options, @started_at]
+                end
+                ret
+              end
+
+              exit 1 if deploy_ary.empty?
+            end
+
+            # Pick which tests are assigned to which deployments
             unless VirtualMonkey::config[:test_permutation] == "distributive"
               deployment_tests = [total_keys] * deploy_ary.length
             else
@@ -420,24 +441,10 @@ module VirtualMonkey
               }
             end
 
+            # Pick the order in which the tests will execute (per deployment)
             deployment_tests.map! { |ary| ary.shuffle } unless VirtualMonkey::config[:test_ordering] == "strict"
-            
-            if @options[:report_metadata]
-              # Using the mappings of deployments to tests we will make sure the deployment can be run
-              #
-              # Create a new runner instance for the feature's test case
-              deploy_ary.reject! do |d|
-                runner = test_cases[feature].options[:runner].new(d.nickname)
-                ret = before_run_logic(runner)
-                # Call the before_run code for the runner and if it fails bail out
-                if ret
-                  # Handle reporting back "blocked" status
-                  report_blocked_status[ret, d, feature, @options, @started_at]                  
-                end
-                ret
-              end
-            end
-            
+
+            # Execute the tests
             deploy_ary.each_with_index { |d,i|
               run_test(d, feature, deployment_tests[i], test_cases[feature].options[:additional_logs])
             }
@@ -465,9 +472,9 @@ module VirtualMonkey
           end
         else
           warn "#{runner.class} doesn't extend VirtualMonkey::RunnerCore::CommandHooks"
-          return false
+          return true
         end
-        return true
+        return false
       end
       
       # Print status of jobs. Also watches for jobs that had exit statuses other than 0 or 1
