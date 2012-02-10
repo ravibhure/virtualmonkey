@@ -323,7 +323,7 @@ module VirtualMonkey
 
         delete_single_record_sdb(uid)
         cache = read_cache
-        raise IndexError.new("#{self} #{uid} not found") unless cache.delete(uid)
+        cache.delete(uid)
         write_cache(cache)
       end
 
