@@ -10,6 +10,7 @@ GEM
     activesupport (2.3.10)
     algorithms (0.3.0)
     builder (3.0.0)
+    chronic (0.6.7)
     colorize (0.5.8)
     columnize (0.3.2)
     commonjs (0.2.0)
@@ -96,6 +97,7 @@ DEPENDENCIES
   ParseTree
   algorithms
   bundler
+  chronic
   colorize
   cronedit
   daemons
