@@ -115,7 +115,12 @@ module VirtualMonkey
 
       def self.index
         cache = read_cache
-        cache.deep_merge!(sdb_index.map { |item| [item["uid"], item] }.to_h)
+        sdb_index.each do |item|
+          uid = item["uid"]
+          if cache[uid] && Chronic.parse(cache[uid]["updated_at"]) < Chronic.parse(item["updated_at"])
+            cache[uid] = item
+          end
+        end
         write_cache(cache)
         cache.map { |uid,item_hash| new.deep_merge(item_hash) }
       end
@@ -144,9 +149,10 @@ module VirtualMonkey
 
         # Update Cache
         cache = read_cache
-        cache[uid] = record
+        if cache[uid] && Chronic.parse(cache[uid]["updated_at"]) < Chronic.parse(record["updated_at"])
+          cache[uid] = record
+        end
         write_cache(cache)
-
         record
       end
 
