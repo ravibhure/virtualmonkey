@@ -104,8 +104,10 @@ module VirtualMonkey
       public
 
       def self.index
-        read_cache.map { |uid,item_hash| new.deep_merge(item_hash) } | sdb_index
-        # TODO: Save the index to the cache
+        cache = read_cache
+        cache.deep_merge!(sdb_index.map { |item| [item["uid"], item] }.to_h)
+        write_cache(cache)
+        cache.map { |uid,item_hash| new.deep_merge(item_hash) }
       end
 
       def self.create(opts={})
@@ -142,6 +144,12 @@ module VirtualMonkey
         record = self.from_json_file(TEMP_STORE, uid)
         record ||= sdb_read(uid)[uid]
         raise IndexError.new("#{self} #{uid} not found") unless record
+
+        # Update Cache
+        cache = read_cache
+        cache[uid] = record
+        write_cache(cache)
+
         record
       end
 

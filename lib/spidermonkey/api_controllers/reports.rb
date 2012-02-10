@@ -456,7 +456,7 @@ module VirtualMonkey
         elsif jobs.reduce(true) { |b,j| b && (self === j) }
           data_ary = jobs
         else
-          raise TypeError.new("can't convert #{jobs.class} to Array of GrinderJobs")
+          raise TypeError.new("can't convert #{jobs.map { |j| j.class }} to Array of GrinderJobs")
         end
 
         ## upload to sdb
@@ -467,8 +467,9 @@ module VirtualMonkey
           data = {}
           replace_data = {}
           data_ary.each do |job_metadata|
+            next unless Hash === job_metadata
             report = self.new.deep_merge(job_metadata)
-            report-= ["links", "actions"]
+            report -= ["links", "actions"]
             if current_items[report["uid"]]
               # Only need to update stuff that has changed
               data[report["uid"]] = report.reject { |key,val| val == current_items[report["uid"]][key] }

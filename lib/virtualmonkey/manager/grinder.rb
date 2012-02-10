@@ -126,6 +126,7 @@ module VirtualMonkey
           # Build Job Metadata
           puts "\nBuilding Job Metadata...\n\n"
           new_job.metadata = VirtualMonkey::Metadata::get_report_metadata(deployment, feature, @options, @started_at)
+          VirtualMonkey::API::Report.update_sdb(new_job)
         end
         new_job.metadata ||= {}
 

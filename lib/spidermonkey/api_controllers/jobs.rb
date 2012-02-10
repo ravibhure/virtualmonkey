@@ -254,6 +254,7 @@ module VirtualMonkey
         @type = (parent_task["shell"] ? "shell" : "command")
 
         if @type == "command"
+          command_opts = {}
           # First get command line syntax
           args = @parent_task["options"].map do |k,v|
             opt = "--#{k.gsub(/_/, '-')}"
@@ -263,8 +264,6 @@ module VirtualMonkey
 
           if %w{run clone troop}.include? @parent_task['command']
             args |= ["--report-metadata"]
-            # Then get list of deployments based on that
-            deployments = VirtualMonkey::Manager::DeploymentSet.list(@parent_task["options"])
 
             # Collate that list and gather metadata
             @started_at = Time.now
@@ -275,19 +274,6 @@ module VirtualMonkey
           @command_argv = [@parent_task['command'], args].flatten.join(" ")
           @cmd = "#{File.join(VirtualMonkey::BIN_DIR, "monkey").inspect} #{@command_argv}"
           @metadata ||= {}
-
-          if %w{run clone troop}.include? @parent_task['command']
-            @metadata = deployments.map { |d|
-              opts = {
-                :config_file => @parent_task["options"]["config_file"],
-                :report_tags => @parent_task["options"]["report_tags"],
-                :command_run => @cmd,
-              }
-              mdata = VirtualMonkey::Metadata.get_report_metadata(d, nil, opts, @started_at)
-              [d.rs_id, mdata]
-            }.to_h
-            VirtualMonkey::API::Report.update_sdb(self)
-          end
         else
           @cmd = "set -x; cd #{VirtualMonkey::ROOTDIR}; "
           @cmd += @parent_task["shell"].gsub(/\r/, "")
