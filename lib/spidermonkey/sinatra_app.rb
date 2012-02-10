@@ -73,11 +73,12 @@ module VirtualMonkey
 end
 
 require 'sinatra'
-require 'partials'
+require File.join(VirtualMonkey::WEB_APP_DIR, 'partials.rb')
 require 'erb'
 require 'less'
 require 'digest/sha1'
 require 'etc'
+require 'rack/ssl'
 
 configure do
   set :environment, VirtualMonkey::RACK_ENV
@@ -88,7 +89,7 @@ configure do
   set :dump_errors, (VirtualMonkey::RACK_ENV == :development)
   set :threaded, true
   set :logging, true
-  set :views, 'views'
+  set :views, VirtualMonkey::VIEWS_DIR
 end
 
 configure :development do
@@ -589,7 +590,7 @@ end
 get "/css/virtualmonkey.css" do
   headers "Content-Type" => "text/css"
   status 200
-  less :virtualmonkey, :views => File.join("public", "css")
+  less :virtualmonkey, :views => File.join(VirtualMonkey::WEB_APP_PUBLIC_DIR, "css")
 end
 
 get "/js/bootstrap.js" do

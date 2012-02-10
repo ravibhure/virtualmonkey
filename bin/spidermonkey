@@ -37,4 +37,6 @@ daemons_opts = {
 app = File.expand_path(File.join(File.dirname(__FILE__), "..", "lib", "spidermonkey", "sinatra_app.rb"))
 Daemons.run(app, daemons_opts)
 =end
-require File.expand_path(File.join(File.dirname(__FILE__), "..", "lib", "spidermonkey", "sinatra_app.rb"))
+app = File.expand_path(File.join(File.dirname(__FILE__), "..", "lib", "spidermonkey", "sinatra_app.rb"))
+Dir.chdir("..")
+exec("ruby #{app.inspect}")
