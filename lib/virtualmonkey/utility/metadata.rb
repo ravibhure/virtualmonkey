@@ -273,7 +273,7 @@ module VirtualMonkey
         extract_data[McInstanceType.find(opts["instance"].instance_type)]
       elsif RightScale::Api::Base === opts["server"] || ServerInterface === opts["server"]
         s = opts["server"]
-        if s.multicloud
+        if s.multicloud || s.is_a?(McServer)
           hsh = {"instance" => (s.current_instance ? s.current_instance : s.next_instance)}
           data.deep_merge!(get_instancetype_metadata(hsh))
         else
@@ -309,8 +309,13 @@ module VirtualMonkey
       elsif RightScale::Api::Base === opts["instance"]
         extract_data[McDatacenter.find(opts["instance"].datacenter)]
       elsif RightScale::Api::Base === opts["server"] || ServerInterface === opts["server"]
-        if opts["server"].multicloud
-          extract_data[McDatacenter.find(opts["server"].datacenter)]
+        s = opts["server"]
+        if s.multicloud || s.is_a?(McServer)
+          if Cloud.find(s.cloud_id.to_i).datacenters
+            s.settings
+            hsh = {"instance" => (s.current_instance ? s.current_instance : s.next_instance)}
+            data.deep_merge!(get_datacenter_metadata(hsh))
+          end
         end
       elsif RightScale::Api::Base === opts["deployment"]
         opts["deployment"].servers.each do |s|
