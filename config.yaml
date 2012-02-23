@@ -1,4 +1,4 @@
----
+--- 
 :enable_log_auditor: "false"
 :default_timeout: 1200
 :grinder_subprocess: force_subprocess
@@ -13,7 +13,7 @@
   "1":
     :max_instances: 1024
   "1956":
-    :max_instances: 10
+    :max_instances: 20
   "1958":
     :max_instances: 10
 :test_permutation: exhaustive
