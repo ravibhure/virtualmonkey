@@ -13,7 +13,7 @@
   "1":
     :max_instances: 1024
   "1956":
-    :max_instances: 20
+    :max_instances: 12
   "1958":
-    :max_instances: 10
+    :max_instances: 12
 :test_permutation: exhaustive
