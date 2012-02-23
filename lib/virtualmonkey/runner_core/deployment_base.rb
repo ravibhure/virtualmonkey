@@ -282,28 +282,18 @@ module VirtualMonkey
       # Re-Launch a set of servers
       def relaunch_set(set=@servers, timeout=::VirtualMonkey::config[:default_timeout])
         set = select_set(set)
-        begin # This loop is to ensure that public and private ips are different (Euca bug)
-          private_ip_equals_public = true
-          set.each { |s|
-            begin
-              transaction {
-                s.relaunch;
-                s.params = s.class[s.href].first.params;
-                s.settings
-              }
-            rescue Exception => e
-              raise #unless e.message =~ /AlreadyLaunchedError/
-            end
-          }
-          set.each { |s|
+        set.each { |s|
+          begin
+            transaction {
+              s.relaunch;
+              s.params = s.class[s.href].first.params;
+              s.settings
+            }
             transaction { wait_for_set(s, "operational", timeout) }
-          }
-          if set.reduce(false) { |bool,s| bool || (s.dns_name == s.private_ip) }
-            warn "WARNING: Found a server with duplicate IPs in public and private"
-          else
-            private_ip_equals_public = false
+          rescue Exception => e
+            raise #unless e.message =~ /AlreadyLaunchedError/
           end
-        end while private_ip_equals_public
+        }
       end
 
       # un-set all tags on all servers in the deployment
@@ -330,10 +320,6 @@ module VirtualMonkey
         # do a special wait, if waiting for operational (for dns)
         if state == "operational"
           set.each { |server| transaction { server.wait_for_operational_with_dns(timeout) } }
-          if set.reduce(false) { |bool,s| bool || (s.dns_name == s.private_ip) }
-            warn "WARNING: Found a server with duplicate IPs in public and private. Relaunching..."
-            relaunch_set(set, timeout)
-          end
         else
           set.each { |server| transaction { server.wait_for_state(state, timeout) } }
         end
@@ -375,24 +361,16 @@ module VirtualMonkey
       def reboot_set(set=@servers, serially_reboot=false)
         wait_for_reboot = true
         set = select_set(set)
-        begin # This loop is to ensure that public and private ips are different (Euca bug)
-          private_ip_equals_public = true
-          # Do NOT thread this each statement
-          set.each do |s|
-            transaction { s.reboot(wait_for_reboot) }
-            if serially_reboot
-              transaction { s.wait_for_state("operational") }
-            end
-          end
-          set.each do |s|
+        # Do NOT thread this each statement
+        set.each do |s|
+          transaction { s.reboot(wait_for_reboot) }
+          if serially_reboot
             transaction { s.wait_for_state("operational") }
           end
-          if set.reduce(false) { |bool,s| bool || (s.dns_name == s.private_ip) }
-            warn "WARNING: Found a server with duplicate IPs in public and private"
-          else
-            private_ip_equals_public = false
-          end
-        end while private_ip_equals_public
+        end
+        set.each do |s|
+          transaction { s.wait_for_state("operational") }
+        end
       end
 
       def reboot_all(serially_reboot=false)
