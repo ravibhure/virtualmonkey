@@ -87,12 +87,19 @@ module VirtualMonkey
       Kernel.require(filename)
     rescue LoadError => e
       begin
-        gem_spec = Gem::Specification.find_by_name(filename)
-        $LOAD_PATH.unshift(Dir.glob(gem_spec.lib_dirs_glob()))
-        $LOAD_PATH.unshift($LOAD_PATH.delete("lib"))
-        $LOAD_PATH.flatten!
-        $LOAD_PATH.compact!
-        Kernel.require(filename)
+        begin
+          gem_spec = Gem::Specification.find_by_name(filename)
+          $LOAD_PATH.unshift(Dir.glob(gem_spec.lib_dirs_glob()))
+        rescue
+          gem_spec = Gem::GemPathSearcher.new.find(filename)
+          paths = gem_spec.require_paths.map { |p| File.join(gem_spec.full_gem_path, p) }
+          $LOAD_PATH.unshift(Dir.glob(paths.uniq))
+        ensure
+          $LOAD_PATH.unshift($LOAD_PATH.delete("lib"))
+          $LOAD_PATH.flatten!
+          $LOAD_PATH.compact!
+          Kernel.require(filename)
+        end
       rescue Gem::LoadError => e
         self.require_within(filename)
       end

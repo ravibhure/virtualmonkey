@@ -592,5 +592,45 @@ module VirtualMonkey
       File.open(File.join(@@cloud_vars_dir, "aws_clouds.json"), "w") { |f| f.write(aws_clouds_out) }
       File.open(File.join(@@cloud_vars_dir, "all_clouds.json"), "w") { |f| f.write(all_clouds_out) }
     end
+
+    def new_sdb_connection
+      if Fog.credentials[:aws_access_key_id_test] && Fog.credentials[:aws_secret_access_key_test]
+        return Fog::AWS::SimpleDB.new(:aws_access_key_id => Fog.credentials[:aws_access_key_id_test],
+                                      :aws_secret_access_key => Fog.credentials[:aws_secret_access_key_test])
+      else
+        return Fog::AWS::SimpleDB.new()
+      end
+    end
+
+    def new_s3_connection
+      if Fog.credentials[:aws_access_key_id_test] && Fog.credentials[:aws_secret_access_key_test]
+        return Fog::Storage.new(:provider => "AWS",
+                                :aws_access_key_id => Fog.credentials[:aws_access_key_id_test],
+                                :aws_secret_access_key => Fog.credentials[:aws_secret_access_key_test])
+      else
+        return Fog::Storage.new(:provider => "AWS")
+      end
+    end
+
+    def get_cloud_instance_type_capacity_data()
+      ret = {}
+      Cloud.find_all.each { |c|
+        cloud_id = c.rs_id.to_i
+        ret[cloud_id] = {
+          "name" => c.name,
+          "instances" => {}
+        }
+        McInstanceType.find_all(cloud_id).each { |t|
+          ret[cloud_id]["instances"][t.href] = {
+            "disk" => t.local_disk_size,
+            "cpu" => t.cpu_count,
+            "memory" => t.memory,
+            "name" => t.name
+          }
+        }
+      }
+
+      return ret
+    end
   end
 end

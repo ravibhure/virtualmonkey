@@ -1,6 +1,7 @@
 module VirtualMonkey
   module API
     class Task < VirtualMonkey::API::BaseResource
+      extend VirtualMonkey::API::StandardSimpleDBHelpers
       PATH = "#{VirtualMonkey::API::ROOT}/tasks".freeze
       ContentType = "application/vnd.rightscale.virtualmonkey.task"
       CollectionContentType = ContentType + ";type=collection"
@@ -25,14 +26,18 @@ module VirtualMonkey
 
       def self.write_cache(json_hash)
         File.open(TEMP_STORE, "w") { |f| f.write(json_hash.to_json) }
+      rescue Errno::EBADF, IOError
+        sleep 0.1
+        retry
       end
       private_class_method :write_cache
 
       def self.fields
-        [
+        @@fields ||= [
           "command",
           "options",
           "subtask_hrefs",
+          "shell",
 #          "scheduled",
           "affinity",
           "name",
@@ -42,10 +47,34 @@ module VirtualMonkey
       end
       private_class_method :fields
 
+      def self.cron_edit_fields
+        @@cron_edit_fields ||= CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s }
+      end
+      private_class_method :cron_edit_fields
+
       def self.valid_affinities
         ["parallel", "continue", "stop"]
       end
       private_class_method :valid_affinities
+
+      def self.validate_parameters(hsh)
+        unless (String === hsh["command"]) or (Array === hsh["subtask_hrefs"]) or (String === hsh["shell"])
+          STDERR.puts(hsh.pretty_inspect)
+          raise ArgumentError.new("#{PATH} requires a 'command' String, a 'subtask_hrefs' Array, or a 'shell' String")
+        end
+        if [hsh["subtask_hrefs"], hsh["command"], hsh["shell"]].count { |o| o } > 1
+          STDERR.puts(hsh.pretty_inspect)
+          raise ArgumentError.new("The 'command', 'subtask_hrefs', and 'shell' parameters are mutually exclusive")
+        end
+        if hsh["subtask_hrefs"] and not valid_affinities.include?(hsh["affinity"])
+          STDERR.puts(hsh.pretty_inspect)
+          msg = "#{PATH} requires a valid 'affinity' String when passing a 'subtask_hrefs' Array"
+          msg += "\nValid affinities are: #{valid_affinities.join(", ")}"
+          raise ArgumentError.new(msg)
+        end
+        true
+      end
+      private_class_method :validate_parameters
 
       #
       # Constructor
@@ -75,33 +104,29 @@ module VirtualMonkey
       public
 
       def self.index
-        read_cache.map { |uid,item_hash| new.deep_merge(item_hash) }
+        cache = read_cache
+        sdb_index.each do |item|
+          uid = item["uid"]
+          if cache[uid] && Chronic.parse(cache[uid]["updated_at"]) < Chronic.parse(item["updated_at"])
+            cache[uid] = item
+          end
+        end
+        write_cache(cache)
+        cache.map { |uid,item_hash| new.deep_merge(item_hash) }
       end
 
       def self.create(opts={})
         # Check for required Arguments
-        unless opts["command"].is_a?(String) or opts["subtask_hrefs"].is_a?(Array)
-          STDERR.puts(opts.pretty_inspect)
-          raise ArgumentError.new("#{PATH} requires a 'command' String or a 'subtask_hrefs' Array")
-        end
-        if opts["subtask_hrefs"] and opts["command"]
-          STDERR.puts(opts.pretty_inspect)
-          raise ArgumentError.new("The 'command' String and 'subtask_hrefs' Array are mutually exclusive")
-        end
-        if opts["subtask_hrefs"] and not valid_affinities.include?(opts["affinity"])
-          STDERR.puts(opts.pretty_inspect)
-          msg = "#{PATH} requires an 'affinity' String when passing a 'subtask_hrefs' Array"
-          raise ArgumentError.new(msg)
-        end
+        validate_parameters(opts)
 
         # Sanitize
-        opts &= (fields | CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s })
+        opts &= (fields | cron_edit_fields)
 
         # Check for Schedule options
         command = opts["command"]
-        schedule_opts = opts & CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s }
+        schedule_opts = opts & cron_edit_fields
         schedule_opts -= ["command"]
-        opts -= CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s }
+        opts -= cron_edit_fields
         opts["command"] = command
 
         # Get user data
@@ -122,22 +147,33 @@ module VirtualMonkey
       def self.get(uid)
         uid = normalize_uid(uid)
         record = self.from_json_file(TEMP_STORE, uid)
+        record ||= sdb_read(uid)[uid]
         raise IndexError.new("#{self} #{uid} not found") unless record
+
+        # Update Cache
+        cache = read_cache
+        if cache[uid] && Chronic.parse(cache[uid]["updated_at"]) < Chronic.parse(record["updated_at"])
+          cache[uid] = record
+        end
+        write_cache(cache)
         record
       end
 
       def self.update(uid, opts={})
         uid = normalize_uid(uid)
 
+        # Check for required Arguments
+        validate_parameters(opts)
+
         # Sanitize
-        opts &= (fields | CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s })
+        opts &= (fields | cron_edit_fields)
         opts["updated_at"] = Time.now.utc.strftime("%Y/%m/%d %H:%M:%S +0000")
 
         # Check for Schedule options
         command = opts["command"]
-        schedule_opts = opts & CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s }
+        schedule_opts = opts & cron_edit_fields
         schedule_opts -= ["command"]
-        opts -= CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s }
+        opts -= cron_edit_fields
         opts["command"] = command
 
         # Get user data NOTE: this means the person who updated takes control
@@ -145,20 +181,17 @@ module VirtualMonkey
 
         # Read Cache
         cache = read_cache
+        cache[uid] ||= sdb_read(uid)
         raise IndexError.new("#{self} #{uid} not found") unless cache[uid]
         cache[uid].deep_merge!(opts)
 
+        # Reject old options if type has changed
+        cache[uid] -= ["subtask_hrefs", "affinity", "shell"] if opts["command"]
+        cache[uid] -= ["command", "options", "shell"] if opts["subtask_hrefs"]
+        cache[uid] -= ["subtask_hrefs", "affinity", "command", "options"] if opts["shell"]
+
         # Check that the Update is valid
-        unless cache[uid]["command"].is_a?(String) or cache[uid]["subtask_hrefs"].is_a?(Array)
-          raise ArgumentError.new("#{PATH} requires a 'command' String or a 'subtask_hrefs' Array")
-        end
-        if cache[uid]["subtask_hrefs"] and cache[uid]["command"]
-          raise ArgumentError.new("The 'command' String and 'subtask_hrefs' Array are mutually exclusive")
-        end
-        if cache[uid]["subtask_hrefs"] and not valid_affinities.include?(cache[uid]["affinity"])
-          msg = "#{PATH} requires an 'affinity' String when using a 'subtask_hrefs' Array"
-          raise ArgumentError.new(msg)
-        end
+        validate_parameters(cache[uid])
 
         # Update Cache
         write_cache(cache)
@@ -169,6 +202,7 @@ module VirtualMonkey
         return nil
       end
 
+      # Deletes only from Cache
       def self.delete(uid)
         uid = normalize_uid(uid)
         cache = read_cache
@@ -177,16 +211,20 @@ module VirtualMonkey
         nil
       end
 
+      # Saves to SimpleDB NOTE: don't save "schedule" field
       def self.save(uid)
         uid = normalize_uid(uid)
-        # Saves to SimpleDB NOTE: don't save "schedule" field
-        not_implemented # TODO - later
+        record = get(uid)
+
+        record -= ["schedule"]
+        sdb_write(record)
       end
 
+      # Deletes from SimpleDB and Cache
       def self.purge(uid)
         uid = normalize_uid(uid)
-        # Deletes from SimpleDB and Cache
-        not_implemented # TODO - later
+        sdb_delete(uid)
+        delete(uid)
       end
 
       def self.schedule(uid, opts={})
@@ -196,7 +234,7 @@ module VirtualMonkey
         raise IndexError.new("#{self} #{uid} not found") unless cache[uid]
 
         # Sanitize
-        opts &= CronEdit::CronEntry::DEFAULTS.keys.map { |k| k.to_s }
+        opts &= cron_edit_fields
         opts["updated_at"] = Time.now.utc.strftime("%Y/%m/%d %H:%M:%S +0000")
         opts["scheduled"] = true
         opts.delete("command")

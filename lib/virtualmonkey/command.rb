@@ -102,7 +102,9 @@ module VirtualMonkey
       :ssh_keys             => {:opts => {:short => :none,  :type => :string},
                                 :desc => 'Takes a JSON object of cloud ids mapped to ssh_key ids. (e.g. {1: 123456, 2: 789012})'},
       :api_version          => {:opts => {:short => '-a',   :type => :float},
-                                :desc => 'Check to see if the monkey has RightScale API access'}
+                                :desc => 'Check to see if the monkey has RightScale API access'},
+      :started_at           => {:opts => {:short => :none,  :type => :string},
+                                :desc => 'Override started_at variable (requires base64-encoded, marshalled Time object)'},
     }
 
     EnvironmentPresets = {
@@ -212,7 +214,11 @@ module VirtualMonkey
 
       "grinder_subprocess"  => {"desc"    => "Turns on/off the ability of Grinder to load into the current process",
                                 "default" => "force_subprocess",
-                                "values"  => ["allow_same_process", "force_subprocess"]}
+                                "values"  => ["allow_same_process", "force_subprocess"]},
+
+      "throttling_values"   => {"desc"    => "All throttling values across all clouds",
+                                "default" => {},
+                                "values"  => Hash},
     }
 
     CollateralOptions = {
@@ -575,6 +581,7 @@ EOS
         when "Integer" then return val.to_i
         when "String" then return val.to_s
         when "Symbol" then return val.to_s.to_sym
+        when "Hash" then return val.to_h
         when "TrueClass", "FalseClass" then return val == "true" || val == true
         else
           raise TypeError.new("can't convert #{val.class} into #{values}")
@@ -589,7 +596,7 @@ EOS
         values = ConfigVariables["#{var}"]["values"]
         if values.is_a?(Array)
           val_valid = values.include?(val)
-        elsif values.is_a?(Class) # Integer, String, Symbol
+        elsif values.is_a?(Class) # Integer, String, Symbol, Hash
           val_valid = convert_value(val, values).is_a?(values)
         end
       end

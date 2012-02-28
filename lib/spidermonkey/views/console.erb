@@ -1,10 +1,15 @@
+<pre id="console">
+  Loading...
+</pre>
 <script type="text/javascript">
   (function($) {
-    var load_img = "<img id='console_loading_img' src='/img/loading-black.gif' />"
+    var load_img = "<img id='console_loading_img' src='/img/loading-black.gif' />";
+    console = $("#console");
     window.interval_id = window.setInterval(function() {
       $.getJSON(<%= @job.href.inspect %>, function(data) {
-        $("#console").text(data.console_output).append(load_img);
-        $("#console").css("text-align", "left");
+        console.text(data.console_output).append(load_img);
+        console.css("text-align", "left");
+        console.scrollTop($("#console").get(0).scrollHeight);
         if (data.status && data.status !== "running") {
           $("#console_loading_img").remove();
           window.clearInterval(window.interval_id);
@@ -13,6 +18,3 @@
     }, 1000);
   })(jQuery);
 </script>
-<pre id="console">
-  Loading...
-</pre>

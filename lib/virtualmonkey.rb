@@ -1,5 +1,9 @@
 require 'yaml'
 
+#
+# Virtual Monkey Main Module
+#
+
 module VirtualMonkey
   ROOTDIR = File.expand_path(File.join(File.dirname(__FILE__), "..")).freeze
   GENERATED_CLOUD_VAR_DIR = File.join(ROOTDIR, "cloud_variables").freeze

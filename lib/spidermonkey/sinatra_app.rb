@@ -73,10 +73,12 @@ module VirtualMonkey
 end
 
 require 'sinatra'
-require 'partials'
+require File.join(VirtualMonkey::WEB_APP_DIR, 'partials.rb')
 require 'erb'
 require 'less'
 require 'digest/sha1'
+require 'etc'
+require 'rack/ssl'
 
 configure do
   set :environment, VirtualMonkey::RACK_ENV
@@ -87,44 +89,48 @@ configure do
   set :dump_errors, (VirtualMonkey::RACK_ENV == :development)
   set :threaded, true
   set :logging, true
-  set :views, 'views'
+  set :views, VirtualMonkey::VIEWS_DIR
 end
 
 configure :development do
   set :port, 8888
+  enable :sessions
 end
 
 # TODO Add production-worthy caching mechanism
 
 configure :production do
   set :port, 443
-  #set :ssl, lambda { !development? }
-  #use Rack::SSL, :exclude => lambda { !ssl? }
-  #use Rack::Session::Cookie, :expire_after => 1.week, :secret => ''
+  use Rack::SSL
+  use Rack::Session::Cookie, :expire_after => 1.day, :secret => 'monkeyman'
 end
 
 use Rack::Auth::Basic, "Restricted Area" do |username, password|
-  hash = Digest::SHA1.hexdigest(password)
-  #session[:username] = username
-  success = (VirtualMonkey::RACK_ENV == :development)
-  if success || VirtualMonkey::CachedLogins[username] == password
+  hashed_pw = Digest::SHA1.hexdigest(password)
+  success = false && (VirtualMonkey::RACK_ENV == :development)
+  if success || VirtualMonkey::CachedLogins[username] == hashed_pw
     success = true
   else
-    headers = {'Authorization' => "Basic #{["#{username}:#{password}"].pack('m').delete("\r\n")}",
-               'X_API_VERSION' => '1.0'}
-    connection = Excon.new('https://my.rightscale.com', :headers => headers)
+    auth_header = {'Authorization' => "Basic #{["#{username}:#{password}"].pack('m').delete("\r\n")}"}
     settings = YAML::load(IO.read(VirtualMonkey::REST_YAML))
+    base_path = URI.parse(settings[:api_url]).path
 
     begin
-      resp = connection.get(:path => "#{settings[:api_url].split(/\//)[-3,3].join('/')}/credentials.js?")
-      success = (resp.status == 200)
+      connection = Excon.new('https://my.rightscale.com', :headers => {'X_API_VERSION' => '1.0'})
+      resp = connection.get(:path => base_path + "/login.js", :headers => auth_header)
+      if (200..204) === resp.status
+        resp2 = connection.put({
+          :path => (base_path + "/tags/unset"),
+          :headers => {"Cookie" => resp.headers["Set-Cookie"]},
+          :body => {}.to_json,
+        })
+        success = (((200..204).map | [422]).include? resp2.status)
+      end
     rescue Exception => e
       STDERR.puts(e)
     end
 
-    VirtualMonkey::CachedLogins[username] = password if success
-
-    #session[:virutalmonkey_id] = rand(1000000)
+    VirtualMonkey::CachedLogins[username] = hashed_pw if success
   end
   success
 end
@@ -159,8 +165,11 @@ helpers do
   end
 
   def standard_handlers(&block)
-    data = (request.POST() || {})
-    data = params.dup unless params.empty?
+    if request.content_type =~ %r{(?:application|text)/(?:javascript|json)}i
+      data = JSON.parse(request.body().read)
+    end
+    data ||= params.dup unless params.empty?
+    data ||= (request.POST() || {})
     yield(data)
   rescue Excon::Errors::HTTPStatusError => e
     status((e.message =~ /Actual\(([0-9]+)\)/; $1.to_i))
@@ -218,6 +227,13 @@ template :layout do
       </body>
     </html>
   EOS
+end
+
+# Before filters
+
+before do
+  auth = request.env["HTTP_AUTHORIZATION"].split(/ /, 2).last
+  session[:username] ||= auth.unpack("m*").last.split(/:/, 2).first
 end
 
 # ==========================
@@ -418,15 +434,30 @@ get "#{VirtualMonkey::API::Report::PATH}/:uid" do |uid|
   end
 end
 
+# Update
+put "#{VirtualMonkey::API::Report::PATH}/:uid" do |uid|
+  standard_handlers do |data|
+    VirtualMonkey::API::Report.update(uid, data.merge(get_user))
+    status 204
+    body ""
+  end
+end
+
 # Delete
 delete "#{VirtualMonkey::API::Report::PATH}/:uid" do |uid|
   standard_handlers do |data|
+    VirtualMonkey::API::Report.delete(uid)
+    status 204
+    body ""
   end
 end
 
 # Details
 post "#{VirtualMonkey::API::Report::PATH}/:uid/details" do |uid|
   standard_handlers do |data|
+    headers "Content-Type" => "application/json"
+    status 200
+    body VirtualMonkey::API::Report.details(uid)
   end
 end
 
@@ -559,7 +590,7 @@ end
 get "/css/virtualmonkey.css" do
   headers "Content-Type" => "text/css"
   status 200
-  less :virtualmonkey, :views => File.join("public", "css")
+  less :virtualmonkey, :views => File.join(VirtualMonkey::WEB_APP_PUBLIC_DIR, "css")
 end
 
 get "/js/bootstrap.js" do

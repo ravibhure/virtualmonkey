@@ -237,7 +237,7 @@ ol {
   h2 { padding-top: 8px; padding-bottom: 8px; }
 }
 
-#command_edit {
+#command_edit, #sche {
   > div.column_one_third {
     width: 33%;
     float: left;
@@ -288,6 +288,14 @@ ol {
     position: static;
     * { position: relative; }
     .input { margin-left: 15px; }
+    > div.column_one_third {
+      width: 33%;
+      float: left;
+    }
+    > div.column_two_third {
+      width: 66%;
+      float: left;
+    }
   }
 }
 
@@ -374,6 +382,7 @@ a { text-decoration: none; }
         &.failed { background: @red_base; }
         &.passed { background: @green_base; }
         &.running { background: @orange_base; }
+        &.blocked { background: @red_base; }
       }
       &:nth-child(odd) {
         background: @white_medium;
@@ -385,6 +394,7 @@ a { text-decoration: none; }
         &.failed { background: @red_medium; }
         &.passed { background: @green_medium; }
         &.running { background: @orange_medium; }
+        &.blocked { background: @red_medium; }
       }
     }
   }
@@ -398,6 +408,7 @@ a { text-decoration: none; }
         &.failed { background: @red_medium; }
         &.passed { background: @green_medium; }
         &.running { background: @orange_medium; }
+        &.blocked { background: @red_medium; }
       }
       &:nth-child(odd) {
         background: @white_dark;
@@ -409,6 +420,7 @@ a { text-decoration: none; }
         &.failed { background: @red_dark; }
         &.passed { background: @green_dark; }
         &.running { background: @orange_dark; }
+        &.blocked { background: @red_dark; }
       }
     }
   }
@@ -439,9 +451,28 @@ a { text-decoration: none; }
   margin: 0px;
   .box_size();
   border: 16px solid black;
+
+  white-space: pre-wrap; /* css-3 */
+  white-space: -moz-pre-wrap !important; /* Mozilla, since 1999 */
+  word-wrap: break-word; /* Internet Explorer 5.5+ */
 }
 
 #console_loading_img {
   position: relative;
   margin-top: 3px;
+}
+
+#shell_command {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+#shell {
+  .box_size();
+  resize: none;
+  width: 100%;
+  min-height: 300px;
+  position: relative;
+  text-align: left;
+  padding: 8px;
 }

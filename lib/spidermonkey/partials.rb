@@ -1,3 +1,5 @@
+# From: https://gist.github.com/119874
+
 # stolen from http://github.com/cschneid/irclogger/blob/master/lib/partials.rb
 #   and made a lot more robust by me
 # this implementation uses erb by default. if you want to use any other template mechanism

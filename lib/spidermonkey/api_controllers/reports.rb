@@ -1,11 +1,14 @@
 module VirtualMonkey
   module API
     class Report < VirtualMonkey::API::BaseResource
+      extend VirtualMonkey::API::StandardSimpleDBHelpers
       PATH = "#{VirtualMonkey::API::ROOT}/reports".freeze
       ContentType = "application/vnd.rightscale.virtualmonkey.report"
       CollectionContentType = ContentType + ";type=collection"
       TEMP_STORE = File.join("", "tmp", "spidermonkey_reports.json").freeze
       BASE_DOMAIN = "virtualmonkey_report_metadata".freeze
+      S3_HOST = "s3.amazonaws.com"
+      S3_SCHEME = "http"
 
       #
       # Helper Methods
@@ -25,11 +28,14 @@ module VirtualMonkey
 
       def self.write_cache(json_hash)
         File.open(TEMP_STORE, "w") { |f| f.write(json_hash.to_json) }
+      rescue Errno::EBADF, IOError
+        sleep 0.1
+        retry
       end
       private_class_method :write_cache
 
       def self.fields
-        [
+        @@fields ||= [
           "user_email",
           "user_name",
           "mci_name",
@@ -38,6 +44,7 @@ module VirtualMonkey
           "mci_os_version",
           "mci_arch",
           "mci_rightlink",
+          #"mci_hypervisor",
           "mci_rev",
           "mci_id",
           "servertemplate_name",
@@ -54,30 +61,19 @@ module VirtualMonkey
           "tags",
           "from_date",
           "to_date",
+          "annotation",
         ]
       end
       private_class_method :fields
 
-      def self.new_sdb_connection
-        if Fog.credentials[:aws_access_key_id_test] && Fog.credentials[:aws_secret_access_key_test]
-          return Fog::AWS::SimpleDB.new(:aws_access_key_id => Fog.credentials[:aws_access_key_id_test],
-                                        :aws_secret_access_key => Fog.credentials[:aws_secret_access_key_test])
-        else
-          return Fog::AWS::SimpleDB.new()
-        end
+      def self.update_fields
+        @@update_fields ||= [
+          "annotation",
+          "tags",
+          "user",
+        ]
       end
-      private_class_method :new_sdb_connection
-
-      def self.new_s3_connection
-        if Fog.credentials[:aws_access_key_id_test] && Fog.credentials[:aws_secret_access_key_test]
-          return Fog::Storage.new(:provider => "AWS",
-                                  :aws_access_key_id => Fog.credentials[:aws_access_key_id_test],
-                                  :aws_secret_access_key => Fog.credentials[:aws_secret_access_key_test])
-        else
-          return Fog::Storage.new(:provider => "AWS")
-        end
-      end
-      private_class_method :new_s3_connection
+      private_class_method :update_fields
 
       def self.ensure_domain_exists(domain=this_month_domain)
         # If domain doesn't exist, create domain
@@ -106,6 +102,16 @@ module VirtualMonkey
         return record
       end
       private_class_method :read_single_record_sdb
+
+      def self.delete_single_record_sdb(uid)
+        uid = normalize_uid(uid)
+        sdb = new_sdb_connection
+        domain_to_check = BASE_DOMAIN + uid[0..5]
+        unless sdb.list_domains.body["Domains"].include?(domain_to_check)
+          raise IndexError.new("#{self} #{uid} not found")
+        end
+        sdb.delete_attributes(domain_to_check, uid)
+      end
 
       def self.read_range_sdb(start_date, end_date)
         sdb = new_sdb_connection
@@ -206,18 +212,31 @@ module VirtualMonkey
         # Sanitize Keys
         opts &= fields
         from_prefix, to_prefix = opts.delete("from_date"), opts.delete("to_date")
-        from_prefix ||= (previous_month_domain =~ /#{BASE_DOMAIN}([0-9]{6})/; "#{$1}01")
-        to_prefix ||= (this_month_domain =~ /#{BASE_DOMAIN}([0-9]{6})/; "#{$1}31")
+
+        records = []
 
         # First check cache
-        # TODO - later
+        if from_prefix && to_prefix
+          from_num, to_num = from_prefix.to_i, to_prefix.to_i
+          cache = read_cache
+          # We can only save ourselves from SimpleDB if we have the full range
+          if cache.keys.min[0..7] < from_prefix && to_prefix < Time.now.strftime("%Y%m%d")
+            records = cache.values.select { |r| (from_num..to_num) === r["uid"][0..7].to_i }
+          end
+        end
 
-        sdb = new_sdb_connection
-        domains = sdb.list_domains.body["Domains"].select { |domain| domain =~ /#{BASE_DOMAIN}/ }
-        return [] if domains.empty?
+        # Then pull from SimpleDB if we didn't have the full range
+        if records.empty?
+          from_prefix ||= (previous_month_domain =~ /#{BASE_DOMAIN}([0-9]{6})/; "#{$1}01")
+          to_prefix ||= (this_month_domain =~ /#{BASE_DOMAIN}([0-9]{6})/; "#{$1}31")
 
-        # Get records in a date range
-        records = read_range_sdb(from_prefix, to_prefix)
+          sdb = new_sdb_connection
+          domains = sdb.list_domains.body["Domains"].select { |domain| domain =~ /#{BASE_DOMAIN}/ }
+          return [] if domains.empty?
+
+          # Get records in a date range
+          records = read_range_sdb(from_prefix, to_prefix)
+        end
 
         # Filter records
         opts.each do |key,val|
@@ -277,21 +296,54 @@ module VirtualMonkey
 
         # First check local cache
         record = self.from_json_file(TEMP_STORE, uid)
-        return record if record
-
-        # Next check SimpleDB
-        record = read_single_record_sdb(uid)
+        record ||= read_single_record_sdb(uid)
         raise IndexError.new("#{self} #{uid} not found") unless record
         return self.new.deep_merge(record)
       end
 
+      def self.update(uid, opts={})
+        uid = normalize_uid(uid)
+
+        # Sanitize
+        opts &= update_fields
+
+        # Write to SimpleDB
+        record = get(uid).deep_merge(opts.merge("uid" => uid))
+        VirtualMonkey::API::Report.update_sdb(record)
+
+        # Update Cache
+        cache = read_cache
+        cache[uid].deep_merge(record)
+        write_cache(cache)
+        true
+      end
+
       def self.delete(uid)
-        not_implemented # TODO - later
+        uid = normalize_uid(uid)
+
+        delete_single_record_sdb(uid)
+        cache = read_cache
+        cache.delete(uid)
+        write_cache(cache)
       end
 
       def self.details(uid)
         # This will grab the contents of the logs from s3
-        not_implemented # TODO - later
+        uid = normalize_uid(uid)
+
+        record = get(uid)
+        raise NameError.new("#{self} doesn't have any logs") unless Array === record["logs"]
+        raise NameError.new("#{self} doesn't have a report_page") unless record["report_page"]
+        return record["logs"].map_to_h do |log_url|
+          uri = URI.parse(log_url)
+          unless uri.absolute?
+            uri = URI.parse(record["report_page"])
+            uri.set_scheme(S3_SCHEME)
+            uri.set_host(S3_HOST)
+            uri.set_path = (uri.path.split("/")[0..-2] << log_url.split("/").last).join("/")
+          end
+          RestClient.get(uri.to_s)
+        end
       end
 
       def self.autocomplete(date_begin=nil, date_end=nil)
@@ -393,7 +445,20 @@ module VirtualMonkey
         return s3_index_url
       end
 
-      def self.update_sdb(jobs)
+      # This method can either accept VirtualMonkey::GrinderJobs or VirtualMonkey::API::Daemon
+      def self.update_sdb(*jobs)
+        jobs.flatten!
+        data_ary = []
+        if jobs.reduce(true) { |b,j| b && (VirtualMonkey::GrinderJob === j) }
+          data_ary = jobs.map { |j| j.metadata }
+        elsif jobs.reduce(true) { |b,j| b && (VirtualMonkey::API::Daemon === j) }
+          data_ary = jobs.metadata.map { |deploy_id,mdata| mdata }
+        elsif jobs.reduce(true) { |b,j| b && (self === j) }
+          data_ary = jobs
+        else
+          raise TypeError.new("can't convert #{jobs.map { |j| j.class }} to Array of GrinderJobs")
+        end
+
         ## upload to sdb
         sdb = new_sdb_connection
         begin
@@ -401,24 +466,32 @@ module VirtualMonkey
           current_items = sdb.select("SELECT * from #{this_month_domain}").body["Items"]
           data = {}
           replace_data = {}
-          jobs.each do |job|
-            if current_items[job.metadata["uid"]]
-              # Only need to update status and logs
-              if current_items[job.metadata["uid"]]["status"] != job.metadata["status"]
-                data[job.metadata["uid"]] = {
-                  "status" => job.metadata["status"],
-                  "logs" => job.metadata["logs"],
-                  "report_page" => job.metadata["report_page"]
-                }
-                replace_data[job.metadata["uid"]] = ["status", "logs", "report_page"]
-              end
+          data_ary.each do |job_metadata|
+            next unless Hash === job_metadata
+            report = self.new.deep_merge(job_metadata)
+            report -= ["links", "actions"]
+            if current_items[report["uid"]]
+              # Only need to update stuff that has changed
+              data[report["uid"]] = report.reject { |key,val| val == current_items[report["uid"]][key] }
+              data[report["uid"]]["updated_at"] = self.new["updated_at"]
+              replace_data[job_metadata["uid"]] = data[report["uid"]].keys
             else
-              # Send all metadata
-              data[job.metadata["uid"]] = job.metadata
-              replace_data[job.metadata["uid"]] = job.metadata.keys
+              # Send all metadata that is a string (no arrays like "links" or "actions")
+              data[report["uid"]] = report
+              replace_data[report["uid"]] = report.keys
             end
           end
-          sdb.batch_put_attributes(this_month_domain, data, replace_data)
+
+          # Partition Data into 25-item chunks
+          data.chunk(25).each do |chunked_data|
+            begin
+              sdb.batch_put_attributes(this_month_domain, chunked_data, (replace_data & chunked_data.keys))
+            rescue Excon::Errors::ServiceUnavailable
+              warn "Got \"ServiceUnavailable\", retrying..."
+              sleep 5
+              retry
+            end
+          end
         rescue Excon::Errors::ServiceUnavailable
           warn "Got \"ServiceUnavailable\", retrying..."
           sleep 5

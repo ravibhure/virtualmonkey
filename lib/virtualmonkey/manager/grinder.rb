@@ -104,24 +104,6 @@ module VirtualMonkey
         File.join(project.paths["features"], name)
       end
 
-      def determine_rightlink_version(mci, regex)
-        mci.find_and_flatten_settings
-        settings_ary = mci.multi_cloud_image_cloud_settings
-        settings_ary.each { |setting|
-          if setting.is_a?(MultiCloudImageCloudSettingInternal)
-            if version = (setting.image_name =~ regex && $3)
-              return version
-            end
-          elsif setting.is_a?(McMultiCloudImageSetting)
-            if image = McImage.find(setting.image)
-              if version = (image.name =~ regex && $3)
-                return version
-              end
-            end
-          end
-        }
-      end
-
       # Runs a grinder test on a single Deployment
       # * deployment<~String> the nickname of the deployment
       # * feature<~String> the feature filename
@@ -143,137 +125,8 @@ module VirtualMonkey
         if @options[:report_metadata]
           # Build Job Metadata
           puts "\nBuilding Job Metadata...\n\n"
-          data = {}
-
-          ###################
-          # Filterable Data #
-          ###################
-
-          # User Data
-          puts "\nGathering User Data...\n\n"
-          describe_metadata_fields("user").each { |f| data["user_#{f}"] = `git config user.#{f}`.chomp }
-
-          # MultiCloudImage Data
-          puts "\nGathering MultiCloudImage Data...\n\n"
-          describe_metadata_fields("mci").each { |f| data["mci_#{f}"] = [] }
-          deployment.get_info_tags["self"].each { |key,val|
-            if key =~ /mci_id/
-              mci = MultiCloudImage.find(val.to_i)
-              data["mci_name"] |= [mci.name]
-              data["mci_href"] |= [mci.href]
-              data["mci_rev"] |= [mci.version]
-              data["mci_id"] |= [mci.rs_id]
-
-              # Extra Info
-              if mci.name =~ /RightImage/i
-                regex = nil
-                if mci.name =~ /CentOS/i
-                  data["mci_os"] |= ["CentOS"]
-                  #        CentOS  Version   Arch    RightLink
-                  regex = /CentOS_([.0-9]*)_([^_]*)_v([.0-9]*)/i
-                elsif mci.name =~ /RHEL/i
-                  data["mci_os"] |= ["RHEL"]
-                  #        RHEL  Version   Arch    RightLink
-                  regex = /RHEL_([.0-9]*)_([^_]*)_v([.0-9]*)/i
-                elsif mci.name =~ /Ubuntu/i
-                  data["mci_os"] |= ["Ubuntu"]
-                  #        Ubuntu  Version Nickname    Arch    RightLink
-                  regex = /Ubuntu_([.0-9]*)[_a-zA-Z]*_([^_]*)_v([.0-9]*)/i
-                elsif mci.name =~ /Windows/i
-                  data["mci_os"] |= ["Windows"]
-                  #        Windows  Version   ServicePack  Arch    App    RightLink
-                  regex = /Windows_([0-9A-Za-z]*[_SP0-9]*)_([^_]*)[\w.]*_v([.0-9]*)/i
-                end
-                data["mci_os_version"] |= [(mci.name =~ regex && $1 || nil)].compact
-                data["mci_arch"] |= [(mci.name =~ regex && $2 || nil)].compact
-                data["mci_rightlink"] |= [determine_rightlink_version(mci, regex) || nil].compact
-              else
-                data["mci_os_version"] |= ["unknown"]
-                data["mci_arch"] |= ["unknown"]
-                data["mci_rightlink"] |= ["unknown"]
-              end
-            end
-          }
-
-          # ServerTemplate Data
-          puts "\nGathering ServerTemplate Data...\n\n"
-          describe_metadata_fields("servertemplate").each { |f| data["servertemplate_#{f}"] = [] }
-          deployment.servers.each { |server|
-            server.settings
-            st = ServerTemplate.find(server.server_template_href)
-            data["servertemplate_name"] |= [st.nickname]
-            data["servertemplate_href"] |= [st.href]
-            data["servertemplate_rev"] |= [st.version]
-            data["servertemplate_id"] |= [st.rs_id]
-          }
-
-          # Cloud Data
-          puts "\nGathering Cloud Data...\n\n"
-          describe_metadata_fields("cloud").each { |f| data["cloud_#{f}"] = [] }
-          cloud_id = deployment.get_info_tags["self"]["cloud"]
-          clouds = VirtualMonkey::Toolbox.get_available_clouds
-          if cloud_id != "multicloud"
-            data["cloud_id"] |= [cloud_id.to_i]
-            data["cloud_name"] |= [clouds.detect { |hsh| hsh["cloud_id"] == cloud_id.to_i }["name"]]
-          else
-            deployment.servers_no_reload.each { |server|
-              scid = server.cloud_id.to_i
-              data["cloud_id"] |= [scid]
-              data["cloud_name"] |= [clouds.detect { |hsh| hsh["cloud_id"] == scid.to_i }["name"]]
-            }
-          end
-
-          # InstanceType Data
-          puts "\nGathering InstanceType Data...\n\n"
-          describe_metadata_fields("instancetype").each { |f| data["instancetype_#{f}"] = [] }
-          deployment.servers_no_reload.each { |server|
-            if server.multicloud
-              if server.current_instance
-                data["instancetype_href"] |= [server.current_instance.instance_type]
-                data["instancetype_name"] |= [McInstanceType.find(server.current_instance.instance_type).name]
-              else
-                data["instancetype_href"] |= [server.next_instance.instance_type]
-                data["instancetype_name"] |= [McInstanceType.find(server.next_instance.instance_type).name]
-              end
-            else
-              data["instancetype_name"] |= [server.ec2_instance_type]
-            end
-          }
-
-          # Datacenter Data
-          puts "\nGathering Datacenter Data...\n\n"
-          deployment.servers_no_reload.each { |server|
-            if server.multicloud
-              describe_metadata_fields("datacenter").each { |f| data["datacenter_#{f}"] ||= [] }
-              data["datacenter_href"] |= [server.datacenter]
-              data["datacenter_name"] |= [Datacenter.find(server.datacenter).name]
-            end
-          }
-
-          # Troop File Data
-          puts "\nGathering Troop Data...\n\n"
-          data["troop"] = [@options[:config_file]]
-
-          # Run Tags Data
-          data["tags"] = @options[:report_tags] || []
-
-          #####################
-          # Extra Report Data #
-          #####################
-
-          # Feature File Data
-          data["status"] = "running" # status => "pending|running|failed|passed" (or, manually, "blocked" or "willnotdo")
-          data["report_page"] = nil # nil until first upload
-          data["started_at"] = @started_at.utc.strftime("%Y/%m/%d %H:%M:%S +0000")
-          data["feature"] = [feature] # TODO: Gather runner info and runner option info?
-          data["command_create"] = Base64.decode64(deployment.get_info_tags["self"]["command"])
-          data.delete("command_create") unless data["command_create"]
-          data["command_run"] = VirtualMonkey::Command::last_command_line
-
-          # Unique JobID
-          data["uid"] = @started_at.strftime("%Y%m%d%H%M%S#{deployment.rs_id}")
-
-          new_job.metadata = data
+          new_job.metadata = VirtualMonkey::Metadata::get_report_metadata(deployment, feature, @options, @started_at)
+          VirtualMonkey::API::Report.update_sdb(new_job)
         end
         new_job.metadata ||= {}
 
@@ -301,8 +154,14 @@ module VirtualMonkey
         run_test(deployment, feature, test_ary, other_logs)
       end
 
-      def initialize()
-        @started_at = Time.now
+      def initialize(opts={})
+        @options = opts
+        begin
+          @started_at = Marshal.load(Base64.decode64(opts[:started_at]))
+        rescue
+        ensure
+          @started_at ||= Time.now
+        end
         @jobs = []
         @passed = []
         @failed = []
@@ -317,7 +176,27 @@ module VirtualMonkey
       # runs a feature on an array of deployments
       # * deployments<~Array> array of strings containing the nicknames of the deployments
       # * feature_name<~String> the feature filename
+      #
+      # Analyzes the configuration of the monkey, configuration of the features files,
+      # the set of tests to run and the available deployments.
       def run_tests(deploys, features, set=[])
+
+        # proc to handle reporting throttling blocked status
+        report_blocked_status = proc do |ret,d,feature,options,started_at|
+          # Handle reporting back "blocked" status
+          data = {
+            "annotation" => ret,
+            "status" => "blocked"
+          }
+          # Update SimpleDB
+          meta_data = ::VirtualMonkey::Metadata.get_report_metadata(d, feature, options, started_at)
+          meta_data.deep_merge! data
+          report = ::VirtualMonkey::API::Report.new.deep_merge meta_data
+          ::VirtualMonkey::API::Report.update_sdb report
+          warn ret
+        end
+
+        # Validate that we can divide up teature tests amung deployments
         features = [features].flatten
         warn_msg = {}
         unless set.nil? || set.empty?
@@ -335,6 +214,7 @@ module VirtualMonkey
           error "No features match #{set.inspect}! (Did you mispell a test name?)"
         end
 
+        # Divide up the features and tests amung the deployments
         test_cases = features.map_to_h { |feature| VirtualMonkey::TestCase.new(feature, @options) }
         deployment_hsh = {}
         if VirtualMonkey::config[:feature_mixins] == "parallel" or features.length < 2
@@ -355,6 +235,7 @@ module VirtualMonkey
         end
 
         if deploys.size == 1 && VirtualMonkey::Command::last_command_line !~ /^troop/ && !@options[:report_metadata]
+          # handle a single deployment
           feature = deployment_hsh.first.first
           d = deployment_hsh.first.last.last
           total_keys = test_cases[feature].get_keys
@@ -366,12 +247,46 @@ module VirtualMonkey
             deployment_tests = [total_keys].map { |ary| ary.shuffle }
           end
 
+          if @options[:report_metadata]
+            # Using the mappings of deployments to tests we will make sure the deployment can be run.
+            # Create a new runner instance for the feature's test case
+            runner = test_cases[feature].options[:runner].new(d.nickname)
+
+            # Call the before_run code for the runner and if it fails bail out
+            if ret = before_run_logic(runner)
+              # Handle reporting back "blocked" status
+              report_blocked_status[ret, d, feature, @options, @started_at]
+              exit 1
+            end
+          end
+
           exec_test(d, feature, deployment_tests[0], test_cases[feature].options[:additional_logs])
-        else
+
+        else # multiple deployments handled here
           deployment_hsh.each { |feature,deploy_ary|
             total_keys = test_cases[feature].get_keys
             total_keys &= set unless set.nil? || set.empty?
             total_keys -= @options[:exclude_tests] unless @options[:exclude_tests].nil? || @options[:exclude_tests].empty?
+
+            if @options[:report_metadata]
+              # Using the mappings of deployments to tests we will make sure the deployment can be run
+              #
+              # Create a new runner instance for the feature's test case
+              deploy_ary.reject! do |d|
+                runner = test_cases[feature].options[:runner].new(d.nickname)
+                ret = before_run_logic(runner)
+                # Call the before_run code for the runner and if it fails bail out
+                if ret
+                  # Handle reporting back "blocked" status
+                  report_blocked_status[ret, d, feature, @options, @started_at]
+                end
+                ret
+              end
+
+              exit 1 if deploy_ary.empty?
+            end
+
+            # Pick which tests are assigned to which deployments
             unless VirtualMonkey::config[:test_permutation] == "distributive"
               deployment_tests = [total_keys] * deploy_ary.length
             else
@@ -385,13 +300,40 @@ module VirtualMonkey
               }
             end
 
+            # Pick the order in which the tests will execute (per deployment)
             deployment_tests.map! { |ary| ary.shuffle } unless VirtualMonkey::config[:test_ordering] == "strict"
 
+            # Execute the tests
             deploy_ary.each_with_index { |d,i|
               run_test(d, feature, deployment_tests[i], test_cases[feature].options[:additional_logs])
             }
           }
         end
+      end
+
+      # Encapsulates the logic for executing the before_run hooks for a particular runner
+      def before_run_logic(runner)
+        if runner.class.respond_to?(:before_run)
+          runner.class.ancestors.select { |a| a.respond_to?(:before_run) }.each do |ancestor|
+            if not ancestor.before_run.empty?
+              puts "Executing before_run hooks..."
+              ancestor.before_run.each { |fn|
+                ret = false
+                begin
+                  ret = (fn.is_a?(Proc) ? runner.instance_eval(&fn) : runner.__send__(fn))
+                rescue Exception => e
+                  warn "WARNING: Got \"#{e.message}\" from #{e.backtrace.join("\n")}"
+                end
+                return ret if ret
+              }
+              puts "Finished executing before_run hooks."
+            end
+          end
+        else
+          warn "#{runner.class} doesn't extend VirtualMonkey::RunnerCore::CommandHooks"
+          return true
+        end
+        return false
       end
 
       # Print status of jobs. Also watches for jobs that had exit statuses other than 0 or 1
@@ -448,26 +390,6 @@ module VirtualMonkey
           report_url = VirtualMonkey::API::Report.update_s3(@jobs, @log_started)
         end
         puts "\n    New results available at #{report_url}\n\n"
-      end
-
-      def describe_metadata_fields(type=nil)
-         fields = {
-          "user" => ["email", "name"],
-          "mci" => ["name", "href", "os", "os_version", "arch", "rightlink", "rev", "id"],
-          "servertemplate" => ["name", "href", "id", "rev"],
-          "cloud" => ["name", "id"],
-          "feature" => [],
-          "instancetype" => ["name", "href"],
-          "datacenter" => ["name", "href"],
-          "troop" => [],
-          "report_page" => [],
-          "logs" => [],
-          "tag" => [],
-          "started_at" => [],
-          "command" => ["create", "run"],
-          "status" => [],
-        }
-        (type ? fields[type] : fields.keys)
       end
     end
   end

@@ -59,6 +59,75 @@
           });
         });
 
+        /************
+         * Tooltips *
+         ************/
+
+        function displayTooltip() {
+          elem = $(this);
+          var index = (elem.is("select") ? elem.val() : elem.parent().find("select").val());
+          var help_wrap = $("<div />");
+          help_wrap.append($("<h3 />").text(index.toUpperCase()));
+          help_wrap.append($("<p />").text(commands[index]));
+          list = $("<ul />");
+          switch (index) {
+            case "collateral":
+              help_wrap.append($("<h4 />").text("SUBCOMMANDS"));
+              for (subcmd in collateral_opts) {
+                obj = collateral_opts[subcmd];
+                txt = "<u>" + subcmd + "</u>: " + obj.desc + "<br />Usage: ";
+                span = $("<span />").text(obj.usage);
+                list.append($("<li />").html(txt).append(span));
+              }
+              break;
+            case "config":
+              help_wrap.append($("<h4 />").text("SUBCOMMANDS"));
+              for (subcmd in config_opts) {
+                obj = config_opts[subcmd];
+                txt = "<u>" + subcmd + "</u>: " + obj.desc + "<br />Usage: "
+                span = $("<span />").text(obj.usage);
+                list.append($("<li />").html(txt).append(span));
+              }
+              help_wrap.append(list).append($("<h4 />").text("CONFIGURABLE VARIABLES"));
+              list = $("<ul />");
+              for (variable in config_vars) {
+                obj = config_vars[variable];
+                txt = "<u>" + variable + "</u>: " + obj.desc + "<br />";
+                txt += "Valid Values: " + obj.values.toString() + "<br />";
+                txt += "Default Value: " + obj["default"];
+                list.append($("<li />").html(txt));
+              }
+              break;
+            case "environment":
+              help_wrap.append($("<h4 />").text("PRESETS"));
+              for (preset in environment_presets) {
+                obj = environment_presets[preset];
+                txt = "<u>" + preset + "</u>: " + obj.desc + "<br />Usage: ";
+                span = $("<span />").text(obj.usage);
+                list.append($("<li />").html(txt).append(span));
+              }
+              break;
+            default:
+              help_wrap.append($("<h4 />").text("FLAGS"));
+              for (idx in command_flags[index]) {
+                flag = command_flags[index][idx];
+                if (all_flags[flag]) {
+                  txt = "<u>" + flag + "</u>: " + all_flags[flag].desc;
+                  if (all_flags[flag].opts.type) {
+                    txt += "<br />Type: " + all_flags[flag].opts.type;
+                  }
+                  if (all_flags[flag].opts["default"]) {
+                    txt += "<br />Default Value: " + all_flags[flag].opts["default"];
+                  }
+                  list.append($("<li />").html(txt));
+                }
+              }
+              break;
+          }
+          help_wrap.append(list);
+          $("#help_info").html(help_wrap.html());
+        }
+
         function booleanOptionHandler() {
           elem = $(this);
           flag = elem.find("option:selected").val();
@@ -70,18 +139,23 @@
             }
           }
         }
+
         // Initialize Deferral
         if ((/^1\.[7-9]/).test($.fn.jquery)) {
           $("#command_edit").on("change", "div.command_option select", booleanOptionHandler);
+          $("#command_edit").on("change", "#command", displayTooltip);
         } else {
           $("#command_edit").delegate("div.command_option select", "change", booleanOptionHandler);
+          $("#command_edit").delegate("#command", "change", displayTooltip);
         }
 
         // Set up
         $("#add_flag").click(function() {
           cmd = $("#command option:selected").text()
           if (cmd === "") return alert("Please select a command first");
-          // TODO - check if cmd === "collateral", "config", or "environment"
+          if (cmd === "collateral" || cmd === "config" || cmd === "environment") {
+            if ($("#command_edit .command_option").length >= 1) return null;
+          }
           // Add option div
           num_options++;
           var div = $("<div data-label='Option' id='option" + num_options + "' />");
@@ -96,7 +170,7 @@
             select.append("<option value='" + flag + "'>" + flag + "</option>");
           }
           div.addClass("inline-inputs command_option")
-             .append(select).append(input).append(tooltip).append(del)
+             .append(select).append(input).append(del)
              .wrap("<div class='clearfix' />")
              .wrap("<div class='input' />")
              .attr("name", function(index,old) { return this.id; })
@@ -109,8 +183,8 @@
           for (field in editing_task) {
             switch(field) {
               // Text Fields
-              case "name": case "minute": case "hour": case "day":
-                $("#"+field).attr("value", editing_task[field]);
+              case "name": case "minute": case "hour": case "day": case "shell":
+                $("#"+field).val(editing_task[field]);
                 break;
 
               // Selects - NOTE: skip "command" if "options" exists
@@ -174,6 +248,15 @@
                 break;
             }
           }
+          var tab_selector = "#command_edit";
+          if (typeof editing_task["subtask_hrefs"] === "object") { tab_selector = "#subtask_edit"; }
+          if (typeof editing_task["shell"] === "string") { tab_selector = "#shell_command"; }
+          $("#task_type_holder > ul.tabs > li").removeClass("active")
+                                               .has("a[href='" + tab_selector + "']")
+                                               .addClass("active")
+          $("#task_type > div").removeClass("active")
+                               .filter(tab_selector)
+                               .addClass("active")
         <% end %>
 
         function serializeTaskForm() {
@@ -190,45 +273,61 @@
           var val_regex = new RegExp(optVal + "(\\d+)", "i");
           console.log(raw_form_data);
 
-          if ($("#task_type").find("div.active").attr("id") === "command_edit") {
-            for (field in raw_form_data) {
-              // Transform option data
-              if (flag_regex.test(field) && all_flags[raw_form_data[field]]) {
-                if (all_flags[raw_form_data[field]].opts.type === "boolean") {
-                  nice_data.options[raw_form_data[field]] = true;
-                } else {
-                  // Ignore, will be grabbed by val_regex
-                }
-              } else if (val_regex.test(field)) {
-                optNum = val_regex.exec(field)[1];
-                optName = raw_form_data[optFlag + optNum];
-                new_value = raw_form_data[field];
-                if (optName in nice_data.options) {
-                  if (typeof nice_data.options[optName] === "object") {
-                    nice_data.options[optName].push(new_value);
+          switch ($("#task_type").find("div.active").attr("id")) {
+            case "command_edit":
+              for (field in raw_form_data) {
+                // Transform option data
+                if (flag_regex.test(field) && all_flags[raw_form_data[field]]) {
+                  if (all_flags[raw_form_data[field]].opts.type === "boolean") {
+                    nice_data.options[raw_form_data[field]] = true;
                   } else {
-                    nice_data.options[optName] = new Array(nice_data.options[optName], new_value);
+                    // Ignore, will be grabbed by val_regex
                   }
-                } else {
-                  nice_data.options[optName] = new_value;
+                } else if (val_regex.test(field)) {
+                  optNum = val_regex.exec(field)[1];
+                  optName = raw_form_data[optFlag + optNum];
+                  new_value = raw_form_data[field];
+                  if (optName in nice_data.options) {
+                    if (typeof nice_data.options[optName] === "object") {
+                      nice_data.options[optName].push(new_value);
+                    } else {
+                      nice_data.options[optName] = new Array(nice_data.options[optName], new_value);
+                    }
+                  } else {
+                    nice_data.options[optName] = new_value;
+                  }
+                } else if (field !== "affinity") {
+                  // Reject affinity data
+                  nice_data[field] = raw_form_data[field];
                 }
-              } else if (field !== "affinity") {
-                // Reject affinity data
-                nice_data[field] = raw_form_data[field];
               }
-            }
-          } else {
-            for (field in raw_form_data) {
-              // Reject all command and options from form data
-              if (flag_regex.test(field) || val_regex.test(field) || field === "command") {}
-              else { nice_data[field] = raw_form_data[field]; }
-            }
-            // Serialize subtasks
-            nice_data["subtask_hrefs"] = []
-            $("#subtasks ol li").each(function(index) {
-              href = <%= VirtualMonkey::API::Task::PATH.inspect %> + "/" + $(this).attr("data-uid");
-              nice_data["subtask_hrefs"].push(href);
-            });
+              break;
+
+            case "shell_command":
+              for (field in raw_form_data) {
+                // Reject all command and options from form data
+                if (flag_regex.test(field) || val_regex.test(field) || field === "command" || field === "affinity") {}
+                else { nice_data[field] = raw_form_data[field]; }
+              }
+              break;
+
+            case "subtask_edit":
+              for (field in raw_form_data) {
+                // Reject all command and options from form data
+                if (flag_regex.test(field) || val_regex.test(field) || field === "command" || field === "shell") {}
+                else { nice_data[field] = raw_form_data[field]; }
+              }
+              // Serialize subtasks
+              nice_data["subtask_hrefs"] = []
+              $("#subtasks ol li").each(function(index) {
+                href = <%= VirtualMonkey::API::Task::PATH.inspect %> + "/" + $(this).attr("data-uid");
+                nice_data["subtask_hrefs"].push(href);
+              });
+              break;
+
+            default:
+              console.error("invalid active tab, check div ids");
+              break;
           }
           console.log(nice_data);
           return nice_data;
@@ -289,90 +388,6 @@
           });
         <% end %>
 
-        /************
-         * Tooltips *
-         ************/
-
-        function displayTooltip(help_type) {
-          return (function() {
-            elem = $(this);
-            var index = (elem.is("select") ? elem.val() : elem.parent().find("select").val());
-            var help_wrap = $("<div />");
-            if (help_type === "command") {
-              help_wrap.append($("<h3 />").text(index.toUpperCase()));
-              help_wrap.append($("<p />").text(commands[index]));
-              list = $("<ul />");
-              switch (index) {
-                case "collateral":
-                  help_wrap.append($("<h4 />").text("SUBCOMMANDS"));
-                  for (subcmd in collateral_opts) {
-                    obj = collateral_opts[subcmd];
-                    txt = "<u>" + subcmd + "</u>: " + obj.desc + "<br />Usage: ";
-                    span = $("<span />").text(obj.usage);
-                    list.append($("<li />").html(txt).append(span));
-                  }
-                  break;
-                case "config":
-                  help_wrap.append($("<h4 />").text("SUBCOMMANDS"));
-                  for (subcmd in config_opts) {
-                    obj = config_opts[subcmd];
-                    txt = "<u>" + subcmd + "</u>: " + obj.desc + "<br />Usage: "
-                    span = $("<span />").text(obj.usage);
-                    list.append($("<li />").html(txt).append(span));
-                  }
-                  help_wrap.append(list).append($("<h4 />").text("CONFIGURABLE VARIABLES"));
-                  list = $("<ul />");
-                  for (variable in config_vars) {
-                    obj = config_vars[variable];
-                    txt = "<u>" + variable + "</u>: " + obj.desc + "<br />";
-                    txt += "Valid Values: " + obj.values.toString() + "<br />";
-                    txt += "Default Value: " + obj["default"];
-                    list.append($("<li />").html(txt));
-                  }
-                  break;
-                case "environment":
-                  help_wrap.append($("<h4 />").text("PRESETS"));
-                  for (preset in environment_presets) {
-                    obj = environment_presets[preset];
-                    txt = "<u>" + preset + "</u>: " + obj.desc + "<br />Usage: ";
-                    span = $("<span />").text(obj.usage);
-                    list.append($("<li />").html(txt).append(span));
-                  }
-                  break;
-                default:
-                  help_wrap.append($("<h4 />").text("FLAGS"));
-                  for (idx in command_flags[index]) {
-                    flag = command_flags[index][idx];
-                    if (all_flags[flag]) {
-                      txt = "<u>" + flag + "</u>: " + all_flags[flag].desc;
-                      if (all_flags[flag].opts.type) {
-                        txt += "<br />Type: " + all_flags[flag].opts.type;
-                      }
-                      if (all_flags[flag].opts["default"]) {
-                        txt += "<br />Default Value: " + all_flags[flag].opts["default"];
-                      }
-                      list.append($("<li />").html(txt));
-                    }
-                  }
-                  break;
-              }
-              help_wrap.append(list);
-            } else if (help_type === "flag") {
-            }
-            $("#help_info").html(help_wrap.html());
-          });
-        }
-
-        if ((/^1\.[7-9]/).test($.fn.jquery)) {
-          $("#command_edit").on("click", "#command + img.tooltip", displayTooltip("command"));
-          $("#command_edit").on("click", "command_option > img.tooltip", displayTooltip("flag"));
-          $("#command_edit").on("change", "#command", displayTooltip("command"));
-        } else {
-          $("#command_edit").delegate("#command + img.tooltip", "click", displayTooltip("command"));
-          $("#command_edit").delegate("command_option > img.tooltip", "click", displayTooltip("flag"));
-          $("#command_edit").delegate("#command", "change", displayTooltip("command"));
-        }
-
         $("#command").trigger("change");
       });
     </script>
@@ -383,10 +398,11 @@
       <legend class="legend">Edit Task</legend>
       <input type="text" class="large init" data-label="Name" id="name" />
       <div class="clearfix">
-        <div id="task_type">
+        <div id="task_type_holder">
           <ul class="tabs" data-tabs="tabs">
-            <li class="active"><a href="#command_edit">Command</a></li>
-            <li><a href="#subtask_edit">Other Tasks</a></li>
+            <li class="active"><a href="#command_edit">Monkey Command</a></li>
+            <li><a href="#shell_command">Shell Script</a></li>
+            <li><a href="#subtask_edit">Multiple Subtasks</a></li>
           </ul>
           <div class="tab-content" id="task_type">
             <div class="active" id="command_edit">
@@ -395,7 +411,6 @@
                   <select id="command" name="command">
                     <option value=""></option>
                   </select>
-                  <img src='/img/tooltip.png' class='action tooltip' />
                 </div>
                 <a href="javascript:void(0)" id="add_flag">+ Add Flag...</a>
               </div>
@@ -404,6 +419,11 @@
                 <div id="help_info">
                 </div>
               </div>
+            </div>
+            <div id="shell_command">
+              <h2>Run a command as user: "<%= Etc.getlogin %>"</h2><br />
+              <h3>Pwd: "<%= VirtualMonkey::ROOTDIR %>"</h3><br />
+              <textarea id="shell" name="shell"></textarea>
             </div>
             <div id="subtask_edit">
               <select class="init" data-label="Subtask Affinity" id="affinity">
