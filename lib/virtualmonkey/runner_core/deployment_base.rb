@@ -274,13 +274,13 @@ module VirtualMonkey
         }
       end
 
-      # Re-Launch all servers
-      def relaunch_all(timeout=::VirtualMonkey::config[:default_timeout])
-        relaunch_set(@servers, timeout)
+      # Re-Launch all servers and wait for them to become operational
+      def relaunch_all
+        relaunch_set(@servers)
       end
 
-      # Re-Launch a set of servers
-      def relaunch_set(set=@servers, timeout=::VirtualMonkey::config[:default_timeout])
+      # Re-Launch a set of servers and wait for them to become operational
+      def relaunch_set(set=@servers)
         set = select_set(set)
         set.each { |s|
           begin
@@ -289,7 +289,7 @@ module VirtualMonkey
               s.params = s.class[s.href].first.params;
               s.settings
             }
-            transaction { wait_for_set(s, "operational", timeout) }
+            transaction { wait_for_set(s, "operational") }
           rescue Exception => e
             raise #unless e.message =~ /AlreadyLaunchedError/
           end
@@ -308,16 +308,40 @@ module VirtualMonkey
       # Wait for server(s) matching nickname_substr to enter state
       # * nickname_substr<~String> - regex compatible string to match
       # * state<~String> - state to wait for, eg. operational
-      def wait_for_set(nickname_substr, state, timeout=::VirtualMonkey::config[:default_timeout])
+      def wait_for_set(nickname_substr, state)
         set = select_set(nickname_substr)
-        state_wait(set, state, timeout)
+        state_wait(set, state)
+      end
+
+      # Helper method, returns the configured timout based on the state
+      # passed in.
+      #
+      # Supported states:
+      #   "operational"
+      #   "stopped"
+      #   "terminated"
+      #   "completed"
+      #
+      # Any other value passed will return ::VirtualMonkey::config[:default_timeout]
+      #
+      def get_timout_for_state(state)
+        timeout = case state
+          when "operational" then ::VirtualMonkey::config[:operational_timeout]
+          when "stopped" then ::VirtualMonkey::config[:stopped_timeout]
+          when "terminated" then ::VirtualMonkey::config[:terminated_timeout]
+          when "completed" then ::VirtualMonkey::config[:completed_timeout]
+          else ::VirtualMonkey::config[:default_timeout]
+        end
+        puts "----- TRACE LOG: get_timeout_for_state(#{state}) returning #{timeout}"
+        return timeout
       end
 
       # Helper method, waits for state on a set of servers.
       # * set<~Array> of servers to operate on
       # * state<~String> state to wait for
-      def state_wait(set, state, timeout=::VirtualMonkey::config[:default_timeout])
+      def state_wait(set, state)
         # do a special wait, if waiting for operational (for dns)
+        timeout = get_timout_for_state(state)
         if state == "operational"
           set.each { |server| transaction { server.wait_for_operational_with_dns(timeout) } }
         else
@@ -327,8 +351,8 @@ module VirtualMonkey
 
       # Wait for all server(s) to enter state.
       # * state<~String> - state to wait for, eg. operational
-      def wait_for_all(state, timeout=::VirtualMonkey::config[:default_timeout])
-        state_wait(@servers, state, timeout)
+      def wait_for_all(state)
+        state_wait(@servers, state)
       end
 
       def start_ebs_all(wait=true)
@@ -361,15 +385,16 @@ module VirtualMonkey
       def reboot_set(set=@servers, serially_reboot=false)
         wait_for_reboot = true
         set = select_set(set)
+        timeout = get_timout_for_state(state)
         # Do NOT thread this each statement
         set.each do |s|
           transaction { s.reboot(wait_for_reboot) }
           if serially_reboot
-            transaction { s.wait_for_state("operational") }
+            transaction { s.wait_for_state("operational", timeout) }
           end
         end
         set.each do |s|
-          transaction { s.wait_for_state("operational") }
+          transaction { s.wait_for_state("operational", timeout) }
         end
       end
 
@@ -408,7 +433,7 @@ module VirtualMonkey
             else
               transaction {
                 a = launch_script(friendly_name, s, options)
-                transaction { a.wait_for_completed(::VirtualMonkey::config[:default_timeout]) }
+                transaction { a.wait_for_completed(::VirtualMonkey::config[:completed_timeout]) }
               }
             end
           end
@@ -644,7 +669,7 @@ module VirtualMonkey
   #       Do this for all? Or just the one?
   #       @servers.each { |server| server.wait_for_operational_with_dns }
           s = @servers.first
-          transaction { s.wait_for_operational_with_dns(::VirtualMonkey::config[:default_timeout]) }
+          transaction { s.wait_for_operational_with_dns(::VirtualMonkey::config[:operational_timeout]) }
           # Verify operational
           run_simple_check(s)
           check_monitoring

@@ -204,6 +204,22 @@ module VirtualMonkey
                                 "default" => (20*60),
                                 "values"  => Integer},
 
+      "operational_timeout" => {"desc"    => "Controls the default timeout for server operational state",
+                                "default" => (20*60),
+                                "values"  => Integer},
+
+      "stopped_timeout"     => {"desc"    => "Controls the default timeout for server stopped state",
+                                "default" => (20*60),
+                                "values"  => Integer},
+
+      "terminated_timeout"  => {"desc"    => "Controls the default timeout for server terminated state",
+                                "default" => (20*60),
+                                "values"  => Integer},
+
+      "completed_timeout"   => {"desc"    => "Controls the default timeout for server completed state",
+                                "default" => (20*60),
+                                "values"  => Integer},
+
       "enable_log_auditor"  => {"desc"    => "Enables log auditing for logfiles defined in lists/*.json",
                                 "default" => "false",
                                 "values"  => [false, true]},
