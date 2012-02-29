@@ -333,7 +333,7 @@ module VirtualMonkey
         if timeout == nil
           timeout = ::VirtualMonkey::config[:default_timeout]
         end
-        puts "----- TRACE LOG: get_timeout_for_state(#{state}) returning #{timeout}"
+        puts "Timeout for state \"#{state}\" set to #{timeout} seconds."
         return timeout
       end
 

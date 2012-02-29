@@ -5,6 +5,8 @@ require 'yaml'
 #
 
 module VirtualMonkey
+  @@virtualMonkeyConfigFilesLoaded = false
+
   ROOTDIR = File.expand_path(File.join(File.dirname(__FILE__), "..")).freeze
   GENERATED_CLOUD_VAR_DIR = File.join(ROOTDIR, "cloud_variables").freeze
   TEST_STATE_DIR = File.join(ROOTDIR, "test_states").freeze
@@ -46,19 +48,23 @@ module VirtualMonkey
   SYS_CONFIG = File.join("", "etc", "virtualmonkey", "config.yaml").freeze
 
   def self.config
-    @@virtual_monkey_config = {}
-    [VirtualMonkey::SYS_CONFIG, VirtualMonkey::USER_CONFIG, VirtualMonkey::ROOT_CONFIG].each do |config_file|
-      if File.exists?(config_file)
-        begin
-          @@virtual_monkey_config.merge!(YAML::load(IO.read(config_file)) || {})
-        rescue Errno::EBADF, IOError
-          retry
-        end
-        if VirtualMonkey.const_defined?("Command")
-          config_ok = @@virtual_monkey_config.reduce(true) do |bool,ary|
-            bool && VirtualMonkey::Command::check_variable_value(ary[0], ary[1])
+    if not @@virtualMonkeyConfigFilesLoaded
+      @@virtual_monkey_config = {}
+      puts "loading available virtualmonkey config files..."
+      [VirtualMonkey::SYS_CONFIG, VirtualMonkey::USER_CONFIG, VirtualMonkey::ROOT_CONFIG].each do |config_file|
+        if File.exists?(config_file)
+          puts "  #{config_file}..."
+          begin
+              @@virtual_monkey_config.merge!(YAML::load(IO.read(config_file)) || {})
+          rescue Errno::EBADF, IOError
+            retry
           end
-          warn "WARNING: #{config_file} contains an invalid variable or value" unless config_ok
+          if VirtualMonkey.const_defined?("Command")
+            config_ok = @@virtual_monkey_config.reduce(true) do |bool,ary|
+              bool && VirtualMonkey::Command::check_variable_value(ary[0], ary[1])
+            end
+            warn "WARNING: #{config_file} contains an invalid variable or value" unless config_ok
+          end
         end
       end
     end
@@ -67,6 +73,7 @@ module VirtualMonkey
         @@virtual_monkey_config[var.to_sym] ||= hsh["default"]
       end
     end
+    @@virtualMonkeyConfigFilesLoaded = true
     @@virtual_monkey_config
   end
 end
