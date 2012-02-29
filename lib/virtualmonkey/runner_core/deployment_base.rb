@@ -324,7 +324,7 @@ module VirtualMonkey
       #
       # Any other value passed will return ::VirtualMonkey::config[:default_timeout]
       #
-      def get_timout_for_state(state)
+      def get_timeout_for_state(state)
         timeout = case state
           when "operational" then ::VirtualMonkey::config[:operational_timeout]
           when "stopped" then ::VirtualMonkey::config[:stopped_timeout]
@@ -341,7 +341,7 @@ module VirtualMonkey
       # * state<~String> state to wait for
       def state_wait(set, state)
         # do a special wait, if waiting for operational (for dns)
-        timeout = get_timout_for_state(state)
+        timeout = get_timeout_for_state(state)
         if state == "operational"
           set.each { |server| transaction { server.wait_for_operational_with_dns(timeout) } }
         else
@@ -385,16 +385,17 @@ module VirtualMonkey
       def reboot_set(set=@servers, serially_reboot=false)
         wait_for_reboot = true
         set = select_set(set)
-        timeout = get_timout_for_state(state)
+        state = "operational"
+        timeout = get_timeout_for_state(state)
         # Do NOT thread this each statement
         set.each do |s|
           transaction { s.reboot(wait_for_reboot) }
           if serially_reboot
-            transaction { s.wait_for_state("operational", timeout) }
+            transaction { s.wait_for_state(state, timeout) }
           end
         end
         set.each do |s|
-          transaction { s.wait_for_state("operational", timeout) }
+          transaction { s.wait_for_state(state, timeout) }
         end
       end
 
