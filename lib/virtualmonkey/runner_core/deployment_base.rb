@@ -313,8 +313,12 @@ module VirtualMonkey
         state_wait(set, state)
       end
 
-      # Helper method, returns the configured timout based on the state
-      # passed in.
+      # Helper method, returns the configured timeout based on the state
+      # passed in. These timeouts can be configured in .config.yaml and
+      # may also be defined on the command line. Any command line values
+      # supplied will supersede any values configured in .config.yaml.
+      #
+      # * state<~String> - state to wait for, eg. operational
       #
       # Supported states:
       #   "operational"
@@ -325,7 +329,7 @@ module VirtualMonkey
       # Any other value passed will return ::VirtualMonkey::config[:default_timeout]
       #
       def get_timeout_for_state(state)
-        timeout = ::VirtualMonkey::config[state.to_sym]
+        timeout = ::VirtualMonkey::config[(state+"_timeout").to_sym]
         if timeout == nil
           timeout = ::VirtualMonkey::config[:default_timeout]
         end
@@ -333,7 +337,10 @@ module VirtualMonkey
         return timeout
       end
 
-      # rest_connection wrapper to add the framework timout logic
+      # wrapper method to add single server based timeout logic that forces collateral
+      # authors to adhere to framework timeouts. Collateral authors should not make
+      # direct calls into rest_connection.wait_for_state and instead use this method.
+      #
       # * server<server> - server to operate on
       # * state<~String> - state to wait for, eg. operational
       def wait_for_server_state(server, state)
