@@ -325,12 +325,9 @@ module VirtualMonkey
       # Any other value passed will return ::VirtualMonkey::config[:default_timeout]
       #
       def get_timeout_for_state(state)
-        timeout = case state
-          when "operational" then ::VirtualMonkey::config[:operational_timeout]
-          when "stopped" then ::VirtualMonkey::config[:stopped_timeout]
-          when "terminated" then ::VirtualMonkey::config[:terminated_timeout]
-          when "completed" then ::VirtualMonkey::config[:completed_timeout]
-          else ::VirtualMonkey::config[:default_timeout]
+        timeout = ::VirtualMonkey::config[state.to_sym]
+        if timeout == nil
+          timeout = ::VirtualMonkey::config[:default_timeout]
         end
         puts "----- TRACE LOG: get_timeout_for_state(#{state}) returning #{timeout}"
         return timeout
