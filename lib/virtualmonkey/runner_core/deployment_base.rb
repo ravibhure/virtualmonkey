@@ -336,6 +336,13 @@ module VirtualMonkey
         return timeout
       end
 
+      # rest_connection wrapper to add the framework timout logic
+      # * server<server> - server to operate on
+      # * state<~String> - state to wait for, eg. operational
+      def wait_for_server_state(server, state)
+        server.wait_for_state(state, get_timeout_for_state(state))
+      end
+
       # Helper method, waits for state on a set of servers.
       # * set<~Array> of servers to operate on
       # * state<~String> state to wait for
