@@ -341,10 +341,20 @@ module VirtualMonkey
       # authors to adhere to framework timeouts. Collateral authors should not make
       # direct calls into rest_connection.wait_for_state and instead use this method.
       #
-      # * server<server> - server to operate on
+      # * server<server> - server to wait on
       # * state<~String> - state to wait for, eg. operational
       def wait_for_server_state(server, state)
         server.wait_for_state(state, get_timeout_for_state(state))
+      end
+
+      # wrapper method to add single server based timeout logic that forces collateral
+      # authors to adhere to framework timeouts. Collateral authors should not make
+      # direct calls into rest_connection.wait_for_operational_with_dns and instead
+      # use this method.
+      #
+      # * server<server> - server to wait on
+      def wait_for_server_to_be_operational_with_dns(server)
+        server.wait_for_operational_with_dns(get_timeout_for_state("operational"))
       end
 
       # Helper method, waits for state on a set of servers.
