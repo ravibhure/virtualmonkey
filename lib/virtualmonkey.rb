@@ -44,8 +44,8 @@ module VirtualMonkey
   end
 
   ROOT_CONFIG = File.join(VirtualMonkey::ROOTDIR, ".config.yaml").freeze
-  USER_CONFIG = File.join(File.expand_path("~"), ".virtualmonkey", "config.yaml").freeze
-  SYS_CONFIG = File.join("", "etc", "virtualmonkey", "config.yaml").freeze
+  USER_CONFIG = File.join(File.expand_path("~"), ".virtualmonkey", ".config.yaml").freeze
+  SYS_CONFIG = File.join("", "etc", "virtualmonkey", ".config.yaml").freeze
 
   def self.config
     if not @@virtualMonkeyConfigFilesLoaded
