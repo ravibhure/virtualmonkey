@@ -332,8 +332,10 @@ module VirtualMonkey
         timeout = ::VirtualMonkey::config[(state+"_timeout").to_sym]
         if timeout == nil
           timeout = ::VirtualMonkey::config[:default_timeout]
+          warn "Timeout for unknown state \"#{state}\" set to #{timeout} seconds."
+        else
+          puts "Timeout for state \"#{state}\" set to #{timeout} seconds."
         end
-        puts "Timeout for state \"#{state}\" set to #{timeout} seconds."
         return timeout
       end
 
