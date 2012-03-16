@@ -1,6 +1,15 @@
 ---
 :enable_log_auditor: "false"
 :default_timeout: 1200
+:operational_timeout: 1200
+:terminated_timeout: 1200
+:stopped_timeout: 1200
+:completed_timeout: 1200
+:inactive_timeout: 1200
+:failed_timeout: 1200
+:error_timeout: 1200
+:snapshot_timeout: 1200
+:booting_timeout: 1200
 :grinder_subprocess: force_subprocess
 :test_ordering: strict
 :max_jobs: 2
@@ -17,3 +26,5 @@
   "1958":
     :max_instances: 12
 :test_permutation: exhaustive
+:dns_domain: "dnsmadeeasy_new"
+:dns_choice: "text:DNSMadeEasy"

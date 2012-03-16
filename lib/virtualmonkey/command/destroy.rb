@@ -1,7 +1,11 @@
 module VirtualMonkey
   module Command
     # monkey destroy --tag unique_tag
-    add_command("destroy", [:config_file, :only, :keep, :prefix, :yes, :clouds, :verbose, :force]) do
+    add_command("destroy", [:config_file, :only, :keep, :prefix, :yes, :timeouts, :clouds, :verbose, :force]) do
+
+      # Handle any command line timeout overrides specified
+      self.override_timeouts
+
       load_config_file
       @@dm = VirtualMonkey::Manager::DeploymentSet.new(@@options)
       select_only_logic("Really destroy")

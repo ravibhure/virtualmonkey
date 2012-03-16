@@ -22,13 +22,13 @@
 
 == RightScale API access
   Uses rest_connection library from http://github.com/twrodriguez/rest_connection.git -b multicloud
-  
+
 == S3 and SimpleDB access
   Uses Fog library from http://github.com/geemus/fog.git
 
 == Virtual Monkey command line client "monkey"
 
-== Cruise Control Hooks 
+== Cruise Control Hooks
   (todo)
 
 == Shared Resource Tracking (Amazon SimpleDB)
@@ -39,18 +39,18 @@
 
 ===  DeploymentSet - handles create/load/delete of DeploymentSets
    Using the RS API we create a set of all the 'basic variations' a deployment can have.
-   Basic variations currently are generated using permutations of Images, Clouds, and Instance Types. 
+   Basic variations currently are generated using permutations of Images, Clouds, and Instance Types.
 ===  Grinder
    handles running grinder tests and collecting and posting results to S3
 ===  Collateral
    Manages test collateral projects consisting of troops, common_inputs, cloud_variable overrides, runners, mixins, lists, and features
 
 === VirtualMonkey::RunnerCore::DeploymentBase
-*  These are a set of specialty mixins per Deployment type for cluster management of a single deployment. 
+*  These are a set of specialty mixins per Deployment type for cluster management of a single deployment.
 
 *  This keeps our grinder features from getting cluttered.  Each step definition needs an equivalent DeploymentRunner method.
-  
-*  'One-off' variations are setup by the DeploymentRunner(s) and will be applied during a test run. 
+
+*  'One-off' variations are setup by the DeploymentRunner(s) and will be applied during a test run.
       ex: OPT_PHP_VHOST_PORT, SLAVE_DNS_ID
 
 === VirtualMonkey::RunnerCore::CommandHooks
@@ -80,4 +80,4 @@
 
 == Copyright
 
-Copyright (c) 2010-2011 Jeremy Deininger, Timothy Rodriguez. See LICENSE for details.
+Copyright (c) 2010-2012 RightScale Inc

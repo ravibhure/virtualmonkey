@@ -73,6 +73,8 @@ module VirtualMonkey
                             :desc => 'Do not use trace info to resume a previous test'},
       :tests            => {:opts => {:short => '-t',  :type => :strings},
                             :desc => 'List of test names to run across Deployments (default is all)'},
+      :timeouts         => {:opts => {:short => '-u',  :type => :strings},
+                            :desc => 'List of timeout_name=number_of_seconds pairs'},
       :verbose          => {:opts => {:short => '-v',  :type => :boolean},
                             :desc => 'Print all output to STDOUT as well as the log files'},
       :revisions        => {:opts => {:short => '-w',  :type => :integers},
@@ -204,6 +206,42 @@ module VirtualMonkey
                                 "default" => (20*60),
                                 "values"  => Integer},
 
+      "operational_timeout" => {"desc"    => "Controls the timeout for server operational state wait",
+                                "default" => (20*60),
+                                "values"  => Integer},
+
+      "stopped_timeout"     => {"desc"    => "Controls the timeout for server stopped state wait",
+                                "default" => (20*60),
+                                "values"  => Integer},
+
+      "terminated_timeout"  => {"desc"    => "Controls the timeout for server terminated state wait",
+                                "default" => (20*60),
+                                "values"  => Integer},
+
+      "completed_timeout"   => {"desc"    => "Controls the timeout for server completed state wait",
+                                "default" => (20*60),
+                                "values"  => Integer},
+
+      "inactive_timeout"    => {"desc"    => "Controls the timeout for server inactive state wait",
+                                "default" => (20*60),
+                                "values"  => Integer},
+
+      "failed_timeout"      => {"desc"    => "Controls the timeout for server failed state wait",
+                                "default" => (20*60),
+                                "values"  => Integer},
+
+      "error_timeout"       => {"desc"    => "Controls the timeout for server error state wait",
+                                "default" => (20*60),
+                                "values"  => Integer},
+
+      "snapshot_timeout"    => {"desc"    => "Controls the timeout for server snapshot wait",
+                                "default" => (20*60),
+                                "values"  => Integer},
+
+      "booting_timeout"     => {"desc"    => "Controls the timeout for server booting state wait",
+                                "default" => (20*60),
+                                "values"  => Integer},
+
       "enable_log_auditor"  => {"desc"    => "Enables log auditing for logfiles defined in lists/*.json",
                                 "default" => "false",
                                 "values"  => [false, true]},
@@ -219,6 +257,14 @@ module VirtualMonkey
       "throttling_values"   => {"desc"    => "All throttling values across all clouds",
                                 "default" => {},
                                 "values"  => Hash},
+
+      "dns_domain"          => {"desc"    => "dns domain name",
+                                "default" => "dnsmadeeasy_new",
+                                "values"  => String},
+
+      "dns_choice"          => {"desc"    => "dns domain choice",
+                                "default" => "text:DNSMadeEasy",
+                                "values"  => String},
     }
 
     CollateralOptions = {
@@ -343,6 +389,7 @@ module VirtualMonkey
       self.instance_eval <<EOS
         def #{command_name}(*args)
           self.init(*args)
+
           @@command = "#{command_name}"
           puts ""
           @@options = Trollop::options do
@@ -364,6 +411,32 @@ module VirtualMonkey
           reset()
         end
 EOS
+    end
+
+    # Method to parse out the command line timeouts and override the current values
+    # * options<~Hash> optional options hash to modify with new command-line timeout values
+    def self.override_timeouts( options=@@options )
+      if options[:timeouts_given]
+        puts "Command-line timeouts overriding previous timeout values..."
+        options[:timeouts].each { |timeout_pair|
+          split_timeout_array = timeout_pair.split(/=/)
+          if split_timeout_array.size != 2
+            raise "Invalid command line timeout syntax detected: \"#{timeout_pair}\""
+          end
+          old_timeout_value = ::VirtualMonkey::config[split_timeout_array[0].to_sym]
+          if old_timeout_value != nil
+            new_timeout_value = split_timeout_array[1].to_i
+            if new_timeout_value > 0
+              ::VirtualMonkey::config[split_timeout_array[0].to_sym] = new_timeout_value
+            else
+              raise "Invalid command line timeout value detected (value must be numeric and greater than zero): \"#{timeout_pair}\""
+            end
+          else
+            raise "Invalid command line timeout name detected: \"#{split_timeout_array[0]}\", Must be operational_timeout, terminated_timeout, stopped_timeout, completed_timeout or normal_timeout"
+          end
+        }
+        VirtualMonkey::display_timeouts "New"
+      end
     end
 
     # Help command
