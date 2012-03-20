@@ -560,7 +560,7 @@ module VirtualMonkey
       def destroy_all
         @deployments.each { |v|
           v.servers_no_reload.each { |s|
-            s.wait_for_state("stopped")
+            s.wait_for_state("stopped", ::VirtualMonkey::config[:stopped_timeout])
           }
           v.destroy
         }

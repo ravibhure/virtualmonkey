@@ -254,7 +254,7 @@ module VirtualMonkey
           runner = runner_hsh[deploy.nickname]
           retry_block do
             deploy.servers_no_reload.each { |s|
-              s.wait_for_state("stopped")
+              s.wait_for_state("stopped", ::VirtualMonkey::config[:stopped_timeout])
             }
           end
           retry_block { deploy.destroy }
@@ -291,7 +291,7 @@ module VirtualMonkey
           runner = runner_hsh[deploy.nickname]
           retry_block do
             deploy.servers_no_reload.each { |s|
-              s.wait_for_state("stopped")
+              s.wait_for_state("stopped", ::VirtualMonkey::config[:stopped_timeout])
             }
           end
           retry_block { deploy.destroy }

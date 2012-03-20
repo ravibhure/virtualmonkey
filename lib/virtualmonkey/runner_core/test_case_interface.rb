@@ -230,7 +230,7 @@ module VirtualMonkey
       # duplicated ary rather than passing in args.
       #
       # threads = []
-      # audits.each { |audit| threads << Thread.new(audit) { |a| a.wait_for_completed } }
+      # audits.each { |audit| threads << Thread.new(audit) { |a| a.wait_for_completed(::VirtualMonkey::config[:completed_timeout]) } }
       # threads.each { |t| t.join }
       #
       timing = Time.now

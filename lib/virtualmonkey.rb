@@ -5,6 +5,8 @@ require 'yaml'
 #
 
 module VirtualMonkey
+  @@virtualMonkeyConfigFilesLoaded = false
+
   ROOTDIR = File.expand_path(File.join(File.dirname(__FILE__), "..")).freeze
   GENERATED_CLOUD_VAR_DIR = File.join(ROOTDIR, "cloud_variables").freeze
   TEST_STATE_DIR = File.join(ROOTDIR, "test_states").freeze
@@ -33,6 +35,11 @@ module VirtualMonkey
     (`cat "#{File.join(ROOTDIR, "VERSION")}"`.chomp + (branch == "master" ? "" : " #{branch.upcase}"))
   }.call
 
+  puts "Virtual Monkey Automated Test Framework"
+  puts "Copyright (c) 2010-2012 RightScale Inc"
+  puts "Version #{VERSION}"
+  puts
+
   unless const_defined?("RUNNING_AS_GEM")
     RUNNING_AS_GEM = lambda {
       gem_dirs = `gem environment | grep -A9999 "GEM PATHS" | grep -B9999 "GEM CONFIGURATION"`.chomp.split("\n")
@@ -42,23 +49,44 @@ module VirtualMonkey
   end
 
   ROOT_CONFIG = File.join(VirtualMonkey::ROOTDIR, ".config.yaml").freeze
-  USER_CONFIG = File.join(File.expand_path("~"), ".virtualmonkey", "config.yaml").freeze
-  SYS_CONFIG = File.join("", "etc", "virtualmonkey", "config.yaml").freeze
+  USER_CONFIG = File.join(File.expand_path("~"), ".virtualmonkey", ".config.yaml").freeze
+  SYS_CONFIG = File.join("", "etc", "virtualmonkey", ".config.yaml").freeze
+
+  # Method to display current timeout value
+  # * prefix<~String> optional prefix string
+  def self.display_timeouts( prefix )
+    puts "#{prefix} timeout values are set to:"
+    puts "      booting_timeout: #{::VirtualMonkey::config[:booting_timeout]}"
+    puts "    completed_timeout: #{::VirtualMonkey::config[:completed_timeout]}"
+    puts "      default_timeout: #{::VirtualMonkey::config[:default_timeout]}"
+    puts "        error_timeout: #{::VirtualMonkey::config[:error_timeout]}"
+    puts "     inactive_timeout: #{::VirtualMonkey::config[:inactive_timeout]}"
+    puts "       failed_timeout: #{::VirtualMonkey::config[:failed_timeout]}"
+    puts "  operational_timeout: #{::VirtualMonkey::config[:operational_timeout]}"
+    puts "     snapshot_timeout: #{::VirtualMonkey::config[:snapshot_timeout]}"
+    puts "      stopped_timeout: #{::VirtualMonkey::config[:stopped_timeout]}"
+    puts "   terminated_timeout: #{::VirtualMonkey::config[:terminated_timeout]}"
+    puts ""
+  end
 
   def self.config
-    @@virtual_monkey_config = {}
-    [VirtualMonkey::SYS_CONFIG, VirtualMonkey::USER_CONFIG, VirtualMonkey::ROOT_CONFIG].each do |config_file|
-      if File.exists?(config_file)
-        begin
-          @@virtual_monkey_config.merge!(YAML::load(IO.read(config_file)) || {})
-        rescue Errno::EBADF, IOError
-          retry
-        end
-        if VirtualMonkey.const_defined?("Command")
-          config_ok = @@virtual_monkey_config.reduce(true) do |bool,ary|
-            bool && VirtualMonkey::Command::check_variable_value(ary[0], ary[1])
+    if not @@virtualMonkeyConfigFilesLoaded
+      @@virtual_monkey_config = {}
+      puts "Attempting to load any available config files..."
+      [VirtualMonkey::SYS_CONFIG, VirtualMonkey::USER_CONFIG, VirtualMonkey::ROOT_CONFIG].each do |config_file|
+        if File.exists?(config_file)
+          puts "found \"#{config_file}\" loading..."
+          begin
+              @@virtual_monkey_config.merge!(YAML::load(IO.read(config_file)) || {})
+          rescue Errno::EBADF, IOError
+            retry
           end
-          warn "WARNING: #{config_file} contains an invalid variable or value" unless config_ok
+          if VirtualMonkey.const_defined?("Command")
+            config_ok = @@virtual_monkey_config.reduce(true) do |bool,ary|
+              bool && VirtualMonkey::Command::check_variable_value(ary[0], ary[1])
+            end
+            warn "WARNING: #{config_file} contains an invalid variable or value" unless config_ok
+          end
         end
       end
     end
@@ -67,6 +95,7 @@ module VirtualMonkey
         @@virtual_monkey_config[var.to_sym] ||= hsh["default"]
       end
     end
+    @@virtualMonkeyConfigFilesLoaded = true
     @@virtual_monkey_config
   end
 end
@@ -144,3 +173,7 @@ progress_require('virtualmonkey/command', 'commands')
 progress_require('spidermonkey', 'spidermonkey')
 puts "\n"
 VirtualMonkey::config # Verify config files
+
+# Display timeouts
+VirtualMonkey::display_timeouts "All available config files now loaded, new"
+

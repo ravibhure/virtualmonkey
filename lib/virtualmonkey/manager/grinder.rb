@@ -120,6 +120,15 @@ module VirtualMonkey
         grinder_bin = File.join(VirtualMonkey::BIN_DIR, "grinder")
         cmd = "\"#{grinder_bin}\" -f \"#{feature}\" -d \"#{deployment.nickname}\" -t "
         test_ary.each { |test| cmd += " \"#{test}\" " }
+
+        # Append any timeout command line parameters originally given
+        if @options[:timeouts] != nil
+          cmd += "-u"
+          @options[:timeouts].each { |timeout|
+            cmd += " \"" + timeout + "\""
+          }
+        end
+
         cmd += " -r " if @options[:no_resume]
 
         if @options[:report_metadata]

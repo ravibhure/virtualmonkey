@@ -33,6 +33,7 @@ options = Trollop::options do
 #  opt :post_mortem, "Enable Post Mortem debugging",                                 :short => "-s", :type => :boolean
   opt :tests, "Space-separated strings of tests to execute (default: all)",         :short => "-t", :type => :strings
 #  conflicts :no_debug, :post_mortem
+  opt :timeouts, "List of timeout_name=number_of_seconds pairs",                    :short => "-u", :type => :strings
 end
 
 # Set up debugging mode
@@ -50,6 +51,7 @@ unless ENV['MONKEY_NO_DEBUG'] =~ /true/i
 end
 
 # Run
+::VirtualMonkey::Command::override_timeouts options
 options[:tests] ||= []
 features = [options[:features]].flatten
 if features.length > 1
