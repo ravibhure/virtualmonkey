@@ -9,20 +9,30 @@ module VirtualMonkey
       attr_accessor :deployment, :servers, :server_templates
       attr_accessor :scripts_to_run
 
-      # Test for instance throttling
+      # before_run which for now checks the instance throttle thresholds if that was configured
+      # Returns false if execution should continue, otherwise a warning message
       before_run do
         ret = false
-        cloud_id = @servers.first.cloud_id.to_s
-        throttling_values = ::VirtualMonkey::config[:throttling_values]
-        throttling_values[cloud_id] ||= {}
-        max_instances = throttling_values[cloud_id][:max_instances] || 1024
-        if cloud_id.to_i <= 10 # Handle AWS API 1.0
-          instance_count = Server.find_by(:state) {|s| s != "stopped"}.size
-        else # Handle non-AWS API 1.5
-          instance_count = McInstance.find_all(cloud_id).size
-        end
-        if @servers.size + instance_count > max_instances
-          ret = "Maximum number of server instances exceeded for cloud #{cloud_id}"
+        # Only check instance throttle thresholds if that was configured
+        if ::VirtualMonkey::config[:throttling]
+          puts "Throttling checks requested..."
+
+          # Handle instance throttling
+          puts "Checking instance throttling thresholds..."
+          cloud_id = @servers.first.cloud_id.to_s
+          throttling_values = ::VirtualMonkey::config[:throttling_values]
+          throttling_values[cloud_id] ||= {}
+          max_instances = throttling_values[cloud_id][:max_instances] || 1024
+          if cloud_id.to_i <= 10 # Handle AWS API 1.0
+            instance_count = Server.find_by(:state) {|s| s != "stopped"}.size
+          else # Handle non-AWS API 1.5
+            instance_count = McInstance.find_all(cloud_id).size
+          end
+          if @servers.size + instance_count > max_instances
+            ret = "Maximum number of server instances exceeded for cloud #{cloud_id}"
+          end
+        else
+          puts "Throttling checks skipped..."
         end
         ret
       end

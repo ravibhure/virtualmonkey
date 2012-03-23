@@ -32,7 +32,7 @@ module VirtualMonkey
 
   VERSION = lambda {
     branch = (`git branch 2> /dev/null | grep \\*`.chomp =~ /\* ([^ ]+)/ && $1) || "master"
-    (`cat "#{File.join(ROOTDIR, "VERSION")}"`.chomp + (branch == "master" ? "" : " #{branch.upcase}"))
+    (`cat "#{File.join(ROOTDIR, "VERSION")}"`.chomp + (branch == "master" ? "" : ", branch \"#{branch}\""))
   }.call
 
   puts "Virtual Monkey Automated Test Framework"
