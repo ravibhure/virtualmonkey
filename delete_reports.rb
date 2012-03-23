@@ -10,7 +10,9 @@ require 'virtualmonkey'
 VirtualMonkey::API::Report.index.each do |record|
   begin
     puts "Deleting record #{record["uid"]}..."
-    VirtualMonkey::API::Report.delete(record["uid"])
+    pp record
+# To actually delete records, uncomment the following line of code
+#    VirtualMonkey::API::Report.delete(record["uid"])
   rescue Excon::Errors::ServiceUnavailable => e
     warn "Message #{e}, retrying..."
     sleep 10

@@ -75,6 +75,8 @@ module VirtualMonkey
                             :desc => 'List of test names to run across Deployments (default is all)'},
       :timeouts         => {:opts => {:short => '-u',  :type => :strings},
                             :desc => 'List of timeout_name=number_of_seconds pairs'},
+      :throttling       => {:opts => {:short => '-q',  :type => :boolean, :default => false},
+                            :desc => 'Turn on throttling'},
       :verbose          => {:opts => {:short => '-v',  :type => :boolean},
                             :desc => 'Print all output to STDOUT as well as the log files'},
       :revisions        => {:opts => {:short => '-w',  :type => :integers},

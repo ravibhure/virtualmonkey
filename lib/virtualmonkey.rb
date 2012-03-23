@@ -32,7 +32,7 @@ module VirtualMonkey
 
   VERSION = lambda {
     branch = (`git branch 2> /dev/null | grep \\*`.chomp =~ /\* ([^ ]+)/ && $1) || "master"
-    (`cat "#{File.join(ROOTDIR, "VERSION")}"`.chomp + (branch == "master" ? "" : " #{branch.upcase}"))
+    (`cat "#{File.join(ROOTDIR, "VERSION")}"`.chomp + (branch == "master" ? "" : ", branch \"#{branch}\""))
   }.call
 
   puts "Virtual Monkey Automated Test Framework"
@@ -60,8 +60,8 @@ module VirtualMonkey
     puts "    completed_timeout: #{::VirtualMonkey::config[:completed_timeout]}"
     puts "      default_timeout: #{::VirtualMonkey::config[:default_timeout]}"
     puts "        error_timeout: #{::VirtualMonkey::config[:error_timeout]}"
-    puts "     inactive_timeout: #{::VirtualMonkey::config[:inactive_timeout]}"
     puts "       failed_timeout: #{::VirtualMonkey::config[:failed_timeout]}"
+    puts "     inactive_timeout: #{::VirtualMonkey::config[:inactive_timeout]}"
     puts "  operational_timeout: #{::VirtualMonkey::config[:operational_timeout]}"
     puts "     snapshot_timeout: #{::VirtualMonkey::config[:snapshot_timeout]}"
     puts "      stopped_timeout: #{::VirtualMonkey::config[:stopped_timeout]}"
