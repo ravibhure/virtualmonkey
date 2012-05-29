@@ -169,10 +169,10 @@ module VirtualMonkey
             @scripts_to_run[st_id] ||= {}
             overwriting_warning_msg = "WARNING: Overwriting '#{a[0]}' for ServerTemplate #{st.nickname}"
             exec = ref_template.executables.detect do |ex|
-              ex.name =~ /#{a[1]}/i or ex.recipe =~ /#{a[1]}/i
+              ex.name =~ /#{a[1]}$/i or ex.recipe =~ /#{a[1]}$/i
             end
             if exec
-              if exec.recipe =~ /#{a[1]}/i
+              if exec.recipe =~ /#{a[1]}$/i
                 # Recipes can only be run on the template they are attached to
                 if resource_id(ref_template) == st_id
                   warn overwriting_warning_msg if @scripts_to_run[st_id][a[0]]
