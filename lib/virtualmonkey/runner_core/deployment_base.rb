@@ -169,7 +169,7 @@ module VirtualMonkey
             @scripts_to_run[st_id] ||= {}
             overwriting_warning_msg = "WARNING: Overwriting '#{a[0]}' for ServerTemplate #{st.nickname}"
             exec = ref_template.executables.detect do |ex|
-              ex.name =~ /#{a[1]}.*]$/i or ex.recipe =~ /#{a[1]}$/i
+              ex.name =~ /#{a[1]}.*(rc)$/i or ex.recipe =~ /#{a[1]}$/i
             end
             if exec
               if exec.recipe =~ /#{a[1]}$/i
