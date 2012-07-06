@@ -1,0 +1,14 @@
+"test01-bad-element","Truncate-troops:10
+show-job-numbers:TRUE",,,,
+"test01","Troops","AWS
+West
+Ubuntu","AWS
+
+CentOS","AWS
+
+RHEL
+","AWS
+
+RHEL2
+"
+"Base","base","BAD_ELEMENT",,,

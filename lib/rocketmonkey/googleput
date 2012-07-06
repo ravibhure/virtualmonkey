@@ -1,0 +1,42 @@
+#!/usr/bin/ruby
+
+#--
+# Copyright (c) 2012 RightScale, Inc, All Rights Reserved Worldwide.
+#
+# THIS PROGRAM IS CONFIDENTIAL AND PROPRIETARY TO RIGHTSCALE
+# AND CONSTITUTES A VALUABLE TRADE SECRET.  Any unauthorized use,
+# reproduction, modification, or disclosure of this program is
+# strictly prohibited.  Any use of this program by an authorized
+# licensee is strictly subject to the terms and conditions,
+# including confidentiality obligations, set forth in the applicable
+# License Agreement between RightScale, Inc. and
+# the licensee.
+#++
+
+require "rubygems"
+require 'trollop'
+require "google_drive"
+
+# Display Version/Copyright banner
+puts "Rocket Monkey Automated Test Framework - Google Get"
+puts "Copyright (c) 2010-2012 RightScale Inc"
+puts "Version 0.0.1"
+
+# Parse command line arguments
+opts = Trollop::options do
+ banner <<-EOS
+Usage:
+#{File.basename($0)} [options]
+ where [options] are:
+EOS
+
+  opt :input,         "Path to the input file in CSV format (required)",              :type => String,  :short => "-i", :required => true
+  opt :target_name,   "Name of the file as it will appear in google docs (required)", :type => String,  :short => "-t", :required => true
+end
+
+# Log in to google docs
+puts "\nLogging in to Google Docs..."
+session = GoogleDrive.login("rsqacsv@gmail.com", "RightScale11")
+
+puts "Uploading to Google Docs..."
+session.upload_from_file(opts[:input], opts[:target_name], :convert => true)

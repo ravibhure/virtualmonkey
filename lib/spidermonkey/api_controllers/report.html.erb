@@ -100,7 +100,8 @@
             <a href="<%= File.basename(log) %>"><%= File.basename(log) %></A><br>
           <% end %>
         <% end %>
-        <a href="<%= failed_job.link_to_rightscale %>">Click here to view in RightScale Dashboard</a>
+        <a href="<%= failed_job.link_to_rightscale %>">Click here to view in RightScale Dashboard</a><br>
+        <a href="<%= failed_job.link_to_rightscale %>/#audit_entries">Click here to view the audit log in RightScale Dashboard</a>
         </li>
       <% end %>
     </ul>

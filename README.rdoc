@@ -21,7 +21,7 @@
 = Virtual Monkey Architecture
 
 == RightScale API access
-  Uses rest_connection library from http://github.com/twrodriguez/rest_connection.git -b multicloud
+  Uses rest_connection library from http://github.com/rightscale/rest_connection.git -b multicloud
 
 == S3 and SimpleDB access
   Uses Fog library from http://github.com/geemus/fog.git

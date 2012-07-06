@@ -28,6 +28,12 @@ begin
     gem.add_dependency "bundler"
     gem.add_dependency "cronedit"
     gem.add_dependency "algorithms"
+    gem.add_dependency "elif"
+    gem.add_dependency "terminal-table"
+    gem.add_dependency "tzinfo"
+    gem.add_dependency "google_drive"
+    gem.add_dependency "system_timer"
+    gem.add_dependency "mail"
     # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
   end
   Jeweler::GemcutterTasks.new

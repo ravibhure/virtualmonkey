@@ -38,7 +38,7 @@ module VirtualMonkey
     attr_accessor :metadata
 
     def link_to_rightscale
-      deployment.href.gsub(/api\//,"") + "#auditentries"
+      deployment.href.gsub(/api\//,"")
     end
 
     # stdout hook for popen3

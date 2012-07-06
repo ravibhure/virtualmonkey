@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+  <actions/>
+  <description>
+  </description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+  <hudson.model.ParametersDefinitionProperty>
+    <parameterDefinitions>
+  <hudson.model.ChoiceParameterDefinition>
+      <name>CHAIN</name>
+      <description>
+      </description>
+  <choices class="java.util.Arrays$ArrayList">
+  <a class="string-array">
+      <string>job_to_destroyer</string>
+      <string>job_to_destroyer_and_next_job</string>
+      <string>job_to_destroyer_then_to_next_job</string>
+  </a>
+  </choices>
+  </hudson.model.ChoiceParameterDefinition>
+  <hudson.model.ChoiceParameterDefinition>
+      <name>THRESHOLD</name>
+      <description>
+      </description>
+  <choices class="java.util.Arrays$ArrayList">
+  <a class="string-array">
+      <string>only_if_build_succeeds</string>
+      <string>even_if_build_is_unstable</string>
+      <string>even_if_the_build_fails</string>
+  </a>
+  </choices>
+  </hudson.model.ChoiceParameterDefinition>
+    </parameterDefinitions>
+  </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <scm class="hudson.scm.NullSCM"/>
+  <assignedNode>master</assignedNode>
+  <canRoam>false</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers class="vector"/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+    <command>
+cd /Users/jonmarinello/mrsc/development/rightscale/repos/virtualmonkey/lib/rocketmonkey
+sed -i "/^:chain:/ s/:chain:.*/:chain: $CHAIN/" .rocketmonkey.yaml
+sed -i "/^:threshold:/ s/:threshold.*/:threshold: $THRESHOLD/" .rocketmonkey.yaml
+./rocketmonkey --generate-jenkins-files --input tests/test01.csv --tabs --refresh-rate 60 --truncate-troops 10
+    </command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers/>
+  <buildWrappers/>
+</project>

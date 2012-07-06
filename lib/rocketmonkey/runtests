@@ -1,0 +1,304 @@
+#
+# Rocket Monkey Integration Test Program
+#
+
+# IMPORTANT NOTE: This test currently requires :chain: job_to_destroyer_then_to_next_job in the yaml file.
+
+function show_usage_banner {
+  echo "Usage:"
+  echo "  $0 [options]"
+  echo "    where [options] are:"
+  echo "           --run, -r:   All tests are run (passing no options also does this)"
+  echo "  --run-continue, -n:   All tests are run but continue even if failures"
+  echo "       --approve, -a:   All current test results are copied to the known goods"
+  echo "         --clean, -c:   All current test results are removed"
+  echo "          --help, -h:   Show this message"
+}
+
+
+function check_rocket_monkey_result {
+  if (( $? != 0 )) ; then echo rocketmonkey execution FAILED ; exit 1 ; fi
+}
+
+
+function check_test_result {
+  if (( $? != 0 )) ; then echo "     Test FAILED" ; if (( $keep_running != 1 )) ; then exit 1 ; fi; else echo "     Test PASSED"; fi
+}
+
+
+function remove_file {
+  if [ -e $1 ]
+  then
+    echo "    Removing $1..."
+    rm $1
+  fi
+}
+
+
+function remove_jobs {
+  echo "    Recursively removing tests/jobs/*..."
+  rm -rf tests/jobs/*
+}
+
+function compare {
+  echo ""
+  echo "  #### Comparing $2 ####"
+  diff -r $1 $2
+}
+
+
+if [ "$1" == "" ] || [ "$1" == "--run" ] || [ "$1" == "-r" ] || [ "$1" == "--run-keep_running" ] || [ "$1" == "-n" ]
+then
+  if [ "$1" == "--run-keep_running" ] || [ "$1" == "-n" ]
+  then
+    keep_running=1
+  else
+    keep_running=0
+  fi
+
+  echo "###########################################################"
+  echo "###########################################################"
+  echo "############## Rocket Monkey Framework Tests ##############"
+  echo "###########################################################"
+  echo "###########################################################"
+  echo -e "\n"
+  # Copy the rest_connection mock up to the rocketmonkey folder
+  cp -f tests/rest_connection_mock.rb rest_connection.rb
+
+  echo "  #### Fetching test01.csv from google ####"
+  ./googleget --key 0Ao3awLQNVOJYdExLX181QWN5ZHRkTGJRVkl1eUN1SWc -o tests/test01.csv
+  echo
+
+  echo "  #### Fetching test01_mci.csv from google ####"
+  ./googleget --key 0Ao3awLQNVOJYdEtSWG81T1YzU2VGQXlYcXlDeTVMWlE -o tests/test01_mci.csv
+  echo
+
+  echo "  #### Fetching test01-bad-element.csv from google ####"
+  ./googleget --key 0AlJY3mQRNNHydEdfeFlxTHhJVTBFNVlxTmI2dmZCcWc -o tests/test01-bad-element.csv
+  echo
+
+
+  echo "##################################"
+  echo "##### Test Command line Help #####"
+  echo "##################################"
+  ./rocketmonkey --help > tests/command_line_help.txt
+  check_rocket_monkey_result
+  compare tests/knowngoods/test01/command_line_help.txt tests/command_line_help.txt
+  check_test_result
+
+
+  echo -e "\n"
+  echo "#####################"
+  echo "##### Test view #####"
+  echo "#####################"
+  ./rocketmonkey --view  --input tests/test01.csv > tests/view.txt
+  check_rocket_monkey_result
+  compare tests/knowngoods/test01/view.txt tests/view.txt
+  check_test_result
+
+
+  echo -e "\n"
+  echo "######################################"
+  echo "##### Test Bad Element Exception #####"
+  echo "######################################"
+  # Remove previously generated files
+  remove_jobs
+  ./rocketmonkey --generate-jenkins-files --input tests/test01-bad-element.csv --tabs 2> temp; grep BAD_ELEMENT temp > tests/test01-bad-element.out; rm temp
+  compare tests/knowngoods/test01/test01-bad-element.out tests/test01-bad-element.out
+  check_test_result
+
+
+  echo -e "\n"
+  echo "#######################################"
+  echo "##### Test Jenkins Job Generation #####"
+  echo "#######################################"
+  # Remove previously generated files
+  remove_jobs
+  cp tests/knowngoods/test01/config.xml tests
+  ./rocketmonkey --generate-jenkins-files --input tests/test01.csv --tabs
+  check_rocket_monkey_result
+
+
+  # Copy over the running, failure & aborted state stub files
+  cp -R tests/knowngoods/test01/job_state_stubs/running/* tests/jobs/test01_AWS_RHEL_002_base
+  cp -R tests/knowngoods/test01/job_state_stubs/failure/* tests/jobs/test01_AWS_RHEL_003_base_linux
+  cp -R tests/knowngoods/test01/job_state_stubs/aborted/* tests/jobs/test01_AWS_RHEL_006_lamp_5_5_chef
+  cp -R tests/knowngoods/test01/job_state_stubs/server_template_failure/* tests/jobs/test01_AWS_RHEL_005_lamp_chef
+  compare tests/knowngoods/test01/config.xml tests/config.xml
+  check_test_result
+  compare tests/knowngoods/test01/jobs tests/jobs
+  check_test_result
+
+
+  echo -e "\n"
+  echo "###########################################"
+  echo "###### Test Zombie Report Generation ######"
+  echo "###########################################"
+  ./rocketmonkey --generate-reports --zombie --input tests/test01.csv --leave --suppress-variable-data
+  check_rocket_monkey_result
+  mv test01ZombieWIP.html tests
+  compare tests/knowngoods/test01/test01ZombieWIP.html tests/test01ZombieWIP.html
+  check_test_result
+  remove_file rest_connection.rb
+
+
+  echo -e "\n"
+  echo "########################################"
+  echo "###### Test WIP Report Generation ######"
+  echo "########################################"
+  ./rocketmonkey --generate-reports --input tests/test01.csv --leave --suppress-variable-data --refresh-rate 60
+  check_rocket_monkey_result
+  mv test01Wip.html tests
+  mv failures_summary_WIP_report.html tests
+  compare tests/knowngoods/test01/test01Wip.html tests/test01Wip.html
+  check_test_result
+  compare tests/knowngoods/test01/failures_summary_WIP_report.html tests/failures_summary_WIP_report.html
+  check_test_result
+
+
+  echo -e "\n"
+  echo "###############################################"
+  echo "###### Test WIP Action Report Generation ######"
+  echo "###############################################"
+  ./rocketmonkey --generate-reports --input tests/test01.csv --leave --suppress-variable-data --refresh-rate 60 --generate-actions
+  check_rocket_monkey_result
+  mv test01WipAction.html tests
+  mv failures_summary_WIPAction_report.html tests
+  compare tests/knowngoods/test01/test01WipAction.html tests/test01WipAction.html
+  check_test_result
+  compare tests/knowngoods/test01/failures_summary_WIPAction_report.html tests/failures_summary_WIPAction_report.html
+  check_test_result
+
+
+  echo -e "\n"
+  echo "##################################################"
+  echo "###### Test WIP Destroyer Report Generation ######"
+  echo "##################################################"
+  ./rocketmonkey --generate-reports --input tests/test01.csv --leave --suppress-variable-data --destroyers --refresh-rate 60
+  check_rocket_monkey_result
+  mv Z_test01Wip.html tests
+  mv Z_failures_summary_WIP_report.html tests
+  compare tests/knowngoods/test01/Z_test01Wip.html tests/Z_test01Wip.html
+  check_test_result
+  compare tests/knowngoods/test01/Z_failures_summary_WIP_report.html tests/Z_failures_summary_WIP_report.html
+  check_test_result
+
+
+  echo -e "\n"
+  echo "#############################################"
+  echo "###### Test Snapshot Report Generation ######"
+  echo "#############################################"
+  ./rocketmonkey --generate-reports --input tests/test01.csv --leave --suppress-variable-data --refresh-rate 60 --snapshot
+  check_rocket_monkey_result
+  mv test01Snapshot.html tests
+  mv failures_summary_snapshot_report.html tests
+  compare tests/knowngoods/test01/test01Snapshot.html tests/test01Snapshot.html
+  check_test_result
+  compare tests/knowngoods/test01/failures_summary_snapshot_report.html tests/failures_summary_snapshot_report.html
+  check_test_result
+
+
+  echo -e "\n"
+  echo "#######################################################"
+  echo "###### Test Snapshot Destroyer Report Generation ######"
+  echo "#######################################################"
+  ./rocketmonkey --generate-reports --input tests/test01.csv --leave --suppress-variable-data --destroyers --refresh-rate 60 --truncate-troops 5 --snapshot
+  check_rocket_monkey_result
+  mv Z_test01Snapshot.html tests
+  mv Z_failures_summary_Snapshot_report.html tests
+  compare tests/knowngoods/test01/Z_test01Snapshot.html tests/Z_test01Snapshot.html
+  check_test_result
+  compare tests/knowngoods/test01/Z_failures_summary_Snapshot_report.html tests/Z_failures_summary_Snapshot_report.html
+  check_test_result
+
+
+  echo -e "\n"
+  echo "####################################"
+  echo "###### Test Jenkins Job Clean ######"
+  echo "####################################"
+  ./rocketmonkey --clean --input tests/test01.csv --suppress-variable-data --leave --yes
+  check_rocket_monkey_result
+  remove_file test01Snapshot.html
+  remove_file failures_summary_snapshot_report.html
+  remove_file Z_test01Snapshot.html
+  remove_file Z_failures_summary_snapshot_report.html
+
+elif [ "$1" == "--clean" ] || [ "$1" == "-c" ]
+  then
+  echo "  #### Cleaning up generated test results... ####"
+
+  remove_file rest_connection.rb
+
+  remove_file tests/command_line_help.txt
+
+  remove_file tests/view.txt
+
+  remove_file tests/test01-bad-element.out
+
+  remove_file tests/test01ZombieWIP.html
+
+  remove_file tests/test01Wip.html
+  remove_file tests/failures_summary_WIP_report.html
+
+  remove_file tests/test01WipAction.html
+  remove_file tests/failures_summary_WIPAction_report.html
+
+  remove_file tests/test01Snapshot.html
+  remove_file tests/failures_summary_snapshot_report.html
+
+  remove_file tests/Z_test01Wip.html
+  remove_file tests/Z_failures_summary_WIP_report.html
+
+  remove_file tests/Z_test01Snapshot.html
+  remove_file tests/Z_failures_summary_Snapshot_report.html
+
+  remove_file tests/config.xml
+  remove_file tests/config.xml.bak
+
+  remove_jobs
+
+elif [ "$1" == "--approve" ] || [ "$1" == "-a" ]
+then
+  echo "  #### Approving all tests results... ####"
+
+  cp tests/command_line_help.txt tests/knowngoods/test01
+
+  cp tests/view.txt tests/knowngoods/test01
+
+  cp tests/test01-bad-element.out tests/knowngoods/test01
+
+  cp tests/config.xml tests/knowngoods/test01
+
+  cp tests/test01ZombieWIP.html tests/knowngoods/test01
+
+  cp tests/test01Wip.html tests/knowngoods/test01
+  cp tests/failures_summary_WIP_report.html tests/knowngoods/test01
+
+  cp tests/test01WipAction.html tests/knowngoods/test01
+  cp tests/failures_summary_WIPAction_report.html tests/knowngoods/test01
+
+  cp tests/test01Snapshot.html tests/knowngoods/test01
+  cp tests/failures_summary_snapshot_report.html tests/knowngoods/test01
+
+  cp tests/Z_test01Wip.html tests/knowngoods/test01
+  cp tests/Z_failures_summary_WIP_report.html tests/knowngoods/test01
+
+  cp tests/Z_test01Snapshot.html tests/knowngoods/test01
+  cp tests/Z_failures_summary_Snapshot_report.html tests/knowngoods/test01
+
+  cp -R tests/jobs/* tests/knowngoods/test01/jobs
+  cp -R tests/knowngoods/test01/job_state_stubs/running/* tests/knowngoods/test01/jobs/test01_AWS_RHEL_002_base
+  cp -R tests/knowngoods/test01/job_state_stubs/failure/* tests/knowngoods/test01/jobs/test01_AWS_RHEL_003_base_linux
+  cp -R tests/knowngoods/test01/job_state_stubs/aborted/* tests/knowngoods/test01/jobs/test01_AWS_RHEL_006_lamp_5_5_chef
+  cp -R tests/knowngoods/test01/job_state_stubs/server_template_failure/* tests/knowngoods/test01/jobs/test01_AWS_RHEL_005_lamp_chef
+
+elif [ "$1" == "--help" ] || [ "$1" == "-h" ]
+then
+  show_usage_banner
+
+else
+  echo "Bad command line flag passed '$1'"
+  show_usage_banner
+fi
+
+exit 0

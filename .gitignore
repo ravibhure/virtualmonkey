@@ -10,6 +10,9 @@ tmtags
 \#*
 .\#*
 
+## RubyMine
+.idea
+
 ## VIM
 *.swp
 *.swo
@@ -17,10 +20,12 @@ tmtags
 ## PROJECT::GENERAL
 rdoc
 pkg
-log
+*.log
 
 ## PROJECT::SPECIFIC
 test_states/
 cloud_variables/*
 collateral/*
 .config.yaml
+.rocketmonkey.yaml
+.googleget.yaml

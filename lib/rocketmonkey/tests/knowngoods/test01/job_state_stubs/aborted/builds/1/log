@@ -1,0 +1,535 @@
+Started by upstream project "[8mha:AAAArR+LCAAAAAAAAABb85aBtbiIQSajNKU4P08vOT+vOD8nVc+jsiC1KCczL9svvyT1dMUiOWdZ/mImBiZPBrac1Lz0kgwfBubSopwSBiGfrMSyRP2cxLx0/eCSosy8dOuKIgYpNOOcITTIMAYIYGRiYKgoADLUSxh09bPyk/TLcuPTMvMSc+Idw4MNDOOdU/NK/IPjDQxM4nMScwvicyuLC3PiTQ31AVMz1l2yAAAA[0mvm_final_AWS01_CentOS_004_lamp_mysql_51" build number [8mha:AAAArR+LCAAAAAAAAABb85aBtbiIQSajNKU4P08vOT+vOD8nVc+jsiC1KCczL9svvyT1dMUiOWdZ/mImBiZPBrac1Lz0kgwfBubSopwSBiGfrMSyRP2cxLx0/eCSosy8dOuKIgYpNOOcITTIMAYIYGRiYKgoADFKGPT0s/KT9Mty49My8xJz4h3Dgw0M451T80r8g+MNDEzicxJzC+JzK4sLc+JNDfUNAXsYdTizAAAA[0m1
+Building on master in workspace /var/lib/jenkins/workspace/vm_final_AWS01_CentOS_006_lamp_5_5_chef
+[vm_final_AWS01_CentOS_006_lamp_5_5_chef] $ /bin/sh -xe /tmp/hudson5946688837075568983.sh
++ cat /dev/null
++ cd /root/virtualmonkey
++ cat collateral/servertemplate_tests/updatedTroops/lamp_5_5_chef.json
+{
+  "feature":"lamp_chef.rb",
+  "cloud_variables":"all_clouds.json",
+
+  "common_inputs":["lamp_chef.json","chef_swap.json", "php_trier_inputs.json"],
+  "prefix":"LAMP",
+  "server_template_ids":[
+    "229981001"
+  ]
+}
++ bin/monkey create -f collateral/servertemplate_tests/updatedTroops/lamp_5_5_chef.json -x vm_final_AWS01_CentOS_006_lamp_5_5_chef -i 1 -o CentOS --yes
+Virtual Monkey Automated Test Framework
+Copyright (c) 2010-2012 RightScale Inc
+Version 0.4.0, branch "jenkins"
+
+Attempting to load any available config files...
+found "/root/virtualmonkey/.config.yaml" loading...
+
+All available config files now loaded, new timeout values are set to:
+      booting_timeout: 1200
+    completed_timeout: 1200
+      default_timeout: 1200
+        error_timeout: 1200
+       failed_timeout: 1200
+     inactive_timeout: 1200
+  operational_timeout: 1200
+     snapshot_timeout: 1200
+      stopped_timeout: 1200
+   terminated_timeout: 1200
+
+
+I, [2012-05-10T18:14:09.398679 #4832]  INFO -- : Initializing Logging using STDOUT
+I, [2012-05-10T18:14:09.398798 #4832]  INFO -- : [API v1.0] GET: https://my.rightscale.com/api/acct/2901/login.js?
+I, [2012-05-10T18:14:10.125200 #4832]  INFO -- : [API v1.0] GET: https://my.rightscale.com/api/acct/2901/tags/search.js?resource_type=deployment&tags[]=info%3Aprefix%3Dvm_final_AWS01_CentOS_006_lamp_5_5_chef-LAMP
+loading 1 deployments matching your prefix
+I, [2012-05-10T18:14:10.588557 #4832]  INFO -- : [API v1.0] GET: https://my.rightscale.com/api/acct/2901/server_templates/229981001.js?
+I, [2012-05-10T18:14:10.883751 #4832]  INFO -- : Initializing Logging using STDOUT
+I, [2012-05-10T18:14:10.883871 #4832]  INFO -- : [API v0.1] GET: https://my.rightscale.com/api/acct/2901/ec2_ssh_keys.js?
+Existing deployments matching --prefix vm_final_AWS01_CentOS_006_lamp_5_5_chef-LAMP found. Skipping deployment creation.
+
+Command 'monkey create --yes --only "CentOS" --prefix "vm_final_AWS01_CentOS_006_lamp_5_5_chef" --clouds 1 --config-file "collateral/servertemplate_tests/updatedTroops/lamp_5_5_chef.json"' finished successfully.
++ bin/monkey run -f collateral/servertemplate_tests/updatedTroops/lamp_5_5_chef.json -x vm_final_AWS01_CentOS_006_lamp_5_5_chef -u booting_timeout=1201 completed_timeout=1201 default_timeout=1201 error_timeout=1201 failed_timeout=1201 inactive_timeout=1201 operational_timeout=1201 snapshot_timeout=1201 stopped_timeout=1201 terminated_timeout=1201 -v --yes
+Virtual Monkey Automated Test Framework
+Copyright (c) 2010-2012 RightScale Inc
+Version 0.4.0, branch "jenkins"
+
+Attempting to load any available config files...
+found "/root/virtualmonkey/.config.yaml" loading...
+
+All available config files now loaded, new timeout values are set to:
+      booting_timeout: 1200
+    completed_timeout: 1200
+      default_timeout: 1200
+        error_timeout: 1200
+       failed_timeout: 1200
+     inactive_timeout: 1200
+  operational_timeout: 1200
+     snapshot_timeout: 1200
+      stopped_timeout: 1200
+   terminated_timeout: 1200
+
+
+Command-line timeouts overriding previous timeout values...
+New timeout values are set to:
+      booting_timeout: 1201
+    completed_timeout: 1201
+      default_timeout: 1201
+        error_timeout: 1201
+       failed_timeout: 1201
+     inactive_timeout: 1201
+  operational_timeout: 1201
+     snapshot_timeout: 1201
+      stopped_timeout: 1201
+   terminated_timeout: 1201
+
+I, [2012-05-10T18:14:17.150821 #4870]  INFO -- : Initializing Logging using STDOUT
+I, [2012-05-10T18:14:17.151003 #4870]  INFO -- : [API v1.5] POST: https://my.rightscale.com/api/session
+I, [2012-05-10T18:14:17.416837 #4870]  INFO -- : [API v1.5] GET: https://my.rightscale.com/api/session.json?
+I, [2012-05-10T18:14:17.619810 #4870]  INFO -- : [API v1.5] GET: https://my.rightscale.com/api/clouds.json?
+I, [2012-05-10T18:14:18.542168 #4870]  INFO -- : [API v1.5] GET: https://my.rightscale.com/api/clouds.json?
+I, [2012-05-10T18:14:18.913691 #4870]  INFO -- : Initializing Logging using STDOUT
+I, [2012-05-10T18:14:18.913828 #4870]  INFO -- : [API v0.1] GET: https://my.rightscale.com/api/acct/2901/ec2_ssh_keys.js?
+I, [2012-05-10T18:14:19.723794 #4870]  INFO -- : Initializing Logging using STDOUT
+I, [2012-05-10T18:14:19.723909 #4870]  INFO -- : [API v1.0] GET: https://my.rightscale.com/api/acct/2901/login.js?
+I, [2012-05-10T18:14:19.945921 #4870]  INFO -- : [API v1.0] GET: https://my.rightscale.com/api/acct/2901/tags/search.js?resource_type=deployment&tags[]=info%3Aprefix%3Dvm_final_AWS01_CentOS_006_lamp_5_5_chef-LAMP
+loading 1 deployments matching your prefix
+I, [2012-05-10T18:14:20.354887 #4870]  INFO -- : [API v1.0] GET: https://my.rightscale.com/api/acct/2901/server_templates/229981001.js?
+I, [2012-05-10T18:14:20.680173 #4870]  INFO -- : [API v0.1] GET: https://my.rightscale.com/api/acct/2901/ec2_ssh_keys.js?
+I, [2012-05-10T18:14:21.613903 #4870]  INFO -- : [API v1.0] GET: /api/acct/2901/servers/336993001.js?
+[{"vm_final_AWS01_CentOS_006_lamp_5_5_chef-LAMP-cloud_1-173761-RightImage_CentOS_5.6_x64_v5.7"=>
+   ["operational"]}]
+I, [2012-05-10T18:14:22.525649 #4870]  INFO -- : [API v1.0] GET: https://my.rightscale.com/api/acct/2901/deployments.js?filter[]=nickname%3Dvm_final_AWS01_CentOS_006_lamp_5_5_chef-LAMP-cloud_1-173761-RightImage_CentOS_5.6_x64_v5.7
+feature_file: 
+I, [2012-05-10T18:14:24.196827 #4870]  INFO -- : [API v1.0] GET: /api/acct/2901/servers/336993001/settings.js?
+I, [2012-05-10T18:14:24.631475 #4870]  INFO -- : [API v1.0] GET: https://my.rightscale.com/api/acct/2901/server_templates/229981001.js?
+lamp_chef_lookup_scripts
+  s_one
+  Duration: 1.8e-05 seconds
+  load_script_table(ServerTemplate["LAMP All-In-One with MySQL 5.5 (Chef)"], [["update_code", "app::do_update_code"], ["dump_schedule_enable", "db::do_dump_schedule_enable"], ["dump_schedule_disable", "db::do_dump_schedule_disable"], ["do_list_rules", "sys_firewall::do_list_rules"], ["setup_rule", "sys_firewall::setup_rule"], ["do_dump_export", "db::do_dump_export"], ["do_dump_import", "db::do_dump_import"], ["apache_start", "web_apache::do_start"], ["apache_stop", "web_apache::do_stop"], ["apache_restart", "web_apache::do_restart"]], ServerTemplate["LAMP All-In-One with MySQL 5.5 (Chef)"])
+I, [2012-05-10T18:14:24.971689 #4870]  INFO -- : [API v1.0] GET: /api/acct/2901/ec2_server_templates/229981001/executables.js?
+  Duration: 0.461984 seconds
+Duration: 0.462575 seconds
+deployment_base_whitelist
+Duration: 2.3e-05 seconds
+deployment_base_blacklist
+Duration: 1.8e-05 seconds
+assert_integrity!
+Duration: 0.000115 seconds
+Executing before_run hooks...
+Throttling checks skipped...
+Finished executing before_run hooks.
+running "/root/virtualmonkey/bin/grinder" -f "/root/virtualmonkey/collateral/servertemplate_tests/features/lamp_chef.rb" -d "vm_final_AWS01_CentOS_006_lamp_5_5_chef-LAMP-cloud_1-173761-RightImage_CentOS_5.6_x64_v5.7" -t  "cloudfiles"  "s3"  "softlayer"  "apache_service_check"  "check_monitoring"  "dump_schedule"  "ulimit" -u "booting_timeout=1201" "completed_timeout=1201" "default_timeout=1201" "error_timeout=1201" "failed_timeout=1201" "inactive_timeout=1201" "operational_timeout=1201" "snapshot_timeout=1201" "stopped_timeout=1201" "terminated_timeout=1201" -g 
+<238551001>[05/10/2012 18:14:25.762064] Virtual Monkey Automated Test Framework
+<238551001>[05/10/2012 18:14:25.762283] Copyright (c) 2010-2012 RightScale Inc
+<238551001>[05/10/2012 18:14:25.762322] Version 0.4.0, branch "jenkins"
+<238551001>[05/10/2012 18:14:25.762362] 
+<238551001>[05/10/2012 18:14:25.762397] Attempting to load any available config files...
+<238551001>[05/10/2012 18:14:25.762436] found "/root/virtualmonkey/.config.yaml" loading...
+<238551001>[05/10/2012 18:14:30.237090] All available config files now loaded, new timeout values are set to:
+<238551001>[05/10/2012 18:14:30.237407]       booting_timeout: 1200
+<238551001>[05/10/2012 18:14:30.237633]     completed_timeout: 1200
+<238551001>[05/10/2012 18:14:30.237881]       default_timeout: 1200
+<238551001>[05/10/2012 18:14:30.238100]         error_timeout: 1200
+<238551001>[05/10/2012 18:14:30.238354]        failed_timeout: 1200
+<238551001>[05/10/2012 18:14:30.238600]      inactive_timeout: 1200
+<238551001>[05/10/2012 18:14:30.238850]   operational_timeout: 1200
+<238551001>[05/10/2012 18:14:30.239087]      snapshot_timeout: 1200
+<238551001>[05/10/2012 18:14:30.239324]       stopped_timeout: 1200
+<238551001>[05/10/2012 18:14:30.239549]    terminated_timeout: 1200
+<238551001>[05/10/2012 18:14:34.164893] Command-line timeouts overriding previous timeout values...
+<238551001>[05/10/2012 18:14:34.165392] New timeout values are set to:
+<238551001>[05/10/2012 18:14:34.165507]       booting_timeout: 1201
+<238551001>[05/10/2012 18:14:34.165546]     completed_timeout: 1201
+<238551001>[05/10/2012 18:14:34.165578]       default_timeout: 1201
+<238551001>[05/10/2012 18:14:34.165613]         error_timeout: 1201
+<238551001>[05/10/2012 18:14:34.165765]        failed_timeout: 1201
+<238551001>[05/10/2012 18:14:34.165803]      inactive_timeout: 1201
+<238551001>[05/10/2012 18:14:34.165829]   operational_timeout: 1201
+<238551001>[05/10/2012 18:14:34.165868]      snapshot_timeout: 1201
+<238551001>[05/10/2012 18:14:34.165903]       stopped_timeout: 1201
+<238551001>[05/10/2012 18:14:34.165936]    terminated_timeout: 1201
+<238551001>[05/10/2012 18:14:34.169176] INFO: Resuming previous testcase...
+<238551001>[05/10/2012 18:14:34.169339] INFO: Confirmed resuming previous testcase, using paused tests...
+ 0 features passed.  0 features failed.  1 features running for 15 seconds
+<238551001>[05/10/2012 18:14:37.338151] feature_file: 
+<238551001>[05/10/2012 18:14:43.053726] RESUME EXCEPTION: Got "comparison of Fixnum with nil failed". Cancelling resume and continuing
+<238551001>[05/10/2012 18:14:43.053899] 
+<238551001>[05/10/2012 18:14:43.053981] @iterating_stack:
+<238551001>[05/10/2012 18:14:43.054047] []
+<238551001>[05/10/2012 18:14:43.054139] 
+<238551001>[05/10/2012 18:14:43.054241] trace_log:
+<238551001>[05/10/2012 18:14:43.054331] [{"feature_file"=>nil}, {"lamp_chef_lookup_scripts"=>[]}]
+<238551001>[05/10/2012 18:14:43.054398] 
+<238551001>[05/10/2012 18:14:43.054458] @expected_stack_depths:
+<238551001>[05/10/2012 18:14:43.054539] []
+<238551001>[05/10/2012 18:14:43.054603] 
+<238551001>[05/10/2012 18:14:43.054661] @in_transaction:
+<238551001>[05/10/2012 18:14:43.054727] []
+<238551001>[05/10/2012 18:14:43.055075] lamp_chef_lookup_scripts
+<238551001>[05/10/2012 18:14:43.055120] Duration: 0.000437 seconds
+<238551001>[05/10/2012 18:14:43.055153] deployment_base_whitelist
+<238551001>[05/10/2012 18:14:43.072304] 
+<238551001>[05/10/2012 18:14:43.072452] resume_log:
+<238551001>[05/10/2012 18:14:43.072520] [{"feature"=>
+<238551001>[05/10/2012 18:14:43.072610]    "/root/virtualmonkey/collateral/servertemplate_tests/features/lamp_chef.rb",
+<238551001>[05/10/2012 18:14:43.072670]   "tests"=>
+<238551001>[05/10/2012 18:14:43.072778]    ["cloudfiles",
+<238551001>[05/10/2012 18:14:43.072849]     "s3",
+<238551001>[05/10/2012 18:14:43.073038]     "softlayer",
+<238551001>[05/10/2012 18:14:43.073321]     "apache_service_check",
+<238551001>[05/10/2012 18:14:43.073573]     "check_monitoring",
+<238551001>[05/10/2012 18:14:43.073678]     "dump_schedule",
+<238551001>[05/10/2012 18:14:43.073738]     "ulimit"],
+<238551001>[05/10/2012 18:14:43.073820]   "feature_file"=>nil,
+<238551001>[05/10/2012 18:14:43.073884]   "completed_features"=>[]},
+<238551001>[05/10/2012 18:14:43.073939]  {"lamp_chef_lookup_scripts"=>[]},
+<238551001>[05/10/2012 18:14:43.074093]  {"deployment_base_whitelist"=>[]},
+<238551001>[05/10/2012 18:14:43.074144]  {"deployment_base_blacklist"=>[]},
+<238551001>[05/10/2012 18:14:43.074206]  {"assert_integrity!"=>[]},
+<238551001>[05/10/2012 18:14:43.074276]  {"lamp_chef_lookup_scripts"=>
+<238551001>[05/10/2012 18:14:43.074340]    [{"s_one"=>[]},
+<238551001>[05/10/2012 18:14:43.074403]     {"load_script_table(ServerTemplate[\"LAMP All-In-One with MySQL 5.5 (Chef)\"], [[\"update_code\", \"app::do_update_code\"], [\"dump_schedule_enable\", \"db::do_dump_schedule_enable\"], [\"dump_schedule_disable\", \"db::do_dump_schedule_disable\"], [\"do_list_rules\", \"sys_firewall::do_list_rules\"], [\"setup_rule\", \"sys_firewall::setup_rule\"], [\"do_dump_export\", \"db::do_dump_export\"], [\"do_dump_import\", \"db::do_dump_import\"], [\"apache_start\", \"web_apache::do_start\"], [\"apache_stop\", \"web_apache::do_stop\"], [\"apache_restart\", \"web_apache::do_restart\"]], ServerTemplate[\"LAMP All-In-One with MySQL 5.5 (Chef)\"])"=>
+<238551001>[05/10/2012 18:14:43.074487]       []}]},
+<238551001>[05/10/2012 18:14:43.074548]  {"launch_all"=>
+<238551001>[05/10/2012 18:14:43.074612]    [{"launch_set([Server[\"vm-289589-LAMP All-In-One with MySQL 5.5 (Chef)\"]])"=>
+<238551001>[05/10/2012 18:14:43.074694]       [{"transaction {\n  clouds = VirtualMonkey::Toolbox.get_available_clouds.to_h(\"cloud_id\", \"name\")\n  McInstance.find_all(s.cloud_id.to_i) if clouds[s.cloud_id.to_i] =~ /euca/i\n  s.start\n}"=>
+<238551001>[05/10/2012 18:14:43.074751]          []}]}]},
+<238551001>[05/10/2012 18:14:43.074804]  {"wait_for_all(\"operational\")"=>
+<238551001>[05/10/2012 18:14:43.074862]    [{"state_wait([Server[\"vm-289589-LAMP All-In-One with MySQL 5.5 (Chef)\"]], \"operational\")"=>
+<238551001>[05/10/2012 18:14:43.074921]       [{"get_timeout_for_state(\"operational\")"=>[]},
+<238551001>[05/10/2012 18:14:43.074992]        {"transaction { server.wait_for_operational_with_dns(timeout) }"=>
+<238551001>[05/10/2012 18:14:43.075046]          []}]}]},
+<238551001>[05/10/2012 18:14:43.075110]  {"servers"=>[]},
+<238551001>[05/10/2012 18:14:43.075168]  {"create_monkey_table(Server[\"vm-289589-LAMP All-In-One with MySQL 5.5 (Chef)\"])"=>
+<238551001>[05/10/2012 18:14:43.075226]    [{"run_query(\"DROP DATABASE IF EXISTS bananas\", Server[\"vm-289589-LAMP All-In-One with MySQL 5.5 (Chef)\"])"=>
+<238551001>[05/10/2012 18:14:43.075295]       [{"probe(Server[\"vm-289589-LAMP All-In-One with MySQL 5.5 (Chef)\"], \"echo -e \\\"DROP DATABASE IF EXISTS bananas\\\"| mysql\")"=>
+<238551001>[05/10/2012 18:14:43.075378]          []}]},
+<238551001>[05/10/2012 18:14:43.075436]     {"run_query(\"create database bananas\", Server[\"vm-289589-LAMP All-In-One with MySQL 5.5 (Chef)\"])"=>
+<238551001>[05/10/2012 18:14:43.075498]       [{"probe(Server[\"vm-289589-LAMP All-In-One with MySQL 5.5 (Chef)\"], \"echo -e \\\"create database bananas\\\"| mysql\")"=>
+<238551001>[05/10/2012 18:14:43.075551]          []}]},
+<238551001>[05/10/2012 18:14:43.075609]     {"run_query(\"use bananas; create table bunches (tree text)\", Server[\"vm-289589-LAMP All-In-One with MySQL 5.5 (Chef)\"])"=>
+<238551001>[05/10/2012 18:14:43.075712]       [{"probe(Server[\"vm-289589-LAMP All-In-One with MySQL 5.5 (Chef)\"], \"echo -e \\\"use bananas; create table bunches (tree text)\\\"| mysql\")"=>
+<238551001>[05/10/2012 18:14:43.075775]          []}]},
+<238551001>[05/10/2012 18:14:43.075833]     {"run_query(\"use bananas; insert into bunches values ('yellow')\", Server[\"vm-289589-LAMP All-In-One with MySQL 5.5 (Chef)\"])"=>
+<238551001>[05/10/2012 18:14:43.075906]       [{"probe(Server[\"vm-289589-LAMP All-In-One with MySQL 5.5 (Chef)\"], \"echo -e \\\"use bananas; insert into bunches values ('yellow')\\\"| mysql\")"=>
+<238551001>[05/10/2012 18:14:43.075983]          []}]}]},
+<238551001>[05/10/2012 18:14:43.076055]  {"servers"=>[]},
+<238551001>[05/10/2012 18:14:43.076125]  {"run_unified_application_checks([Server[\"vm-289589-LAMP All-In-One with MySQL 5.5 (Chef)\"]], 80)"=>
+<238551001>[05/10/2012 18:14:43.076196]    [{"test_http_responses([\"ec2-50-17-115-50.compute-1.amazonaws.com:80/index.html\"], \"html serving succeeded\", FalseClass)"=>
+<238551001>[05/10/2012 18:14:43.076255]       []},
+<238551001>[05/10/2012 18:14:43.076317]     {"test_http_responses([\"ec2-50-17-115-50.compute-1.amazonaws.com:80/appserver/\"], \"configuration=.*succeeded\", FalseClass)"=>
+<238551001>[05/10/2012 18:14:43.076375]       []},
+<238551001>[05/10/2012 18:14:43.076428]     {"test_http_responses([\"ec2-50-17-115-50.compute-1.amazonaws.com:80/serverid/\"], \"hostname=\", FalseClass)"=>
+<238551001>[05/10/2012 18:14:43.076489]       []},
+<238551001>[05/10/2012 18:14:43.076547]     {"test_http_responses([\"ec2-50-17-115-50.compute-1.amazonaws.com:80/dbread/\"], \"I am in the db\", FalseClass)"=>
+<238551001>[05/10/2012 18:14:43.076604]       []}]},
+<238551001>[05/10/2012 18:14:43.076662]  {"servers"=>[]}]
+<238551001>[05/10/2012 18:14:43.076723] 
+<238551001>[05/10/2012 18:14:43.076789] @rerun_last_command:
+<238551001>[05/10/2012 18:14:43.076851] []
+<238551001>[05/10/2012 18:14:43.076908] 
+<238551001>[05/10/2012 18:14:43.076967] @retry_loop:
+<238551001>[05/10/2012 18:14:43.077021] [0]
+<238551001>[05/10/2012 18:14:43.077082] 
+<238551001>[05/10/2012 18:14:43.077138] @index_stack:
+<238551001>[05/10/2012 18:14:43.077203] [1]
+<238551001>[05/10/2012 18:14:43.077255] 
+<238551001>[05/10/2012 18:14:43.077312] @done_resuming:
+<238551001>[05/10/2012 18:14:43.077373] false
+<238551001>[05/10/2012 18:14:43.077430] 
+<238551001>[05/10/2012 18:14:43.077483] @stack_objects:
+<238551001>[05/10/2012 18:14:43.077676] [[]]
+<238551001>[05/10/2012 18:14:43.077736] Exception Backtrace:
+<238551001>[05/10/2012 18:14:43.077797] /root/virtualmonkey/lib/virtualmonkey/runner_core/test_case_interface.rb:487:in `<'
+<238551001>[05/10/2012 18:14:43.077851] /root/virtualmonkey/lib/virtualmonkey/runner_core/test_case_interface.rb:487:in `add_to_trace_log'
+<238551001>[05/10/2012 18:14:43.077924] /root/virtualmonkey/lib/virtualmonkey/runner_core/test_case_interface.rb:467:in `execution_stack_trace'
+<238551001>[05/10/2012 18:14:43.077978] /root/virtualmonkey/lib/virtualmonkey/runner_core/test_case_interface.rb:156:in `function_wrapper'
+<238551001>[05/10/2012 18:14:43.078044] (eval):1:in `deployment_base_whitelist'
+<238551001>[05/10/2012 18:14:43.078129] /root/virtualmonkey/lib/virtualmonkey/runner_core/test_case_interface.rb:337:in `__send__'
+<238551001>[05/10/2012 18:14:43.078198] /root/virtualmonkey/lib/virtualmonkey/runner_core/test_case_interface.rb:337:in `__list_loader__'
+<238551001>[05/10/2012 18:14:43.078256] /root/virtualmonkey/lib/virtualmonkey/runner_core/test_case_interface.rb:336:in `each'
+<238551001>[05/10/2012 18:14:43.078323] /root/virtualmonkey/lib/virtualmonkey/runner_core/test_case_interface.rb:336:in `__list_loader__'
+<238551001>[05/10/2012 18:14:43.078405] /root/virtualmonkey/lib/virtualmonkey/runner_core/test_case_interface.rb:334:in `each'
+<238551001>[05/10/2012 18:14:43.078473] /root/virtualmonkey/lib/virtualmonkey/runner_core/test_case_interface.rb:334:in `__list_loader__'
+<238551001>[05/10/2012 18:14:43.078555] /root/virtualmonkey/lib/virtualmonkey/runner_core/test_case_interface.rb:387:in `__send__'
+<238551001>[05/10/2012 18:14:43.078627] /root/virtualmonkey/lib/virtualmonkey/runner_core/test_case_interface.rb:387:in `populate_settings'
+<238551001>[05/10/2012 18:14:43.078686] /root/virtualmonkey/lib/virtualmonkey/runner_core/deployment_base.rb:47:in `initialize'
+<238551001>[05/10/2012 18:14:43.078748] /root/virtualmonkey/bin/../lib/virtualmonkey/test_case_dsl.rb:120:in `new'
+<238551001>[05/10/2012 18:14:43.078801] /root/virtualmonkey/bin/../lib/virtualmonkey/test_case_dsl.rb:120:in `run'
+<238551001>[05/10/2012 18:14:43.078861] /root/virtualmonkey/bin/../lib/virtualmonkey/test_case_dsl.rb:115:in `each'
+<238551001>[05/10/2012 18:14:43.078927] /root/virtualmonkey/bin/../lib/virtualmonkey/test_case_dsl.rb:115:in `run'
+<238551001>[05/10/2012 18:14:43.078981] /root/virtualmonkey/bin/grinder:74
+<238551001>[05/10/2012 18:14:43.079560] Duration: 0.000666 seconds
+<238551001>[05/10/2012 18:14:43.079629] deployment_base_blacklist
+<238551001>[05/10/2012 18:14:43.079663] Duration: 0.000651 seconds
+<238551001>[05/10/2012 18:14:43.079706] assert_integrity!
+<238551001>[05/10/2012 18:14:43.079745] Duration: 0.000687 seconds
+<238551001>[05/10/2012 18:14:43.079788] Completed features: 
+<238551001>[05/10/2012 18:14:43.079827] Running feature: /root/virtualmonkey/collateral/servertemplate_tests/features/lamp_chef.rb
+<238551001>[05/10/2012 18:14:43.079868] Running tests: cloudfiles, s3, softlayer, apache_service_check, check_monitoring, dump_schedule, ulimit
+<238551001>[05/10/2012 18:14:43.079898] ********************************
+<238551001>[05/10/2012 18:14:43.079933] **  lamp_chef.rb: BEFORE all  **
+<238551001>[05/10/2012 18:14:43.079963] ********************************
+<238551001>[05/10/2012 18:14:43.080016] lamp_chef_lookup_scripts
+<238551001>[05/10/2012 18:14:43.080041]   s_one
+<238551001>[05/10/2012 18:14:43.080075]   Duration: 0.001285 seconds
+<238551001>[05/10/2012 18:14:43.080109]   load_script_table(ServerTemplate["LAMP All-In-One with MySQL 5.5 (Chef)"], [["update_code", "app::do_update_code"], ["dump_schedule_enable", "db::do_dump_schedule_enable"], ["dump_schedule_disable", "db::do_dump_schedule_disable"], ["do_list_rules", "sys_firewall::do_list_rules"], ["setup_rule", "sys_firewall::setup_rule"], ["do_dump_export", "db::do_dump_export"], ["do_dump_import", "db::do_dump_import"], ["apache_start", "web_apache::do_start"], ["apache_stop", "web_apache::do_stop"], ["apache_restart", "web_apache::do_restart"]], ServerTemplate["LAMP All-In-One with MySQL 5.5 (Chef)"])
+<238551001>[05/10/2012 18:14:43.409964]   Duration: 0.335995 seconds
+<238551001>[05/10/2012 18:14:43.410065] Duration: 0.339303 seconds
+<238551001>[05/10/2012 18:14:43.410103] set_variation_storage_account_provider("S3")
+ 0 features passed.  0 features failed.  1 features running for 25 seconds
+<238551001>[05/10/2012 18:14:50.747377] Duration: 7.337407 seconds
+<238551001>[05/10/2012 18:14:50.747465] set_variation_dump_container("lamp-feature-bucket-ap-symphony")
+<238551001>[05/10/2012 18:14:50.747514]   Set variation dump CONTAINER: lamp-feature-bucket-ap-symphony
+<238551001>[05/10/2012 18:14:53.833303] Duration: 3.08561 seconds
+<238551001>[05/10/2012 18:14:53.833420] set_dump_prefix("app_test")
+ 0 features passed.  0 features failed.  1 features running for 35 seconds
+<238551001>[05/10/2012 18:14:56.176152] Duration: 2.342844 seconds
+<238551001>[05/10/2012 18:14:56.176256] set_database_name_input("app_test")
+ 0 features passed.  0 features failed.  1 features running for 46 seconds
+<238551001>[05/10/2012 18:15:09.975707] Duration: 13.793778 seconds
+<238551001>[05/10/2012 18:15:09.975821] launch_all
+<238551001>[05/10/2012 18:15:09.975862]   launch_set([Server["vm-289589-LAMP All-In-One with MySQL 5.5 (Chef)"]])
+<238551001>[05/10/2012 18:15:09.975903]     transaction {
+<238551001>[05/10/2012 18:15:09.975942]       clouds = VirtualMonkey::Toolbox.get_available_clouds.to_h("cloud_id", "name")
+<238551001>[05/10/2012 18:15:09.975990]       McInstance.find_all(s.cloud_id.to_i) if clouds[s.cloud_id.to_i] =~ /euca/i
+<238551001>[05/10/2012 18:15:09.976031]       s.start
+<238551001>[05/10/2012 18:15:09.976079]     }
+<238551001>[05/10/2012 18:15:11.566575]     1.589143 seconds
+<238551001>[05/10/2012 18:15:11.566682]   Duration: 1.590933 seconds
+<238551001>[05/10/2012 18:15:11.566714] Duration: 1.59273 seconds
+<238551001>[05/10/2012 18:15:11.566758] wait_for_all("operational")
+<238551001>[05/10/2012 18:15:11.566809]   state_wait([Server["vm-289589-LAMP All-In-One with MySQL 5.5 (Chef)"]], "operational")
+<238551001>[05/10/2012 18:15:11.566862]     get_timeout_for_state("operational")
+<238551001>[05/10/2012 18:15:11.566905]       Timeout for state "operational" set to 1201 seconds.
+<238551001>[05/10/2012 18:15:11.566948]     Duration: 0.00207 seconds
+<238551001>[05/10/2012 18:15:11.567797]     transaction { server.wait_for_operational_with_dns(timeout) }
+ 0 features passed.  0 features failed.  1 features running for 56 seconds
+<238551001>[05/10/2012 18:15:15.812664]     4.247814 seconds
+<238551001>[05/10/2012 18:15:15.815141]   Duration: 4.252558 seconds
+<238551001>[05/10/2012 18:15:15.817378] Duration: 4.254881 seconds
+<238551001>[05/10/2012 18:15:15.817552] servers
+<238551001>[05/10/2012 18:15:15.819740] Duration: 0.002259 seconds
+<238551001>[05/10/2012 18:15:15.819898] create_monkey_table(Server["vm-289589-LAMP All-In-One with MySQL 5.5 (Chef)"])
+<238551001>[05/10/2012 18:15:15.819949]   run_query("DROP DATABASE IF EXISTS bananas", Server["vm-289589-LAMP All-In-One with MySQL 5.5 (Chef)"])
+<238551001>[05/10/2012 18:15:15.820059]     probe(Server["vm-289589-LAMP All-In-One with MySQL 5.5 (Chef)"], "echo -e \"DROP DATABASE IF EXISTS bananas\"| mysql")
+<238551001>[05/10/2012 18:15:17.004712]     Duration: 1.184606 seconds
+<238551001>[05/10/2012 18:15:17.007220]   Duration: 1.187269 seconds
+<238551001>[05/10/2012 18:15:17.007377]   run_query("create database bananas", Server["vm-289589-LAMP All-In-One with MySQL 5.5 (Chef)"])
+<238551001>[05/10/2012 18:15:17.007499]     probe(Server["vm-289589-LAMP All-In-One with MySQL 5.5 (Chef)"], "echo -e \"create database bananas\"| mysql")
+<238551001>[05/10/2012 18:15:18.124190]     Duration: 1.116636 seconds
+<238551001>[05/10/2012 18:15:18.273220]   Duration: 1.265672 seconds
+<238551001>[05/10/2012 18:15:18.273501]   run_query("use bananas; create table bunches (tree text)", Server["vm-289589-LAMP All-In-One with MySQL 5.5 (Chef)"])
+<238551001>[05/10/2012 18:15:18.273543]     probe(Server["vm-289589-LAMP All-In-One with MySQL 5.5 (Chef)"], "echo -e \"use bananas; create table bunches (tree text)\"| mysql")
+<238551001>[05/10/2012 18:15:19.405341]     Duration: 1.13174 seconds
+<238551001>[05/10/2012 18:15:19.408784]   Duration: 1.135349 seconds
+<238551001>[05/10/2012 18:15:19.408966]   run_query("use bananas; insert into bunches values ('yellow')", Server["vm-289589-LAMP All-In-One with MySQL 5.5 (Chef)"])
+<238551001>[05/10/2012 18:15:19.409125]     probe(Server["vm-289589-LAMP All-In-One with MySQL 5.5 (Chef)"], "echo -e \"use bananas; insert into bunches values ('yellow')\"| mysql")
+<238551001>[05/10/2012 18:15:20.569069]     Duration: 1.159875 seconds
+<238551001>[05/10/2012 18:15:20.572243]   Duration: 1.163232 seconds
+<238551001>[05/10/2012 18:15:20.575413] Duration: 4.755498 seconds
+<238551001>[05/10/2012 18:15:20.575600] *************************************
+<238551001>[05/10/2012 18:15:20.575662] **  lamp_chef.rb: TEST cloudfiles  **
+<238551001>[05/10/2012 18:15:20.575729] *************************************
+<238551001>[05/10/2012 18:15:20.575772] set_variation_storage_account_provider("Cloudfiles")
+ 0 features passed.  0 features failed.  1 features running for 1 minute and 6 seconds
+<238551001>[05/10/2012 18:15:26.648027] Duration: 6.072349 seconds
+<238551001>[05/10/2012 18:15:26.648288] servers
+<238551001>[05/10/2012 18:15:26.651919] Duration: 0.003788 seconds
+<238551001>[05/10/2012 18:15:26.652091] run_unified_application_checks([Server["vm-289589-LAMP All-In-One with MySQL 5.5 (Chef)"]], 80)
+<238551001>[05/10/2012 18:15:26.652234]   test_http_responses(["ec2-50-17-115-50.compute-1.amazonaws.com:80/index.html"], "html serving succeeded", FalseClass)
+<238551001>[05/10/2012 18:15:26.652363]     curl -sk ec2-50-17-115-50.compute-1.amazonaws.com:80/index.html 2> /dev/null
+<238551001>[05/10/2012 18:15:26.755241] reasponse set = <?xml version="1.0" encoding="ISO-8859-1"?>
+<238551001>[05/10/2012 18:15:26.755409] <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+<238551001>[05/10/2012 18:15:26.755490]    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<238551001>[05/10/2012 18:15:26.755574] <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<238551001>[05/10/2012 18:15:26.755641] <head>
+<238551001>[05/10/2012 18:15:26.755679]     <title>RightScale Unified Test App</title>
+<238551001>[05/10/2012 18:15:26.755711]     <link rel="stylesheet" type="text/css" href="style.css" />  
+<238551001>[05/10/2012 18:15:26.755764] </head>
+<238551001>[05/10/2012 18:15:26.755820] 
+<238551001>[05/10/2012 18:15:26.755866] <body>
+<238551001>[05/10/2012 18:15:26.755918] 
+<238551001>[05/10/2012 18:15:26.755959] <div id="header">
+<238551001>[05/10/2012 18:15:26.756011] <div id="logo"><img src="images/logo.png" /></div>
+<238551001>[05/10/2012 18:15:26.756062] </div>
+<238551001>[05/10/2012 18:15:26.756102] 
+<238551001>[05/10/2012 18:15:26.756138] <div class="code_container">
+<238551001>[05/10/2012 18:15:26.756198] <div class="code">
+<238551001>[05/10/2012 18:15:26.756235] <h3>
+<238551001>[05/10/2012 18:15:26.756276] Basic html serving succeeded.
+<238551001>[05/10/2012 18:15:26.756311] </h3>
+<238551001>[05/10/2012 18:15:26.756348] </div>
+<238551001>[05/10/2012 18:15:26.756379] </div>
+<238551001>[05/10/2012 18:15:26.756410] 
+<238551001>[05/10/2012 18:15:26.756440] </body>
+<238551001>[05/10/2012 18:15:26.756488] </html>
+<238551001>[05/10/2012 18:15:26.759696]   Duration: 0.107379 seconds
+<238551001>[05/10/2012 18:15:26.759877]   test_http_responses(["ec2-50-17-115-50.compute-1.amazonaws.com:80/appserver/"], "configuration=.*succeeded", FalseClass)
+<238551001>[05/10/2012 18:15:26.759993]     curl -sk ec2-50-17-115-50.compute-1.amazonaws.com:80/appserver/ 2> /dev/null
+<238551001>[05/10/2012 18:15:26.861448] reasponse set = <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+<238551001>[05/10/2012 18:15:26.861573]    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<238551001>[05/10/2012 18:15:26.861616]    
+<238551001>[05/10/2012 18:15:26.861665] <!-- # Copyright 2010 RightScale, Inc. All rights reserved. -->
+<238551001>[05/10/2012 18:15:26.861700]    
+<238551001>[05/10/2012 18:15:26.861735]    
+<238551001>[05/10/2012 18:15:26.861773] <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<238551001>[05/10/2012 18:15:26.861812] <head>
+<238551001>[05/10/2012 18:15:26.861846]     <title>RightScale Unified Test App</title>
+<238551001>[05/10/2012 18:15:26.861884]     <link rel="stylesheet" type="text/css" href="../style.css" />  
+<238551001>[05/10/2012 18:15:26.861914] </head>
+<238551001>[05/10/2012 18:15:26.861950] 
+<238551001>[05/10/2012 18:15:26.861976] <body>
+<238551001>[05/10/2012 18:15:26.862006] 
+<238551001>[05/10/2012 18:15:26.862031] <div id="header">
+<238551001>[05/10/2012 18:15:26.862060] <div id="logo"><img src="../images/logo.png" /></div>
+<238551001>[05/10/2012 18:15:26.862091] </div>
+<238551001>[05/10/2012 18:15:26.862116] 
+<238551001>[05/10/2012 18:15:26.862238] <div class="code_container">
+<238551001>[05/10/2012 18:15:26.862414] <div class="code">
+<238551001>[05/10/2012 18:15:26.862446] 
+<238551001>[05/10/2012 18:15:26.862488] <h3>  
+<238551001>[05/10/2012 18:15:26.862516] PHP configuration=succeeded</h3>
+<238551001>[05/10/2012 18:15:26.862546] 
+<238551001>[05/10/2012 18:15:26.862571] </div>
+<238551001>[05/10/2012 18:15:26.862617] </div>
+<238551001>[05/10/2012 18:15:26.862649] 
+<238551001>[05/10/2012 18:15:26.862681] </body>
+<238551001>[05/10/2012 18:15:26.862718] </html>
+<238551001>[05/10/2012 18:15:26.865994]   Duration: 0.105914 seconds
+<238551001>[05/10/2012 18:15:26.866211]   test_http_responses(["ec2-50-17-115-50.compute-1.amazonaws.com:80/serverid/"], "hostname=", FalseClass)
+<238551001>[05/10/2012 18:15:26.866268]     curl -sk ec2-50-17-115-50.compute-1.amazonaws.com:80/serverid/ 2> /dev/null
+<238551001>[05/10/2012 18:15:26.968450] reasponse set = <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+<238551001>[05/10/2012 18:15:26.968560]    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<238551001>[05/10/2012 18:15:26.968602] 
+<238551001>[05/10/2012 18:15:26.968641] 
+<238551001>[05/10/2012 18:15:26.968672] <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<238551001>[05/10/2012 18:15:26.968730] <head>
+<238551001>[05/10/2012 18:15:26.968804]     <title>RightScale Unified Test App</title>
+<238551001>[05/10/2012 18:15:26.968853]     <link rel="stylesheet" type="text/css" href="../style.css" />
+<238551001>[05/10/2012 18:15:26.968899] </head>
+<238551001>[05/10/2012 18:15:26.968938] 
+<238551001>[05/10/2012 18:15:26.968972] <body>
+<238551001>[05/10/2012 18:15:26.969002] 
+<238551001>[05/10/2012 18:15:26.969032] <div id="header">
+<238551001>[05/10/2012 18:15:26.969070] <div id="logo"><img src="../images/logo.png" /></div>
+<238551001>[05/10/2012 18:15:26.969108] </div>
+<238551001>[05/10/2012 18:15:26.969146] 
+<238551001>[05/10/2012 18:15:26.969184] <div class="code_container">
+<238551001>[05/10/2012 18:15:26.969227] <div class="code">
+<238551001>[05/10/2012 18:15:26.969261] 
+<238551001>[05/10/2012 18:15:26.969297] <h3>
+<238551001>[05/10/2012 18:15:26.969331] PHP server
+<238551001>[05/10/2012 18:15:26.969361] </h3>
+<238551001>[05/10/2012 18:15:26.969402] ip=10.64.47.108; <br/>
+<238551001>[05/10/2012 18:15:26.969441] hostname=ec2-50-17-115-50.compute-1.amazonaws.com; <br/>
+<238551001>[05/10/2012 18:15:26.969476] 
+<238551001>[05/10/2012 18:15:26.969506] </div>
+<238551001>[05/10/2012 18:15:26.969540] </div>
+<238551001>[05/10/2012 18:15:26.969571] 
+<238551001>[05/10/2012 18:15:26.969600] </body>
+<238551001>[05/10/2012 18:15:26.969648] </html>
+<238551001>[05/10/2012 18:15:26.972781]   Duration: 0.106505 seconds
+<238551001>[05/10/2012 18:15:26.972958]   test_http_responses(["ec2-50-17-115-50.compute-1.amazonaws.com:80/dbread/"], "I am in the db", FalseClass)
+<238551001>[05/10/2012 18:15:26.973017]     curl -sk ec2-50-17-115-50.compute-1.amazonaws.com:80/dbread/ 2> /dev/null
+<238551001>[05/10/2012 18:15:27.077064] reasponse set = <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+<238551001>[05/10/2012 18:15:27.077215]    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<238551001>[05/10/2012 18:15:27.077276]    
+<238551001>[05/10/2012 18:15:27.077329] <!-- # Copyright 2010 RightScale, Inc. All rights reserved.  -->
+<238551001>[05/10/2012 18:15:27.077382] 
+<238551001>[05/10/2012 18:15:27.077434]    
+<238551001>[05/10/2012 18:15:27.077474] <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<238551001>[05/10/2012 18:15:27.077520] <head>
+<238551001>[05/10/2012 18:15:27.077568]     <title>RightScale Unified Test App</title>
+<238551001>[05/10/2012 18:15:27.077605]     <link rel="stylesheet" type="text/css" href="../style.css" />  
+<238551001>[05/10/2012 18:15:27.077637] </head>
+<238551001>[05/10/2012 18:15:27.077680] 
+<238551001>[05/10/2012 18:15:27.077717] <body>
+<238551001>[05/10/2012 18:15:27.077748] 
+<238551001>[05/10/2012 18:15:27.077787] <div id="header">
+<238551001>[05/10/2012 18:15:27.077831] <div id="logo"><img src="../images/logo.png" /></div>
+<238551001>[05/10/2012 18:15:27.077867] </div>
+<238551001>[05/10/2012 18:15:27.077906] 
+<238551001>[05/10/2012 18:15:27.077935] <div class="code_container">
+<238551001>[05/10/2012 18:15:27.077971] <div class="code">
+<238551001>[05/10/2012 18:15:27.078016] 
+<238551001>[05/10/2012 18:15:27.078056] <H1>Database Connection Test</H1>
+<238551001>[05/10/2012 18:15:27.078088] 
+<238551001>[05/10/2012 18:15:27.078128] <b><center> Database(app_test) Output From Host(localhost)</center></b><br><br><b>app_test1:I am in the db</b><br><hr><br><b>app_test2:I am in the db</b><br><hr><br><b>app_test3:I am in the db</b><br><hr><br>
+<238551001>[05/10/2012 18:15:27.078196] </div>
+<238551001>[05/10/2012 18:15:27.078231] </div>
+<238551001>[05/10/2012 18:15:27.078271] 
+<238551001>[05/10/2012 18:15:27.078310] </body>
+<238551001>[05/10/2012 18:15:27.078354] </html>
+<238551001>[05/10/2012 18:15:27.081683]   Duration: 0.108625 seconds
+<238551001>[05/10/2012 18:15:27.085866] Duration: 0.433717 seconds
+<238551001>[05/10/2012 18:15:27.086037] set_variation_dump_container
+<238551001>[05/10/2012 18:15:27.086082]   Set variation dump CONTAINER: dumpcontainer238551001
+ 0 features passed.  0 features failed.  1 features running for 1 minute and 16 seconds
+<238551001>[05/10/2012 18:15:38.401910] Duration: 11.315893 seconds
+<238551001>[05/10/2012 18:15:38.402157] set_dump_prefix("bananas1")
+ 0 features passed.  0 features failed.  1 features running for 1 minute and 26 seconds
+<238551001>[05/10/2012 18:15:54.616454] Duration: 16.214371 seconds
+<238551001>[05/10/2012 18:15:54.616772] set_database_name_input("bananas")
+ 0 features passed.  0 features failed.  1 features running for 1 minute and 36 seconds
+<238551001>[05/10/2012 18:16:04.365257] Duration: 9.748647 seconds
+<238551001>[05/10/2012 18:16:04.365496] servers
+<238551001>[05/10/2012 18:16:04.369761] Duration: 0.004403 seconds
+<238551001>[05/10/2012 18:16:04.369936] run_script("do_dump_export", Server["vm-289589-LAMP All-In-One with MySQL 5.5 (Chef)"])
+<238551001>[05/10/2012 18:16:04.370098]   run_script_on_set("do_dump_export", Server["vm-289589-LAMP All-In-One with MySQL 5.5 (Chef)"], TrueClass, nil)
+<238551001>[05/10/2012 18:16:04.374488]     transaction {
+<238551001>[05/10/2012 18:16:04.374552]       a = launch_script(friendly_name, s, options)
+<238551001>[05/10/2012 18:16:04.374585]       transaction do
+<238551001>[05/10/2012 18:16:04.374611]         a.wait_for_completed(::VirtualMonkey.config[:completed_timeout])
+<238551001>[05/10/2012 18:16:04.374641]       end
+<238551001>[05/10/2012 18:16:04.374677]     }
+<238551001>[05/10/2012 18:16:04.374798]       launch_script("do_dump_export", Server["vm-289589-LAMP All-In-One with MySQL 5.5 (Chef)"], nil)
+<238551001>[05/10/2012 18:16:04.374833]         script_to_run?("do_dump_export", Server["vm-289589-LAMP All-In-One with MySQL 5.5 (Chef)"])
+<238551001>[05/10/2012 18:16:04.374869]         Duration: 6.5e-05 seconds
+<238551001>[05/10/2012 18:16:04.378037]         transaction {
+<238551001>[05/10/2012 18:16:04.378094]           server.run_executable(@scripts_to_run[resource_id(server.server_template_href)][actual_name], options)
+<238551001>[05/10/2012 18:16:04.378135]         }
+ 0 features passed.  0 features failed.  1 features running for 1 minute and 46 seconds
+<238551001>[05/10/2012 18:16:13.583859]         9.208859 seconds
+<238551001>[05/10/2012 18:16:13.584179]       Duration: 9.209183 seconds
+<238551001>[05/10/2012 18:16:13.587291]       transaction { a.wait_for_completed(::VirtualMonkey.config[:completed_timeout]) }
+ 0 features passed.  0 features failed.  1 features running for 1 minute and 56 seconds
+ 0 features passed.  0 features failed.  1 features running for 2 minutes and 6 seconds
+ 0 features passed.  0 features failed.  1 features running for 2 minutes and 16 seconds
+<238551001>[05/10/2012 18:16:44.177779] /usr/lib/ruby/gems/1.8/gems/rest_connection-0.1.10/lib/rest_connection/rightscale/audit_entry.rb:49:in `wait_for_state': FATAL error, failed: db::do_dump_export (RuntimeError)
+<238551001>[05/10/2012 18:16:44.178008] See Audit: API:https://my.rightscale.com/api/acct/2901/audit_entries/34950139001, WWW:<a href='https://my.rightscale.com/audit_entries/34950139001'>https://my.rightscale.com/audit_entries/34950139001</a>
+<238551001>[05/10/2012 18:16:44.178085] 	from /usr/lib/ruby/gems/1.8/gems/rest_connection-0.1.10/lib/rest_connection/rightscale/audit_entry.rb:57:in `wait_for_completed'
+<238551001>[05/10/2012 18:16:44.178475] 	from /root/virtualmonkey/lib/virtualmonkey/runner_core/deployment_base.rb:469:in `__behavior_run_script_on_set'
+<238551001>[05/10/2012 18:16:44.178559] 	from /root/virtualmonkey/lib/virtualmonkey/runner_core/test_case_interface.rb:255:in `transaction'
+<238551001>[05/10/2012 18:16:44.178628] 	from /root/virtualmonkey/lib/virtualmonkey/runner_core/deployment_base.rb:469:in `__behavior_run_script_on_set'
+<238551001>[05/10/2012 18:16:44.178696] 	from /root/virtualmonkey/lib/virtualmonkey/runner_core/test_case_interface.rb:255:in `transaction'
+<238551001>[05/10/2012 18:16:44.178782] 	from /root/virtualmonkey/lib/virtualmonkey/runner_core/deployment_base.rb:467:in `__behavior_run_script_on_set'
+<238551001>[05/10/2012 18:16:44.178851] 	from /root/virtualmonkey/lib/virtualmonkey/runner_core/deployment_base.rb:466:in `each'
+<238551001>[05/10/2012 18:16:44.178923] 	from /root/virtualmonkey/lib/virtualmonkey/runner_core/deployment_base.rb:466:in `__behavior_run_script_on_set'
+<238551001>[05/10/2012 18:16:44.179012] 	from /root/virtualmonkey/lib/virtualmonkey/runner_core/test_case_interface.rb:168:in `__send__'
+<238551001>[05/10/2012 18:16:44.179080] 	from /root/virtualmonkey/lib/virtualmonkey/runner_core/test_case_interface.rb:168:in `function_wrapper'
+<238551001>[05/10/2012 18:16:44.179163] 	from (eval):1:in `run_script_on_set'
+<238551001>[05/10/2012 18:16:44.179230] 	from /root/virtualmonkey/lib/virtualmonkey/runner_core/deployment_base.rb:486:in `__behavior_run_script'
+<238551001>[05/10/2012 18:16:44.179288] 	from /root/virtualmonkey/lib/virtualmonkey/runner_core/test_case_interface.rb:168:in `__send__'
+<238551001>[05/10/2012 18:16:44.179345] 	from /root/virtualmonkey/lib/virtualmonkey/runner_core/test_case_interface.rb:168:in `function_wrapper'
+<238551001>[05/10/2012 18:16:44.179414] 	from (eval):1:in `run_script'
+<238551001>[05/10/2012 18:16:44.179476] 	from /root/virtualmonkey/collateral/servertemplate_tests/features/lamp_chef.rb:27:in `initialize'
+<238551001>[05/10/2012 18:16:44.179547] 	from /root/virtualmonkey/bin/../lib/virtualmonkey/test_case_dsl.rb:103:in `instance_exec'
+<238551001>[05/10/2012 18:16:44.179623] 	from /root/virtualmonkey/bin/../lib/virtualmonkey/test_case_dsl.rb:103:in `run'
+<238551001>[05/10/2012 18:16:44.179703] 	from /root/virtualmonkey/bin/../lib/virtualmonkey/test_case_dsl.rb:173:in `[]'
+<238551001>[05/10/2012 18:16:44.179771] 	from /root/virtualmonkey/bin/../lib/virtualmonkey/test_case_dsl.rb:173:in `run'
+<238551001>[05/10/2012 18:16:44.179847] 	from /root/virtualmonkey/bin/../lib/virtualmonkey/test_case_dsl.rb:170:in `each'
+<238551001>[05/10/2012 18:16:44.179937] 	from /root/virtualmonkey/bin/../lib/virtualmonkey/test_case_dsl.rb:170:in `run'
+<238551001>[05/10/2012 18:16:44.180027] 	from /root/virtualmonkey/bin/../lib/virtualmonkey/test_case_dsl.rb:169:in `each'
+<238551001>[05/10/2012 18:16:44.180107] 	from /root/virtualmonkey/bin/../lib/virtualmonkey/test_case_dsl.rb:169:in `run'
+<238551001>[05/10/2012 18:16:44.180207] 	from /root/virtualmonkey/bin/../lib/virtualmonkey/test_case_dsl.rb:115:in `each'
+<238551001>[05/10/2012 18:16:44.180292] 	from /root/virtualmonkey/bin/../lib/virtualmonkey/test_case_dsl.rb:115:in `run'
+<238551001>[05/10/2012 18:16:44.180388] 	from /root/virtualmonkey/bin/grinder:74
+ 0 features passed.  1 features failed.  0 features running for 2 minutes and 26 seconds
+I, [2012-05-10T18:16:46.202599 #4870]  INFO -- : [API v1.0] GET: /api/acct/2901/servers/336993001.js?
+I, [2012-05-10T18:16:46.734260 #4870]  INFO -- : [API v1.0] GET: https://my.rightscale.com/api/acct/2901/tags/search.js?resource_href=https%3A%2F%2Fmy.rightscale.com%2Fapi%2Facct%2F2901%2Fservers%2F336993001
+
+    New results available at http://s3.amazonaws.com/virtual_monkey/2012/05/10/18-14-19-37686832/index.html
+
+monkey done.
+Some jobs failed. Inspect the results at the given URL
+Build step 'Execute shell' marked build as failure
+Triggering a new build of [8mha:AAAArh+LCAAAAAAAAABb85aBtbiIQSajNKU4P08vOT+vOD8nVc+jsiC1KCczL9svvyT1dMUiOWdZ/mImBiZPBrac1Lz0kgwfBubSopwSBiGfrMSyRP2cxLx0/eCSosy8dOuKIgYpNOOcITTIMAYIYGRiYKgoADI0Sxj09bPyk/Sj4sty49My8xJz4h3Dgw0M451T80r8g+MNDMzicxJzC+JNgTA5IzVNHwBkDuRYtAAAAA==[0mZ_vm_final_AWS01_CentOS_006_lamp_5_5_chef #1
+Finished: ABORTED

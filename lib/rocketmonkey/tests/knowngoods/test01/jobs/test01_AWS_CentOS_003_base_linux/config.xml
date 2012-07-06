@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+  <actions/>
+  <description>
+  </description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <scm class="hudson.scm.NullSCM"/>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers class="vector"/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+    <command>
+cat /dev/null &gt; ~/.ssh/known_hosts
+cd /Users/jonmarinello/mrsc/development/rightscale/repos/virtualmonkey/
+cat collateral/servertemplate_tests/updatedTroops/base_linux.json
+bin/monkey create -f collateral/servertemplate_tests/updatedTroops/base_linux.json -x test01_AWS_CentOS_003_base_linux -i 1 -o CentOS  --yes
+bin/monkey run -f collateral/servertemplate_tests/updatedTroops/base_linux.json -x test01_AWS_CentOS_003_base_linux   -v --yes
+    </command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <hudson.tasks.BuildTrigger>
+    <childProjects>Z_test01_AWS_CentOS_003_base_linux</childProjects>
+    <threshold>
+      <name>FAILURE</name>
+      <ordinal>2</ordinal>
+      <color>RED</color>
+    </threshold>
+    </hudson.tasks.BuildTrigger>
+  </publishers>
+  <buildWrappers/>
+</project>

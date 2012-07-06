@@ -4,6 +4,7 @@
 # Must be run from the root of the virtaul monkey folder tree!
 
 $LOAD_PATH.unshift('lib')
+
 require 'rubygems'
 require 'virtualmonkey'
 

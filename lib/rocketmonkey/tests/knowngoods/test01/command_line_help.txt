@@ -1,0 +1,43 @@
+Rocket Monkey Automated Test Framework
+Powered by Virtual Monkey and Jenkins
+Copyright (c) 2010-2012 RightScale Inc
+Version 1.0.27
+Usage:
+rocketmonkey [options]
+ where [options] are:
+       --generate-jenkins-files, -g:   Generate Jenkins XML job files
+             --generate-reports, -e:   Generate a report set WIP (default),
+                                       Snapshot or Zombie
+                        --clean, -c:   Clean current Jenkins job folders
+     --clean-generate-and-start, -C:   Clean, generate and start all job
+                                       columns
+                         --view, -w:   View CSV file
+                    --input, -i <s>:   Path to the input file in CSV format
+             --refresh-rate, -r <i>:   Page refresh rate in seconds (default:
+                                       60)
+          --truncate-troops, -u <i>:   Truncate troops names to <n> characters
+                                       (default: 10240)
+                        --force, -f:   Pass --force flag to the monkey on all
+                                       destroy calls
+                         --tabs, -t:   Generate "RS-<cloud>-<image>" column
+                                       tabs in Jenkins
+                     --snapshot, -s:   Generate a snapshot report set
+                       --zombie, -z:   Generate a zombie deployment report set
+                        --leave, -l:   Leave the generated HTML file on the
+                                       local drive
+       --suppress-variable-data, -v:   Suppress variable data (used for
+                                       testing)
+                   --destroyers, -d:   Generate the destroyers job report
+             --cloud-filter, -o <s>:   Filter report by cloud-region(s)
+                                       <cloud-region> or <"<cloud1-region1>
+                                       <cloud2-region1>..."
+             --generate-actions, -a:   Generate actions in the report (WIP
+                                       only)
+          --mail-failure-report, -m:   Mail the failure summary report
+  --failure-report-run-time, -p <s>:   The time to run the mail failure report
+                                       Jenkins job
+               --nuclear-option, -N:   Remove all Jenkins job folders and files
+                          --yes, -y:   Automatically answer yes to all
+                                       questions
+                           --no, -n:   Automatically answer no to all questions
+                         --help, -h:   Show this message

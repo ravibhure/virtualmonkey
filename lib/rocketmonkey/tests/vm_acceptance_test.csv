@@ -1,0 +1,16 @@
+"Virtual Monkey Acceptance Test","Truncate-troops:100
+Failure-report-run-time:0 13 * * *",,
+"vm_acceptance_test","Troops","AWS
+WST
+CentOS
+Timeout:1200","RAX
+US
+CentOS
+Timeout:3600
+Enabled:false"
+"Base Chef","base_chef",,
+"LAMP Chef 5.5","lamp_5_5_chef",,
+"PHP App, LB","three_tier_php_lamp_5_5","f:MCI_CentOS_29","f:MCI_CentOS_29"
+"Storage","dr_toolbox",,
+"Database 5.5","mysql_5_5_chef__smoke_test",,
+"Database 5.5","mysql_5_5_chef__secondary_restore_and_become_master_s3",,

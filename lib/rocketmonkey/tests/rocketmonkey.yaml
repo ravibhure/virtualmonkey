@@ -1,0 +1,300 @@
+#--
+# Copyright (c) 2012 RightScale, Inc, All Rights Reserved Worldwide.
+#
+# THIS PROGRAM IS CONFIDENTIAL AND PROPRIETARY TO RIGHTSCALE
+# AND CONSTITUTES A VALUABLE TRADE SECRET.  Any unauthorized use,
+# reproduction, modification, or disclosure of this program is
+# strictly prohibited.  Any use of this program by an authorized
+# licensee is strictly subject to the terms and conditions,
+# including confidentiality obligations, set forth in the applicable
+# License Agreement between RightScale, Inc. and
+# the licensee.
+#++
+
+#
+# Config file in YAML format that controls rocketmonkey execution
+#
+# All variables require an explicit value.
+#
+
+
+#
+# resume - resume virtual monkey
+#
+# false = do not resume (start virtual monkey job from scratch)
+# true = resume
+#
+:resume: false
+
+
+#
+# email_from - email address used as the sender
+# email_to - email address to use as recipient
+#
+:email_from: "jon.marinello@rightscale.com"
+:email_to: "jon.marinello@rightscale.com"
+
+
+#
+# jenkins_user - user used to authenticate with Jenkins to kick off jobs
+# jenkins_password - user used to authenticate with Jenkins to kick off jobs
+#
+:jenkins_user: "qa"
+:jenkins_password: "rightscale11"
+
+
+#
+# virtual_monkey_path - Path to virtual monkey folder
+#
+:virtual_monkey_path: "/Users/jonmarinello/mrsc/development/rightscale/repos/virtualmonkey/"
+
+
+#
+# troop_path - Path to troop files
+#
+:troop_path: "collateral/servertemplate_tests/updatedTroops/"
+
+
+#
+# output_file_path - Path to Jenkins jobs xml generation target folder
+#
+# On the Mac it should usually be "/Users/Shared/Jenkins/Home/jobs"
+# On a cloud server it should usually be "/var/lib/jenkins/jobs"
+#
+:output_file_path: "/Users/jonmarinello/mrsc/development/rightscale/repos/virtualmonkey/lib/rocketmonkey/tests/jobs"
+
+
+#
+# mci_override_file_name - Optional MCI Override file name
+#
+# You only need to specify this if you use the m:<friendly_name>/<revision> cell clause
+#
+:mci_override_file_name: "test01_mci.csv"
+
+
+#
+# cloud_ids - map of cloud names to cloud ids
+#
+:cloud_ids:
+  "AWS": 1
+  "AWS1": 2
+  "AWS06": 6
+  "RAXUS": 232
+  "RAXUK": 1868
+  "CST302": 2043
+  "AWS-West": 33
+
+#
+# chain - How to chain the generated Jenkins jobs
+#   Allowed values:
+#     job_to_destroyer                  - Only link the each job to its associtated destroyer
+#     job_to_destroyer_and_next_job     - Link current job to next job and associated destroyer (parallel)
+#     job_to_destroyer_then_to_next_job - Link current job to associated destroyer and then to next job (serial)
+#
+:chain: job_to_destroyer_then_to_next_job
+
+
+#
+# threshold - Controls the Jenkins job "Threshold" value which affects how the chain executes (if at all)
+#   Allowed values:
+#     only_if_build_succeeds
+#     even_if_build_is_unstable
+#     even_if_the_build_fails
+#
+:threshold: only_if_build_succeeds
+
+
+#
+# rightscale_account - Rightscale account number. Defaults to the Publish account 2901
+#
+:rightscale_account: 2901
+
+
+#
+# failure_report_regular_expressions - Error report regular expressions
+#
+:failure_report_regular_expressions:
+  "05\/10\/2012 18:14:25.762064":
+    - "DO NOT DELETE THIS - USED BY ROCKET MONKEY TEST FRAMEWORK (Server Template Error)"
+    - "http://www.missionridgeconsulting.com"
+    - true
+  "05\/10\/2012 18:14:25.762322":
+    - "DO NOT DELETE THIS - USED BY ROCKET MONKEY TEST FRAMEWORK (Other Error)"
+    - "http://www.missionridgeconsulting.com"
+    - false
+  "422:.*\(":
+    - ""
+    - ""
+    - false
+  "FATAL:.*\(":
+    - ""
+    - ""
+    - true
+  "Connection timed out":
+    - ""
+    - ""
+    - false
+  "No MCI on ServerTemplate":
+    - ""
+    - ""
+    - true
+  "Invalid response HTTP code: 504:":
+    - ""
+    - ""
+    - false
+  "in `spot_check_command':":
+    - ""
+    - ""
+    - false
+  "Request failed":
+    - ""
+    - ""
+    - false
+  "FATAL error, this server is stranded and needs to be operational":
+    - ""
+    - ""
+    - true
+  "No such file or directory":
+    - ""
+    - ""
+    - true
+  "FATAL: Timeout waiting for Executable to complete.  State was in-progress":
+    - ""
+    - ""
+    - true
+  "FATAL: Timeout waiting for Executable to complete.  State was unknown":
+    - ""
+    - ""
+    - true
+  "FATAL: Timeout waiting for Executable to complete.  State was queued: enable_root_ssh":
+    - ""
+    - ""
+    - true
+  "FATAL: Failed Continuous Backup Enable Test":
+    - ""
+    - ""
+    - true
+  "UnifiedApplication Error: Done waiting.*\(":
+    - ""
+    - ""
+    - true
+  "timed out waiting for the state to be operational":
+    - ""
+    - ""
+    - false
+  "timed out waiting for lock to release":
+    - ""
+    - ""
+    - true
+  "timed out waiting for the state to be inactive":
+    - ""
+    - ""
+    - false
+  "timed out waiting for IP":
+    - ""
+    - ""
+    - false
+  ": undefined method `create_monkey_table' for #":
+    - ""
+    - ""
+    - true
+  ":in `raise': port is not 8888 (RuntimeError)":
+    - ""
+    - ""
+    - true
+  "port is not 8888":
+    - ""
+    - ""
+    - true
+  "FATAL error, this server terminated when waiting for operational":
+    - ""
+    - ""
+    - false
+  "failed: block_device::do_force_reset":
+    - ""
+    - ""
+    - true
+  "failed: db::do_primary_init_slave":
+    - ""
+    - ""
+    - true
+  "failed: block_device::do_primary_backup":
+    - ""
+    - ""
+    - true
+  "failed: db::do_init_and_become_master":
+    - ""
+    - ""
+    - true
+  "The create_master_from_slave_backup_2 replication database is corrupted":
+    - ""
+    - ""
+    - true
+  "Logrotate did not work properly on rails appserver.*\(":
+    - ""
+    - ""
+    - true
+  "failed: block_device::do_secondary_backup":
+    - ""
+    - ""
+    - true
+  "FATAL error, failed: app::do_update_code":
+    - ""
+    - ""
+    - true
+  "Broken pipe":
+    - ""
+    - ""
+    - false
+  "execution expired (Timeout::Error)":
+    - ""
+    - ""
+    - false
+  "SSL_connect SYSCALL returned=5 errno=0 state=SSLv2":
+    - ""
+    - ""
+    - false
+  "Cannot allocate memory":
+    - ""
+    - ""
+    - false
+  "Logrotate did not work properly on php appserver":
+    - ""
+    - ""
+    - true
+  "Invalid response HTTP code: 504":
+    - ""
+    - ""
+    - false
+  "Haproxy start failed":
+    - ""
+    - ""
+    - true
+  "in `get_sketchy_data':.*\(":
+    - ""
+    - ""
+    - true
+  "The bananas table is corrupted":
+    - ""
+    - ""
+    - true
+  "The create_master_from_slave_backup_1 replication database is corrupted":
+    - ""
+    - ""
+    - true
+  "start only valid on AWS cloud":
+    - ""
+    - ""
+    - true
+  "FATAL: No deployments to create":
+    - ""
+    - ""
+    - true
+  "getaddrinfo: Temporary failure in name resolution":
+    - ""
+    - ""
+    - false
+  "CPU idle time is < 0: NaNNaNNaN":
+    - ""
+    - ""
+    - true

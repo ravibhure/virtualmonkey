@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+  <actions/>
+  <description>
+  </description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <scm class="hudson.scm.NullSCM"/>
+  <assignedNode>master</assignedNode>
+  <canRoam>false</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers class="vector"/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+    <command>
+cat /dev/null &gt; ~/.ssh/known_hosts
+cd /Users/jonmarinello/mrsc/development/rightscale/repos/virtualmonkey/
+cat collateral/servertemplate_tests/updatedTroops/base_linux.json
+bin/monkey create -f collateral/servertemplate_tests/updatedTroops/base_linux.json -x test01_AWS_West_Ubuntu_003_base_linux -i 33 -o Ubuntu -m "http://my.rightscale.com/api/acct/2901/multi_cloud_images/22222" --yes
+bin/monkey run -f collateral/servertemplate_tests/updatedTroops/base_linux.json -x test01_AWS_West_Ubuntu_003_base_linux  -r -u "booting_timeout=1201" "completed_timeout=1201" "default_timeout=1201" "error_timeout=1201" "failed_timeout=1201" "inactive_timeout=1201" "operational_timeout=1201" "snapshot_timeout=1201" "stopped_timeout=1201" "terminated_timeout=1201" -v --yes
+    </command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <hudson.tasks.BuildTrigger>
+    <childProjects>Z_test01_AWS_West_Ubuntu_003_base_linux</childProjects>
+    <threshold>
+      <name>SUCCESS</name>
+      <ordinal>0</ordinal>
+      <color>BLUE</color>
+    </threshold>
+    </hudson.tasks.BuildTrigger>
+  </publishers>
+  <buildWrappers/>
+</project>

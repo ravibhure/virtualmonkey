@@ -1,0 +1,5 @@
+# This is a test/mci override file used in the Rocket Monkey tests
+   # Here is another comment that doesn't start in column one
+-t "test_name_01"
+-t "test_name_02"
+-m 227526001

@@ -9,6 +9,18 @@ module VirtualMonkey
       attr_accessor :deployment, :servers, :server_templates
       attr_accessor :scripts_to_run
 
+      def initialize(deployment, opts = {})
+        @scripts_to_run = {}
+        @server_templates = []
+        @st_table = []
+        @deployment = Deployment.find_by_nickname_speed(deployment).first
+        raise "Fatal: Could not find a deployment named #{deployment}" unless @deployment
+        test_case_interface_init(opts)
+        populate_settings
+        self.class.extend(VirtualMonkey::RunnerCore::CommandHooks) unless self.class.respond_to?(:before_create)
+        assert_integrity!
+      end
+
       # before_run which for now checks the instance throttle thresholds if that was configured
       # Returns false if execution should continue, otherwise a warning message
       before_run do
@@ -35,18 +47,6 @@ module VirtualMonkey
           puts "Throttling checks skipped..."
         end
         ret
-      end
-
-      def initialize(deployment, opts = {})
-        @scripts_to_run = {}
-        @server_templates = []
-        @st_table = []
-        @deployment = Deployment.find_by_nickname_speed(deployment).first
-        raise "Fatal: Could not find a deployment named #{deployment}" unless @deployment
-        test_case_interface_init(opts)
-        populate_settings
-        self.class.extend(VirtualMonkey::RunnerCore::CommandHooks) unless self.class.respond_to?(:before_create)
-        assert_integrity!
       end
 
       # Select a server based on the info tags attached to it
@@ -306,6 +306,16 @@ module VirtualMonkey
         }
       end
 
+      def relaunch_server(server)
+        # relaunch a single server
+        transaction {
+          server.relaunch(get_timeout_for_state("inactive"));
+          server.params = server.class[server.href].first.params;
+          server.settings
+        }
+        transaction { wait_for_set(server, "operational") }
+      end
+
       # un-set all tags on all servers in the deployment
       def unset_all_tags
         @servers.each do |s|
@@ -381,10 +391,28 @@ module VirtualMonkey
       def state_wait(set, state)
         # do a special wait, if waiting for operational (for dns)
         timeout = get_timeout_for_state(state)
-        if state == "operational"
-          set.each { |server| transaction { server.wait_for_operational_with_dns(timeout) } }
-        else
-          set.each { |server| transaction { server.wait_for_state(state, timeout) } }
+        # current server in the set being processed in case of an exception
+        current_server = nil
+        begin
+          if state == "operational"
+            set.each { |server| transaction {
+                current_server = server
+                server.wait_for_operational_with_dns(timeout)
+              }
+            }
+          else
+            set.each { |server| transaction {
+                current_server = server
+                server.wait_for_state(state, timeout)
+              }
+            }
+          end
+        rescue Exception => e
+          audit_log_dump_num_lines = 100
+          warn "Caught exception #{e.message}, dumping last #{audit_log_dump_num_lines} lines of audit log..."
+          probe(current_server, "tail -n #{audit_log_dump_num_lines} /var/log/messages") { | result_string, status | warn result_string; true }
+          warn "Audit log dump complete, rethrowing exception..."
+          raise
         end
       end
 

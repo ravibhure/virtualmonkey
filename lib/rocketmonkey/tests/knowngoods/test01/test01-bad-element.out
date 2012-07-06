@@ -1,0 +1,1 @@
+./rocketmonkey_base.rb:212:in `raise_invalid_element_exception': Invalid value "BAD_ELEMENT" found at row: 3, column: 3 in tests/test01-bad-element.csv (RuntimeError)

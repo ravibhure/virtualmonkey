@@ -1,0 +1,81 @@
+#!/usr/bin/ruby
+
+#--
+# Copyright (c) 2012 RightScale, Inc, All Rights Reserved Worldwide.
+#
+# THIS PROGRAM IS CONFIDENTIAL AND PROPRIETARY TO RIGHTSCALE
+# AND CONSTITUTES A VALUABLE TRADE SECRET.  Any unauthorized use,
+# reproduction, modification, or disclosure of this program is
+# strictly prohibited.  Any use of this program by an authorized
+# licensee is strictly subject to the terms and conditions,
+# including confidentiality obligations, set forth in the applicable
+# License Agreement between RightScale, Inc. and
+# the licensee.
+#++
+
+require "rubygems"
+require 'trollop'
+require 'yaml'
+require "google_drive"
+
+# Display Version/Copyright banner
+puts "Rocket Monkey Automated Test Framework - Google Get"
+puts "Copyright (c) 2010-2012 RightScale Inc"
+puts "Version 0.0.1"
+
+# Parse command line arguments
+opts = Trollop::options do
+ banner <<-EOS
+Usage:
+#{File.basename($0)} [options]
+ where [options] are:
+EOS
+
+  opt :output,        "Path to the output file in CSV format (required)", :type => String,  :short => "-o", :required => true
+  opt :key,           "Google key of the file you want to download",      :type => String,  :short => "-k"
+  opt :friendly_name, "Friendly name of the file you want to download",   :type => String,  :short => "-f"
+end
+Trollop::die :key, "You must provide either a key or a friendly name" if !opts[:friendly_name_given] && !opts[:key_given]
+Trollop::die :key, "You can't give both a key and a friendly name" if opts[:friendly_name_given] && opts[:key_given]
+
+def report_progress()
+  printf "."
+end
+
+# Parse the yaml file settings
+config = YAML::load(File.open(".googleget.yaml"))
+
+# Log in to google docs
+puts "\nLogging in to Google Docs..."
+session = GoogleDrive.login("rsqacsv@gmail.com", "RightScale11")
+
+# Open the first worksheet of the spreadsheet
+if opts[:key_given]
+  key = opts[:key]
+else
+  key = config[:friendly_names][opts[:friendly_name]]
+end
+spread_sheet = session.spreadsheet_by_key(key).worksheets[0]
+
+# Display the report title of the spreadsheet we are processing
+puts "\nProcessing \"#{spread_sheet[1, 1]}\""
+
+# Open the output file
+output_file = File.open(opts[:output], "w")
+
+# Save the contents to the output file
+for row in 1..spread_sheet.num_rows
+  for col in 1..spread_sheet.num_cols
+    report_progress()
+    if spread_sheet[row, col] != ""
+      output_file.printf "\"#{spread_sheet[row, col]}\""
+      output_file.printf "," unless col == spread_sheet.num_cols
+    else
+      output_file.printf "," unless col == spread_sheet.num_cols
+    end
+  end
+  output_file.printf "\n"
+end
+puts ""
+
+output_file.close

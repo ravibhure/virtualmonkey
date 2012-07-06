@@ -1,0 +1,46 @@
+#
+# Rocket Monkey Acceptance Test Program
+#
+
+function show_usage_banner {
+  echo "Usage:"
+  echo "  $0 [options]"
+  echo "    where [options] are:"
+  echo " --clean-generate-and-start, -C:   Clean, generate and start all job columns"
+  echo "   --generate-jenkins-files, -g:   Generate Jenkins XML job files"
+  echo "                    --clean, -c:   Clean current Jenkins job folders"
+  echo "                     --help, -h:   Show this message"
+}
+
+
+if [ "$1" == "--clean-generate-and-start" ] || [ "$1" == "-n" ]
+then
+
+  echo "################################################"
+  echo "##### Cleaning, Generating & Starting Jobs #####"
+  echo "################################################"
+  ./rocketmonkey --clean-generate-and-start --input tests/vm_acceptance_test.csv --tabs --refresh-rate 30 --yes
+
+elif [ "$1" == "--generate" ] || [ "$1" == "-g" ]
+then
+
+  echo "###########################"
+  echo "##### Generating Jobs #####"
+  echo "###########################"
+  ./rocketmonkey --generate-jenkins-files --input tests/vm_acceptance_test.csv --tabs --refresh-rate 30
+
+elif [ "$1" == "--clean" ] || [ "$1" == "-c" ]
+  then
+  echo "###########################"
+  echo "###### Cleaning Jobs ######"
+  echo "###########################"
+  ./rocketmonkey --clean --input tests/vm_acceptance_test.csv
+
+elif [ "$1" == "--help" ] || [ "$1" == "-h" ]
+then
+  show_usage_banner
+
+else
+  echo "Bad command line flag passed '$1'"
+  show_usage_banner
+fi

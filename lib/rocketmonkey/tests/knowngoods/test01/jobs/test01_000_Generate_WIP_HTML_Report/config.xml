@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+  <actions/>
+  <description>
+  </description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <scm class="hudson.scm.NullSCM"/>
+  <assignedNode>master</assignedNode>
+  <canRoam>false</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers class="vector">
+    <hudson.triggers.TimerTrigger>
+    <spec>* * * * *</spec>
+    </hudson.triggers.TimerTrigger>
+  </triggers>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+    <command>
+cd /Users/jonmarinello/mrsc/development/rightscale/repos/virtualmonkey/lib/rocketmonkey
+./rocketmonkey --generate-reports --input tests/test01.csv --refresh-rate 60 --truncate-troops 10
+./rocketmonkey --generate-reports --input tests/test01.csv --refresh-rate 60 --truncate-troops 10 --generate-actions
+./rocketmonkey --generate-reports --input tests/test01.csv --refresh-rate 60 --truncate-troops 10 --destroyers
+./rocketmonkey --generate-reports --input tests/test01.csv --refresh-rate 60 --truncate-troops 10 --destroyers --generate-actions
+    </command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers/>
+  <buildWrappers/>
+</project>

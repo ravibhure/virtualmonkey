@@ -1,0 +1,110 @@
+#!/usr/bin/ruby
+
+#--
+# Copyright (c) 2012 RightScale, Inc, All Rights Reserved Worldwide.
+#
+# THIS PROGRAM IS CONFIDENTIAL AND PROPRIETARY TO RIGHTSCALE
+# AND CONSTITUTES A VALUABLE TRADE SECRET.  Any unauthorized use,
+# reproduction, modification, or disclosure of this program is
+# strictly prohibited.  Any use of this program by an authorized
+# licensee is strictly subject to the terms and conditions,
+# including confidentiality obligations, set forth in the applicable
+# License Agreement between RightScale, Inc. and
+# the licensee.
+#++
+
+#
+# This program will either upload all the Rocket Monkey images to s3 or copy them to the Jenkins 'userContent'
+# folder.
+#
+
+require "rubygems"
+require 'fog'
+require 'fileutils'
+require 'trollop'
+
+# Display Version/Copyright banner
+puts "Rocket Monkey Automated Test Framework - Jenkins/s3 Image Uploader"
+puts "Copyright (c) 2010-2012 RightScale Inc"
+puts "Version 0.0.1"
+
+images = [
+  "images/RocketMonkey.jpg",
+  "images/HappyMonkey.png",
+  "images/MadMonkey.png",
+  "images/RightScaleLogo.png",
+  "images/NotRunYet.png",
+  "images/Running.gif",
+  "images/Aborted.png",
+  "images/other_failure.png",
+  "images/server_template_failure.png",
+  "images/Passed.png",
+  "images/NotSupported.png",
+  "images/NotSupportedYet.png",
+  "images/Disabled.png",
+  "images/StartJob.png",
+  "images/StopJob.png",
+  "images/Question.png",
+]
+
+######################################################################################################################
+# upload_image_to_s3
+#
+# Based on the supplied inputs this function will upload the image to Amazon's S3
+######################################################################################################################
+def upload_image_to_s3(image_name)
+  # Get image type
+  case File.extname(image_name)
+    when ".png"
+      image_type = "image/png"
+    when ".jpg"
+      image_type = "image/jpeg"
+    when ".gif"
+      image_type = "image/gif"
+    else
+      raise "Unsupported image type encountered for #{image_name}"
+  end
+
+  # Upload the image
+  amazon_url_prefix = "rocketmonkey/images"
+  uri = amazon_url_prefix + "/" + File.basename(image_name)
+  puts "Uploading #{image_name} to http://s3.amazonaws.com/virtual_monkey/#{uri} as '#{image_type}'..."
+  s3 = Fog::Storage.new(:provider => "AWS")
+  file = File.open(image_name)
+  s3.put_object("virtual_monkey", uri, file.read, {'x-amz-acl' => 'public-read', 'Content-Type' => image_type})
+  file.close()
+end
+
+
+# Parse command line arguments
+opts = Trollop::options do
+  banner <<-EOS
+Usage:
+#{File.basename($0)} [options]
+ where [options] are:
+EOS
+
+  opt :target, "Must be either 's3' or 'jenkins' (required)", :type => String, :short => "-t", :required => true
+end
+target = opts[:target].downcase
+Trollop::die :target, "Unknown target name '#{opts[:target]}'" if target != "s3" && target != "qaweb"
+
+if target == "s3"
+  # Disable annoying [WARN] about bucket names
+  Fog::Logger[:warning] = nil
+
+  # Upload the images
+  images.each { |image_file_name| upload_image_to_s3(image_file_name)}
+
+else # Copy files to the correct QAWeb Apache server folder (when you run this way you must be on the QAWeb Apache server)
+  target_image_path = "/var/www/html/rocketmonkey/images"
+  # Create the path to where we need to upload the images
+  FileUtils.mkpath(target_image_path)
+
+  # Copy the images
+  images.each { |image_file_name|
+    puts "Copying #{image_file_name} to #{target_image_path}..."
+    FileUtils.copy(image_file_name, "/var/www/html/rocketmonkey/images/#{File.basename(image_file_name)}")
+  }
+
+end

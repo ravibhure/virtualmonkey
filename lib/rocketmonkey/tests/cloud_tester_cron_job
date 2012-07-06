@@ -1,0 +1,51 @@
+#
+# Nightly Cloud Tester Cron Bash Script
+#
+# This is intended to be run from cron on a monkey server like this:
+#   # Run Nightly Cloud Tester at midnight UTC
+#   00 7 * * * /root/virtualmonkey/lib/rocketmonkey/tests/cloud_tester_cron_job
+#
+#   Add those lines using crontab -e
+#
+logfile=/root/cloud_tester_cron_job_current_run.log
+master_logfile=/root/cloud_tester_cron_job.log
+email_to=efrain@rightscale.com
+csv_file=/root/EOR_RS_Files/overnightServers/CLOUDS_TESTER/GENERAL_CLOUDS_TESTING.csv
+key=0Ao3awLQNVOJYdEpNUjNqUjQtZHFDWWxfRzVMaDlaUHc
+
+echo "#####################################################" > $logfile
+echo "#####################################################" >> $logfile
+echo "############### Nightly Cloud Tester ################" >> $logfile
+echo "#####################################################" >> $logfile
+echo "#####################################################" >> $logfile
+
+# Dump the start date/time
+echo "*** Started at: " >> $logfile
+date >> $logfile
+echo >> $logfile
+
+# Change the directory to rocketmonkey which is where everything is
+cd /root/virtualmonkey/lib/rocketmonkey >> $logfile
+
+echo " *** Fetching $csv_file from google drive ***" >> $logfile
+./googleget --key $key --output $csv_file >> $logfile
+echo >> $logfile
+
+# Run rocketmonkey to clean the Jenkins job data, generate the new Jenkins job data, and kick off all the cloud columns
+echo "*** Launching rocketmonkey ***" >> $logfile
+./rocketmonkey --clean-generate-and-start --input $csv_file --tabs --refresh-rate 90 --nuclear-option --yes >> $logfile
+echo >> $logfile
+
+# Mail the log file
+echo "*** Emailing log file to $email_to ***" >> $logfile
+cat $logfile | mutt -s $logfile -a $logfile $email_to
+echo >> $logfile
+
+# Dump the end date/time
+echo "*** Ended at: " >> $logfile
+date >> $logfile
+echo >> $logfile
+
+# Append this run to the master log file
+echo -e "\n" >> $master_logfile
+cat $logfile >> $master_logfile

@@ -1,0 +1,26 @@
+#--
+# Copyright (c) 2012 RightScale, Inc, All Rights Reserved Worldwide.
+#
+# THIS PROGRAM IS CONFIDENTIAL AND PROPRIETARY TO RIGHTSCALE
+# AND CONSTITUTES A VALUABLE TRADE SECRET.  Any unauthorized use,
+# reproduction, modification, or disclosure of this program is
+# strictly prohibited.  Any use of this program by an authorized
+# licensee is strictly subject to the terms and conditions,
+# including confidentiality obligations, set forth in the applicable
+# License Agreement between RightScale, Inc. and
+# the licensee.
+#++
+
+#
+# Config file in YAML format that controls googleget execution
+#
+# All variables require an explicit value.
+#
+
+
+#
+# friendly_names - map of cloud names to cloud ids
+#
+:friendly_names:
+  "vm_acceptance_test": "0Ao3awLQNVOJYdFJRY0FQUTVycFFSdVF3eW9hdllCU0E"
+  "12_04Regression": "0Ao3awLQNVOJYdC1mV0NHRThQdWdjQzI2S29jR2JiMnc"

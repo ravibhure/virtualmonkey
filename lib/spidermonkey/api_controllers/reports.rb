@@ -375,7 +375,7 @@ module VirtualMonkey
             bucket,
             "#{log_started}/#{File.basename(filename)}",
             IO.read(filename),
-            {'x-amz-acl' => 'public-read', 'Content-Type' => content.chomp}
+            {'x-amz-acl' => 'public-read', 'Content-Type' => (File.extname(filename) == ".log" ? 'text/plain' : content.chomp)}
           ]
         end
 

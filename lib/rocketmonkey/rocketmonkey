@@ -1,0 +1,178 @@
+#!/usr/bin/ruby
+
+#--
+# Copyright (c) 2012 RightScale, Inc, All Rights Reserved Worldwide.
+#
+# THIS PROGRAM IS CONFIDENTIAL AND PROPRIETARY TO RIGHTSCALE
+# AND CONSTITUTES A VALUABLE TRADE SECRET.  Any unauthorized use,
+# reproduction, modification, or disclosure of this program is
+# strictly prohibited.  Any use of this program by an authorized
+# licensee is strictly subject to the terms and conditions,
+# including confidentiality obligations, set forth in the applicable
+# License Agreement between RightScale, Inc. and
+# the licensee.
+#++
+
+########################################################################################################################
+# Rocket Monkey Main program
+########################################################################################################################
+
+# Third party requires
+require 'rubygems'
+require 'trollop'
+
+# RocketMonkey requires
+require 'helpers'
+require 'jenkins'
+require 'jenkins_job_generator'
+require 'report_generator'
+require 'zombie_report_generator'
+require 'jenkins_job_cleaner'
+require 'csv_viewer'
+require 'test_starter'
+
+########################################################################################################################
+# Main program execution starts here...
+########################################################################################################################
+
+# Rocket Monkey version string
+version = "Version 1.0.27"
+
+#
+# Display Version/Copyright banner
+#
+puts "Rocket Monkey Automated Test Framework"
+puts "Powered by Virtual Monkey and Jenkins"
+puts "Copyright (c) 2010-2012 RightScale Inc"
+puts version
+
+cloud_filter_command_description =
+    "Filter report by cloud-region(s) <cloud-region> or <\"<cloud1-region1> <cloud2-region1>...\""
+
+#
+# Parse and validate command line arguments
+#
+opts = Trollop::options do
+  banner <<-EOS
+Usage:
+#{File.basename($0)} [options]
+ where [options] are:
+EOS
+
+  # Master flags
+  opt :generate_jenkins_files,  "Generate Jenkins XML job files",                           :short => "-g", :default => false
+  opt :generate_reports,        "Generate a report set WIP (default), Snapshot or Zombie",  :short => "-e", :default => false
+  opt :clean,                   "Clean current Jenkins job folders",                        :short => "-c", :default => false
+  opt :clean_generate_and_start,"Clean, generate and start all job columns",                :short => "-C", :default => false
+  opt :view,                    "View CSV file",                                            :short => "-w", :default => false
+
+  # Common flags
+  opt :input,                   "Path to the input file in CSV format",                     :short => "-i", :type => String, :required => true
+  opt :refresh_rate,            "Page refresh rate in seconds",                             :short => "-r", :default => 60
+  # Default truncate_troops to 10240 which is longer than any real-world troop name (simplifies code generation)
+  opt :truncate_troops,         "Truncate troops names to <n> characters",                  :short => "-u", :default => $truncate_troops_default
+
+  # Generate Jenkins files specific flags
+  opt :force,                   "Pass --force flag to the monkey on all destroy calls",     :short => "-f", :default => false
+  opt :tabs,                    "Generate \"RS-<cloud>-<image>\" column tabs in Jenkins",   :short => "-t", :default => false
+
+  # Generate report specific flags
+  opt :snapshot,                "Generate a snapshot report set",					                  :short => "-s", :default => false
+  opt :zombie,                  "Generate a zombie deployment report set",                 	:short => "-z", :default => false
+  opt :leave,                   "Leave the generated HTML file on the local drive",         :short => "-l", :default => false
+  opt :suppress_variable_data,  "Suppress variable data (used for testing)",                :short => "-v", :default => false
+  opt :destroyers,              "Generate the destroyers job report",                       :short => "-d", :default => false
+  opt :cloud_filter,            cloud_filter_command_description,                           :short => "-o", :type => String
+  opt :generate_actions,        "Generate actions in the report (WIP only)",                :short => "-a", :default => false
+  opt :mail_failure_report,     "Mail the failure summary report",                          :short => "-m", :default => false
+  opt :failure_report_run_time, "The time to run the mail failure report Jenkins job",      :short => "-p", :type =>String
+
+  # Clean & clean_generate_and_start specific flags
+  opt :nuclear_option,          "Remove all Jenkins job folders and files",                 :short => "-N", :default => false
+  opt :yes,                     "Automatically answer yes to all questions",                :short => "-y", :default => false
+  opt :no,                      "Automatically answer no to all questions",                 :short => "-n", :default => false
+end
+
+# Sanity test the specified command line flags
+Trollop::die :generate_jenkins_files,
+  "You must provide either the --clean, --generate-jenkins-files, --generate-reports or the --start flag" \
+    if !opts[:generate_jenkins_files_given] and !opts[:generate_reports_given] and !opts[:clean_given] and
+      !opts[:clean_generate_and_start_given] && !opts[:view_given]
+
+Trollop::die :input, "#{opts[:input]} must exist" unless File.exist?(opts[:input])
+
+if opts[:truncate_troops_given] && Integer(opts[:truncate_troops]) < 1
+  Trollop::die :input, "#{opts[:input]} must exist be > 0"
+end
+
+if opts[:clean_generate_and_start_given]
+  #
+  # If the user wants to clean_generate_and_start_given, then that will be run exclusively. Even if other master flags
+  # are passed in. They will be ignored.
+  #
+
+  # Stop Jenkins
+  stop_jenkins_service()
+
+  # Remove all previous job state
+  JenkinsJobCleaner.cleanup_old_jenkins_jobs(opts, version, opts[:nuclear_option])
+
+  # Generate all the Jenkins jobs
+  jenkins_job_generator = JenkinsJobGenerator.new(version, opts[:input], opts[:refresh_rate], opts[:force],
+                                                  opts[:tabs], opts[:truncate_troops], opts[:failure_report_run_time])
+  jenkins_job_generator.generate_jenkins_jobs()
+
+  # Restart Jenkins
+  start_jenkins_service()
+
+  # Kick off the column header jobs
+  test_starter = TestStarter.new(version, opts[:input])
+  test_starter.start_column_header_jobs()
+else
+  #
+  # If the user specified any combination of the other master flags, their respective functions will be run in the order
+  # view, clean, generate_jenkins_files and generate_reports. So the user may invoke all three of these logical
+  # functions in one invocation of the Rocket Monkey of desired.
+  #
+
+  # View the csv file if desired
+  if opts[:view_given]
+    csv_viewer = CsvViewer.new(version, opts[:input])
+    csv_viewer.view()
+  end
+
+  # Clean jenkins job folders if desired
+  if opts[:clean_given]
+
+    # Stop Jenkins
+    stop_jenkins_service()
+
+    # Remove all previous job state
+    JenkinsJobCleaner.cleanup_old_jenkins_jobs(opts, version, opts[:nuclear_option])
+
+    # Restart Jenkins
+    start_jenkins_service()
+  end
+
+  # Generate jenkins XML job files if desired
+  if opts[:generate_jenkins_files_given]
+    jenkins_job_generator = JenkinsJobGenerator.new(version, opts[:input], opts[:refresh_rate], opts[:force],
+                                                    opts[:tabs], opts[:truncate_troops], opts[:failure_report_run_time])
+    jenkins_job_generator.generate_jenkins_jobs()
+  end
+
+  # Generate reports if desired
+  if opts[:generate_reports_given]
+    if opts[:zombie_given]
+      zombie_report_generator = ZombieReportGenerator.new(version, opts[:input], opts[:leave],
+                                             opts[:suppress_variable_data], opts[:truncate_troops])
+      zombie_report_generator.generate_report()
+    else
+      report_type = opts[:snapshot] ? "Snapshot" : "Wip"
+      report_generator = ReportGenerator.new(version, opts[:input], opts[:refresh_rate], opts[:snapshot], opts[:leave],
+                                             opts[:suppress_variable_data], opts[:destroyers], opts[:truncate_troops],
+                                             opts[:cloud_filter], opts[:generate_actions], opts[:mail_failure_report])
+      report_generator.generate_reports()
+    end
+  end
+end

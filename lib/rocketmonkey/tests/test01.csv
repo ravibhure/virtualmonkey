@@ -1,0 +1,29 @@
+"Integration Test 01","Truncate-troops:10
+show-job-numbers:TRUE",,,,
+"test01","Troops","AWS
+West
+Ubuntu
+Timeout:1201
+Restrict:master","AWS
+
+CentOS
+Chain:job_to_destroyer
+Threshold:even_if_the_build_fails
+Resume:true","AWS
+
+RHEL
+Timeout:1400
+Image-regex:RHEL*
+enabled:true","AWS
+
+RHEL2
+Timeout:1500
+enabled:false"
+"Base","base","m:test_mci_1/66",,,
+"Base Chef","base_linux","m:test_mci_2/77",,,
+"LAMP RSB","lamp_mysql_51","f:test01sample",,"NSY","NSY"
+"LAMP Chef 5.1","lamp_chef","NS",,,"NSY"
+"LAMP Chef 5.5","lamp_5_5_chef",,,,
+"Dummy1
+Dummy2","troop_01__test_XX",,"f:test01sample","NS","NS"
+"Disabled","dummy","DIS","DIS","DIS","DIS"
