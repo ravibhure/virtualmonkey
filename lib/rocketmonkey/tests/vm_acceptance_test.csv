@@ -1,9 +1,11 @@
 "Virtual Monkey Acceptance Test","Truncate-troops:100
-Failure-report-run-time:0 13 * * *",,
+Failure-report-run-time:0 13 * * *
+show-job-numbers:TRUE",,
 "vm_acceptance_test","Troops","AWS
 WST
 CentOS
-Timeout:1200","RAX
+Timeout:1200
+Enabled:true","RAX
 US
 CentOS
 Timeout:3600
