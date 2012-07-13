@@ -408,10 +408,14 @@ module VirtualMonkey
             }
           end
         rescue Exception => e
-          audit_log_dump_num_lines = 100
-          warn "Caught exception #{e.message}, dumping last #{audit_log_dump_num_lines} lines of audit log..."
-          probe(current_server, "tail -n #{audit_log_dump_num_lines} /var/log/messages") { | result_string, status | warn result_string; true }
-          warn "Audit log dump complete, rethrowing exception..."
+          # If the server that that threw the exception is in AWS and "windows" is not in its nickname, dump the audit
+          # log.
+          if current_server.cloud_id <= 10 && !(current_server.nickname =~ /windows/i)
+            audit_log_dump_num_lines = 100
+            warn "Caught exception #{e.message}, dumping last #{audit_log_dump_num_lines} lines of audit log..."
+            probe(current_server, "tail -n #{audit_log_dump_num_lines} /var/log/messages") { | result_string, status | warn result_string; true }
+            warn "Audit log dump complete, rethrowing exception..."
+          end
           raise
         end
       end
