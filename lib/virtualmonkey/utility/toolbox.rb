@@ -186,7 +186,7 @@ module VirtualMonkey
             my_instance = McInstance.find_with_filter(cid, field => ssh_address).first
             if my_instance
               my_instance.show
-              if my_instance.user_data.include?(ENV['RS_RN_URL'])
+              if my_instance.user_data && my_instance.user_data.include?(ENV['RS_RN_URL'])
                 # Found myself, let's get servers, etc.
                 myself = McServer.find(my_instance.parent)
                 myself.settings
