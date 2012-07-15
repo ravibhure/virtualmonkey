@@ -1,5 +1,6 @@
 "Integration Test 01","Truncate-troops:10
-show-job-numbers:TRUE",,,,
+show-job-numbers:TRUE
+Show-wip-statistics-table:true",,,,
 "test01","Troops","AWS
 West
 Ubuntu

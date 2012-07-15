@@ -507,11 +507,19 @@ class ReportGenerator < ReportGeneratorBase
       fileHtml.puts "</center></object>"
     end
 
-    # Generate stats table
-    generate_statistics_table(fileHtml, has_not_run_count, running_count,
-                              success_count, other_failure_count, server_template_failure_count,
-                              aborted_count, not_supported_count, not_supported_yet_count, disabled_count,
-                              question_count)
+    if @snapshot
+      # Generate stats table
+      generate_statistics_table(fileHtml, has_not_run_count, running_count,
+                                success_count, other_failure_count, server_template_failure_count,
+                                aborted_count, not_supported_count, not_supported_yet_count, disabled_count,
+                                question_count)
+    elsif @show_wip_statistics_table
+      # Generate stats table
+      generate_statistics_table(fileHtml, has_not_run_count, running_count,
+                                success_count, other_failure_count, server_template_failure_count,
+                                aborted_count, not_supported_count, not_supported_yet_count, disabled_count,
+                                question_count)
+    end
 
     # Generate footer
     generate_report_footer_html(fileHtml, @suite_prefix, monkey_mood_image, false, !@snapshot && !@generate_actions)

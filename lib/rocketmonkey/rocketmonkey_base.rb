@@ -40,6 +40,7 @@ class RocketMonkeyBase
     @refresh_rate_in_seconds = refresh_rate_in_seconds
     @truncate_troops = truncate_troops
     @failure_report_run_time = failure_report_run_time
+    @show_wip_statistics_table = true # CURRENTLY, may only reset from within the CSV file
 
     # Initialize CSV in memory array fixed row and column variables
     @report_title_prefix_row = 0
@@ -126,6 +127,8 @@ class RocketMonkeyBase
           if @show_job_numbers == nil
             @show_job_numbers = split_key_value_pairs_array[1].to_bool
           end
+        elsif split_key_value_pairs_array[0].upcase == "SHOW-WIP-STATISTICS-TABLE"
+          @show_wip_statistics_table = split_key_value_pairs_array[1].to_bool
         else
           raise "Invalid column parameter key \"#{element}\" found at row: #{@key_value_pairs_row + 1}, column: #{@key_value_pairs_column +1 } in #{@csv_input_filename}"
         end
