@@ -231,68 +231,52 @@ module VirtualMonkey
               next
             end
           end
+
+          # Build up key as "monkey"-"cloud ID"-"Rightscale Account Number"
           key_name = "monkey-#{cloud}-#{ENV['RS_API_URL'].split("/").last}"
-          found = nil
+
+          ssh_key_found = nil
+
           if cloud <= 10
+            # Handle Amazon clouds
+
+            # Look for key_name in this cloud's ssh keys
             if api0_1?
-              found = Ec2SshKeyInternal.find_by_cloud_id("#{cloud}").select { |o| o.aws_key_name =~ /#{key_name}/ }.first
+              found_ssh_key = Ec2SshKeyInternal.find_by_cloud_id("#{cloud}").select { |o| o.aws_key_name =~ /#{key_name}/ }.first
             end
+
             if ssh_key_id_ary[cloud.to_i]
-              k = Ec2SshKey[ssh_key_id_ary[cloud.to_i].to_i].first
+              ssh_key = Ec2SshKey[ssh_key_id_ary[cloud.to_i].to_i].first
             else
-              k = (found ? found : Ec2SshKey.create('aws_key_name' => key_name, 'cloud_id' => "#{cloud}"))
+              ssh_key = (found_ssh_key ? found_ssh_key : Ec2SshKey.create('aws_key_name' => key_name, 'cloud_id' => "#{cloud}"))
             end
-            keys["#{cloud}"] = {"ec2_ssh_key_href" => k.href,
+
+            # Add the new ssh key to the keys map
+            keys["#{cloud}"] = {"ec2_ssh_key_href" => ssh_key.href,
                                 "parameters" =>
-                                  {"PRIVATE_SSH_KEY" => "key:#{key_name}:#{cloud}"}
-                                }
-            # Generate Private Key Files
-            priv_key_file = File.join(@@ssh_dir, "#{@@ssh_key_file_basename}#{cloud}")
-            File.open(priv_key_file, "w") { |f| f.write(k.aws_material) } unless File.exists?(priv_key_file)
+                                    {"PRIVATE_SSH_KEY" => "key:#{key_name}:#{cloud}"}
+            }
+
+            # Generate private key file for this cloud
+            priv_key_file_name = File.join(@@ssh_dir, "#{@@ssh_key_file_basename}#{cloud}")
+            File.open(priv_key_file_name, "w") { |f| f.write(ssh_key.aws_material) } unless File.exists?(priv_key_file_name)
+
           else
+            # Handle generic clouds
             keys["#{cloud}"] = {}
-=begin
-            TODO Uncomment once API 1.5 supports returning the key material
-            if Cloud.find(cloud).ssh_keys
-              # Multicloud Resource that supports SSH Keys
-              found = McSshKey.find_by(:resource_uid, "#{cloud}") { |n| n =~ /#{key_name}/ }.first
-              if ssh_key_id_ary[cloud.to_i]
-                k = McSshKey[ssh_key_id_ary[cloud.to_i].to_i].first
-              else
-                k = (found ? found : McSshKey.create('name' => key_name, 'cloud_id' => "#{cloud}"))
-              end
-              keys["#{cloud}"]["ssh_key_href"] = k.href
-              priv_key_file = File.join(@@ssh_dir, "#{@@ssh_key_file_basename}#{cloud}")
-              File.open(priv_key_file, "w") { |f| f.write(#TODO key_material) } unless File.exists?(priv_key_file)
-            else
-=end
-              # Use API user's managed ssh key
-              puts "Using API user's managed ssh key, make sure \"~/.ssh/#{multicloud_key_file}\" exists!"
-              if api0_1? and Ec2SshKeyInternal.find_by_cloud_id(1).select { |o| o.aws_key_name =~ /publish-test/ }.first
-                keys["#{cloud}"]["parameters"] = {"PRIVATE_SSH_KEY" => "key:publish-test:1"}
-              end
-=begin
-              begin
-                found = McSshKey.find_by(:resource_uid, "#{cloud}") { |n| n =~ /publish-test/ }.first
-                if ssh_key_id_ary[cloud.to_i]
-                  k = McSshKey[ssh_key_id_ary[cloud.to_i].to_i].first
-                else
-                  k = (found ? found : McSshKey.create('name' => "publish-test", 'cloud_id' => "#{cloud}"))
-                end
-                keys["#{cloud}"]["ssh_key_href"] = k.href
-              rescue
-                puts "Cloud #{cloud} doesn't support the resource 'ssh_key'"
-              end
-=end
-              warn "Cloud #{cloud} doesn't support the resource 'ssh_key'" unless Cloud.find(cloud).ssh_keys
-              priv_key_file = multicloud_key_file
-#            end #TODO Uncomment once API 1.5 supports returning the key material
+            # Use API user's managed ssh key
+            puts "Using API user's managed ssh key, make sure \"~/.ssh/#{multicloud_key_file}\" exists!"
+            if api0_1? and Ec2SshKeyInternal.find_by_cloud_id(1).select { |o| o.aws_key_name =~ /publish-test/ }.first
+              keys["#{cloud}"]["parameters"] = {"PRIVATE_SSH_KEY" => "key:publish-test:1"}
+            end
+            warn "Cloud #{cloud} doesn't support the resource 'ssh_key'" unless Cloud.find(cloud).ssh_keys
+            priv_key_file_name = multicloud_key_file
           end
 
-          FileUtils.touch(priv_key_file)
-          File.chmod(0700, priv_key_file)
+          FileUtils.touch(priv_key_file_name)
+          File.chmod(0700, priv_key_file_name)
           # Configure rest_connection config
-          rest_settings[:ssh_keys] |= [priv_key_file]
+          rest_settings[:ssh_keys] |= [priv_key_file_name]
         rescue Interrupt
           raise
         rescue Exception => e
