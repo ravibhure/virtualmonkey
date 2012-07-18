@@ -105,6 +105,8 @@
   "HP": 1695
   "TATA-IND": 2086
   "TATA-SNG": 2086
+  "Google-Silicon": 2133
+  "Azure-Seattle": 2136
 #
 # chain - How to chain the generated Jenkins jobs
 #   Allowed values:
@@ -316,6 +318,14 @@
     - ""
     - false
   "CPU idle time is < 0: NaNNaNNaN":
+    - ""
+    - ""
+    - true
+  "503: Service Temporarily Unavailable":
+    - ""
+    - ""
+    - false
+  ": Service Apache did not start":
     - ""
     - ""
     - true
