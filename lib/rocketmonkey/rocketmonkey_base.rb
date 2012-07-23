@@ -55,7 +55,7 @@ class RocketMonkeyBase
     # Parse the yaml file settings
     config_file_name = ".rocketmonkey.yaml"
     puts "\nLoading #{config_file_name}..."
-    @config = YAML::load(File.open(".rocketmonkey.yaml"))
+    @config = YAML::load(File.open(File.dirname($0) + "/.rocketmonkey.yaml"))
 
     # Sanity check config file inputs
     raise "Missing resume definition in yaml file" if @config[:resume] == nil

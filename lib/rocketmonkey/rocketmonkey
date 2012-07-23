@@ -13,6 +13,10 @@
 # the licensee.
 #++
 
+# Prepend the path to this program to the load path so we can run from folders other than the program folder.
+# This is needed so Ruby can find the .rb files in this project.
+$LOAD_PATH.unshift(File.expand_path(File.dirname(__FILE__)))
+
 ########################################################################################################################
 # Rocket Monkey Main program
 ########################################################################################################################
@@ -36,7 +40,7 @@ require 'test_starter'
 ########################################################################################################################
 
 # Rocket Monkey version string
-version = "Version 1.0.28"
+version = "Version 1.0.29"
 
 #
 # Display Version/Copyright banner
