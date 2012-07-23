@@ -43,7 +43,7 @@ def report_progress()
 end
 
 # Parse the yaml file settings
-config = YAML::load(File.open(".googleget.yaml"))
+config = YAML::load(File.open(File.dirname($0) + "/.googleget.yaml"))
 
 # Log in to google docs
 puts "\nLogging in to Google Docs..."
