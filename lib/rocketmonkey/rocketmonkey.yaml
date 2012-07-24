@@ -90,7 +90,7 @@
   "RAX-US": 232
   "RAX-UK": 1868
   "RAX-MGC": 2034
-  "CS3_XEN-RS": 2043
+  "CS3_XEN-RS": 2111 
   "CS3_KVM-RS": 0
   "CS3_VMW-RS": 0
   "DP-NY": 1874
@@ -105,8 +105,9 @@
   "HP": 1695
   "TATA-IND": 2086
   "TATA-SNG": 2086
-  "Google-Silicon": 2133
-  "Azure-Seattle": 2136
+  "Google-Silicon": 2175
+  "Azure-EastUS": 2179
+  "Azure-WestUS": 2178
 #
 # chain - How to chain the generated Jenkins jobs
 #   Allowed values:
