@@ -33,7 +33,13 @@ class RocketMonkeyBase
   # instance method: initialize
   ######################################################################################################################
   def initialize(version, suppress_variable_data, csv_input_filename, refresh_rate_in_seconds, truncate_troops,
-      failure_report_run_time)
+      failure_report_run_time, cloud_filter)
+
+    # Initialize the logger
+    @logger = Logger.new(STDOUT)
+    @logger.level = Logger::INFO
+    @logger.progname = "Rocket Monkey"
+
     @version = version
     @suppress_variable_data = suppress_variable_data
     @csv_input_filename = csv_input_filename
@@ -75,6 +81,9 @@ class RocketMonkeyBase
       if @config[:failure_report_regular_expressions] == nil
     raise "failure_report_regular_expressions definition in yaml file is not a hash" \
       if !@config[:failure_report_regular_expressions].is_a?(Hash)
+    raise "Missing cloud_shepherd_max_retries definition in yaml file" if @config[:cloud_shepherd_max_retries] == nil
+    raise "Missing cloud_shepherd_sleep_before_retrying_job_in_seconds definition in yaml file" if @config[:cloud_shepherd_sleep_before_retrying_job_in_seconds] == nil
+    raise "Missing cloud_shepherd_sleep_after_job_start_in_seconds definition in yaml file" if @config[:cloud_shepherd_sleep_after_job_start_in_seconds] == nil
 
     @resume = @config[:resume]
     @email_to = @config[:email_to]
@@ -89,6 +98,9 @@ class RocketMonkeyBase
     @threshold = @config[:threshold]
     @rightscale_account = @config[:rightscale_account]
     @virtual_monkey_path = @config[:virtual_monkey_path]
+    @cloud_shepherd_max_retries = @config[:cloud_shepherd_max_retries]
+    @cloud_shepherd_sleep_before_retrying_job_in_seconds = @config[:cloud_shepherd_sleep_before_retrying_job_in_seconds]
+    @cloud_shepherd_sleep_after_job_start_in_seconds = @config[:cloud_shepherd_sleep_after_job_start_in_seconds]
 
     # Get ip address of Jenkins host
     if @suppress_variable_data
@@ -99,6 +111,21 @@ class RocketMonkeyBase
 
     # Parse the CSV file into a 2-dimensional array
     @parsed_job_definition = CSV.read(@csv_input_filename)
+
+    # Parse out cloud filter and check that it is valid
+    cloud_filter ||= ""
+    @cloud_filter = cloud_filter.split(/ /)
+    @cloud_filter.each { |element|
+      raise "Cloud-Region #{element} not found in cloud_ids map in yaml file." if !@cloud_ids[element]
+    }
+
+    # Clean up the input path and make sure it has the trailing '/'
+    # Here in the report generator we use what was the @output_file_path in the JenkinsJobGenerator
+    # as the input file path. This came from the yaml file.
+    @edited_input_file_path = edit_path(@output_file_path)
+
+    # Get the suite prefix from the first element
+    @suite_prefix = @parsed_job_definition[@cloud_row][@server_template_column].strip
 
     # Parse out any CSV file "overall" key value pairs
     key_value_pairs = @parsed_job_definition[@key_value_pairs_row][@key_value_pairs_column]
@@ -327,6 +354,112 @@ class RocketMonkeyBase
   ######################################################################################################################
   def get_job_order_number_as_string(column)
     return sprintf('%03d', column)
+  end
+
+
+
+  ######################################################################################################################
+  # instance method: cloud_in_filter?
+  #
+  # Based on the supplied inputs this function will return true if the given cloud_lookup_name is in
+  # the cloud filter or if the filter is empty (i.e., all clouds included), otherwise false.
+  ######################################################################################################################
+  def cloud_in_filter?(cloud_lookup_name)
+    if @cloud_filter.length > 0
+      return @cloud_filter.include?(cloud_lookup_name)
+    end
+    return true
+  end
+
+
+
+  ######################################################################################################################
+  # instance method: validate_jenkins_folder
+  #
+  # Based on the supplied inputs this function will validate the jenkins folder path for a specific job. If it is
+  # invalid, an exception is raised.
+  ######################################################################################################################
+  def validate_jenkins_folder(input_folder_path)
+    # Assemble the Jenkins config.xml file name and make sure that it is there
+    config_file_path = input_folder_path + "/" + "config.xml"
+
+    if !FileTest.exists? config_file_path
+      puts "Unexpected Jenkins folder structure encountered, \"#{config_file_path}\" missing."
+      return false
+    end
+
+    return true
+  end
+
+
+
+  ######################################################################################################################
+  # instance method: start_jenkins_job
+  #
+  # Based on the supplied inputs this function will launch the jenkins job named <deployment_name>.
+  ######################################################################################################################
+  def start_jenkins_job(logger, deployment_name, max_tries, sleep_between_http_retries_in_seconds)
+    logger.info("Launching #{deployment_name}...")
+
+    for http_retry_counter in 1..max_tries
+      if http_retry_counter == max_tries
+        raise "Jenkins failed after #{max_tries - 1} attempts to start #{deployment_name}"
+      end
+      response = nil
+      Net::HTTP.start("#{@jenkins_ip_address}", 8080) { |http|
+        request = Net::HTTP::Get.new("/job/#{deployment_name}/build?delay=0sec")
+        request.basic_auth @jenkins_user, @jenkins_password
+        response = http.request(request)
+      }
+
+      # Test to see if Jenkins is still waking up
+      if response.body =~ /Please wait while Jenkins is getting ready to work/
+        logger.info("Jenkins is still getting ready, sleeping for #{sleep_between_http_retries_in_seconds} seconds then retrying...")
+        sleep(sleep_between_http_retries_in_seconds)
+      elsif response.body =~ /Error/i
+        logger.info("Error starting job, sleeping for #{sleep_between_http_retries_in_seconds} seconds then retrying...")
+        sleep(sleep_between_http_retries_in_seconds)
+      else
+        logger.info("OK")
+        break
+      end
+    end
+  end
+
+
+
+  ######################################################################################################################
+  # instance method: get_log_file_information
+  #
+  # Based on the supplied inputs this function will return the last line from the Jenkins console log if it exists
+  # or and empty string if it doesn't. It also returns a link to that same log and the log as a string if it exists
+  # or nil if it doesn't.
+  ######################################################################################################################
+  def get_log_file_information(current_build_log, path_to_current_jenkins_job, currentBuildNumber)
+    last_line = ""
+    link_to_log = nil
+    log_as_string = nil
+    if FileTest.exists? current_build_log
+      # Attempt to load the the virtual monkey report url as will can use it in all 4 cases below
+      log_as_string = File.open(current_build_log, 'rb') { |file| file.read }
+      monkey_results = log_as_string.scan(/http:\/\/s3.amazonaws.*?html/)
+
+      # if we have some results from the monkey use those as the link, otherwise provide a URL to
+      # this Job's Jenkins console output
+      if monkey_results.length > 0
+        link_to_log = monkey_results[0]
+      else
+        link_to_log = "#{path_to_current_jenkins_job}/#{currentBuildNumber}/console"
+      end
+
+      # Get the last line of the build file
+      Elif.open(current_build_log, "r").each_line { |s|
+        # Need to chomp off the newline
+        last_line = s.chomp
+        break
+      }
+    end
+    return last_line, link_to_log, log_as_string
   end
 
 end

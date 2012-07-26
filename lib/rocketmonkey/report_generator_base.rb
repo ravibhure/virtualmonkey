@@ -41,7 +41,7 @@ class ReportGeneratorBase < RocketMonkeyBase
   ######################################################################################################################
   def initialize(version, csv_input_filename, refresh_rate_in_seconds, snapshot, leave,
       suppress_variable_data, truncate_troops, cloud_filter, generate_actions)
-    super(version, suppress_variable_data, csv_input_filename, refresh_rate_in_seconds, truncate_troops, nil)
+    super(version, suppress_variable_data, csv_input_filename, refresh_rate_in_seconds, truncate_troops, nil, cloud_filter)
 
     # Initialize the ReportImages module
     initialize_images(snapshot)
@@ -49,18 +49,9 @@ class ReportGeneratorBase < RocketMonkeyBase
     # Initialize the ReportCss module
     initialize_css()
 
-    # Clean up the input path and make sure it has the trailing '/'
-    # Here in the report generator we use what was the @output_file_path in the JenkinsJobGenerator
-    # as the input file path. This came from the yaml file.
-    @edited_input_file_path = edit_path(@output_file_path)
-
     @leave = leave
     @failure_report_regular_expressions = @config[:failure_report_regular_expressions]
-    cloud_filter ||= ""
-    @cloud_filter = cloud_filter.split(/ /)
-    @cloud_filter.each { |element|
-      raise "Cloud-Region #{element} not found in cloud_ids map in yaml file." if !@cloud_ids[element]
-    }
+
     @generate_actions = generate_actions
 
     # Used for suppressing things like dates, times, computer names, etc. that vary from run-to-run and would break
@@ -91,9 +82,6 @@ class ReportGeneratorBase < RocketMonkeyBase
     end
 
     @report_title = CGI.escapeHTML("#{@parsed_job_definition[@report_title_prefix_row][0].strip}")
-
-    # Get the suite prefix from the first element
-    @suite_prefix = @parsed_job_definition[@cloud_row][@server_template_column].strip
 
     # Escape the suite prefix
     @escaped_suite_prefix = URI.escape @suite_prefix
@@ -231,21 +219,6 @@ class ReportGeneratorBase < RocketMonkeyBase
 
 
   ######################################################################################################################
-  # instance method: cloud_in_filter?
-  #
-  # Based on the supplied inputs this function will return true if the given cloud_lookup_name is in
-  # the cloud filter or if the filter is empty (i.e., all clouds included), otherwise false.
-  ######################################################################################################################
-  def cloud_in_filter?(cloud_lookup_name)
-    if @cloud_filter.length > 0
-      return @cloud_filter.include?(cloud_lookup_name)
-    end
-    return true
-  end
-
-
-
-  ######################################################################################################################
   # instance method: create_html_report_output_file
   #
   # Based on the supplied inputs this function will create and open the html report file and return the file name and
@@ -263,61 +236,6 @@ class ReportGeneratorBase < RocketMonkeyBase
     return html_file_name, fileHtml
   end
 
-
-
-  ######################################################################################################################
-  # instance method: get_log_file_information
-  #
-  # Based on the supplied inputs this function will return the last line from the Jenkins console log if it exists
-  # or and empty string if it doesn't. It also returns a link to that same log and the log as a string if it exists
-  # or nil if it doesn't.
-  ######################################################################################################################
-  def get_log_file_information(current_build_log, path_to_current_jenkins_job, currentBuildNumber)
-    last_line = ""
-    link_to_log = nil
-    log_as_string = nil
-    if FileTest.exists? current_build_log
-      # Attempt to load the the virtual monkey report url as will can use it in all 4 cases below
-      log_as_string = File.open(current_build_log, 'rb') { |file| file.read }
-      monkey_results = log_as_string.scan(/http:\/\/s3.amazonaws.*?html/)
-
-      # if we have some results from the monkey use those as the link, otherwise provide a URL to
-      # this Job's Jenkins console output
-      if monkey_results.length > 0
-        link_to_log = monkey_results[0]
-      else
-        link_to_log = "#{path_to_current_jenkins_job}/#{currentBuildNumber}/console"
-      end
-
-      # Get the last line of the build file
-      Elif.open(current_build_log, "r").each_line { |s|
-        # Need to chomp off the newline
-        last_line = s.chomp
-        break
-      }
-    end
-    return last_line, link_to_log, log_as_string
-  end
-
-
-
-  ######################################################################################################################
-  # instance method: validate_jenkins_folder
-  #
-  # Based on the supplied inputs this function will validate the jenkins folder path for a specific job. If it is
-  # invalid, an exception is raised.
-  ######################################################################################################################
-  def validate_jenkins_folder(input_folder_path)
-    # Assemble the Jenkins config.xml file name and make sure that it is there
-    config_file_path = input_folder_path + "/" + "config.xml"
-
-    if !FileTest.exists? config_file_path
-      puts "Unexpected Jenkins folder structure encountered, \"#{config_file_path}\" missing."
-      return false
-    end
-
-    return true
-  end
 
 
 

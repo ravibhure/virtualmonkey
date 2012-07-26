@@ -34,13 +34,14 @@ require 'zombie_report_generator'
 require 'jenkins_job_cleaner'
 require 'csv_viewer'
 require 'test_starter'
+require 'cloud_shepherd'
 
 ########################################################################################################################
 # Main program execution starts here...
 ########################################################################################################################
 
 # Rocket Monkey version string
-version = "Version 1.0.29"
+version = "Version 1.0.30"
 
 #
 # Display Version/Copyright banner
@@ -69,6 +70,7 @@ EOS
   opt :clean,                   "Clean current Jenkins job folders",                        :short => "-c", :default => false
   opt :clean_generate_and_start,"Clean, generate and start all job columns",                :short => "-C", :default => false
   opt :view,                    "View CSV file",                                            :short => "-w", :default => false
+  opt :cloud_shepherd,          "Run in Cloud Shepherd mode",                               :short => "-q", :default => false
 
   # Common flags
   opt :input,                   "Path to the input file in CSV format",                     :short => "-i", :type => String, :required => true
@@ -95,13 +97,16 @@ EOS
   opt :nuclear_option,          "Remove all Jenkins job folders and files",                 :short => "-N", :default => false
   opt :yes,                     "Automatically answer yes to all questions",                :short => "-y", :default => false
   opt :no,                      "Automatically answer no to all questions",                 :short => "-n", :default => false
+
+  # cloud_shepherd specific flags
+  opt :start_job,               "Cloud shepherd starting job number",                       :short => "-j", :default => 2
 end
 
 # Sanity test the specified command line flags
 Trollop::die :generate_jenkins_files,
-  "You must provide either the --clean, --generate-jenkins-files, --generate-reports or the --start flag" \
+  "You must provide either the --clean, --generate-jenkins-files, --generate-reports, --cloud_shepherd or the --start flag" \
     if !opts[:generate_jenkins_files_given] and !opts[:generate_reports_given] and !opts[:clean_given] and
-      !opts[:clean_generate_and_start_given] && !opts[:view_given]
+      !opts[:clean_generate_and_start_given] && !opts[:view_given] && !opts[:cloud_shepherd_given]
 
 Trollop::die :input, "#{opts[:input]} must exist" unless File.exist?(opts[:input])
 
@@ -132,6 +137,17 @@ if opts[:clean_generate_and_start_given]
   # Kick off the column header jobs
   test_starter = TestStarter.new(version, opts[:input])
   test_starter.start_column_header_jobs()
+elsif opts[:cloud_shepherd_given]
+  #
+  # If the user wants to run in cloud shepherd mode, then that will be run exclusively. Even if other master flags
+  # are passed in. They will be ignored.
+  #
+
+  Trollop::die :start_job, "must be greater than 1" if opts[:start_job] < 2
+  Trollop::die :cloud_filter, "is required for cloud shepherd mode" unless opts[:cloud_filter_given]
+
+  cloud_shepherd = CloudShepherd.new(version, opts[:input], opts[:cloud_filter])
+  cloud_shepherd.start(opts[:start_job])
 else
   #
   # If the user specified any combination of the other master flags, their respective functions will be run in the order

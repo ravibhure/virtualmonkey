@@ -30,7 +30,7 @@ class JenkinsJobGenerator < RocketMonkeyBase
   ######################################################################################################################
   def initialize(version, csv_input_filename, refresh_rate_in_seconds, force, generate_tabs, truncate_troops,
       failure_report_run_time)
-    super(version, false, csv_input_filename, refresh_rate_in_seconds, truncate_troops, failure_report_run_time)
+    super(version, false, csv_input_filename, refresh_rate_in_seconds, truncate_troops, failure_report_run_time, nil)
 
     @force = force
     @generate_tabs = generate_tabs

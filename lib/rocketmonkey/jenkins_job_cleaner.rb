@@ -29,7 +29,7 @@ class JenkinsJobCleaner < RocketMonkeyBase
   # instance method: initialize
   ######################################################################################################################
   def initialize(version, csv_input_filename, nuclear_option)
-    super(version, false, csv_input_filename, 0, false, nil)
+    super(version, false, csv_input_filename, 0, false, nil, nil)
 
     @nuclear_option = nuclear_option
   end

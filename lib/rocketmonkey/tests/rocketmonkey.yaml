@@ -111,6 +111,25 @@
 
 
 #
+# cloud_shepherd_max_retries - Maximum number of retries the the cloud shepherd will use per job
+#
+:cloud_shepherd_max_retries: 10
+
+
+#
+# cloud_shepherd_sleep_before_retrying_job_in_seconds - Number of seconds the cloud shepherd will sleep between polling the current job
+#
+:cloud_shepherd_sleep_before_retrying_job_in_seconds: 60
+
+
+#
+# cloud_shepherd_sleep_after_job_start_in_seconds - Number of seconds the cloud shepherd will sleep after starting a
+# test
+#
+:cloud_shepherd_sleep_after_job_start_in_seconds: 300
+
+
+#
 # failure_report_regular_expressions - Error report regular expressions
 #
 :failure_report_regular_expressions:

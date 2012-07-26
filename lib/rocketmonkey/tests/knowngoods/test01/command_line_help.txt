@@ -1,7 +1,7 @@
 Rocket Monkey Automated Test Framework
 Powered by Virtual Monkey and Jenkins
 Copyright (c) 2010-2012 RightScale Inc
-Version 1.0.29
+Version 1.0.30
 Usage:
 rocketmonkey [options]
  where [options] are:
@@ -12,6 +12,7 @@ rocketmonkey [options]
      --clean-generate-and-start, -C:   Clean, generate and start all job
                                        columns
                          --view, -w:   View CSV file
+               --cloud-shepherd, -q:   Run in Cloud Shepherd mode
                     --input, -i <s>:   Path to the input file in CSV format
              --refresh-rate, -r <i>:   Page refresh rate in seconds (default:
                                        60)
@@ -40,4 +41,6 @@ rocketmonkey [options]
                           --yes, -y:   Automatically answer yes to all
                                        questions
                            --no, -n:   Automatically answer no to all questions
+                --start-job, -j <i>:   Cloud shepherd starting job number
+                                       (default: 2)
                          --help, -h:   Show this message

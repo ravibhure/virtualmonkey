@@ -28,7 +28,7 @@ class CsvViewer < RocketMonkeyBase
   # instance method: initialize
   ######################################################################################################################
   def initialize(version, csv_input_filename)
-    super(version, false, csv_input_filename, 0, false, nil)
+    super(version, false, csv_input_filename, 0, false, nil, nil)
   end
 
 

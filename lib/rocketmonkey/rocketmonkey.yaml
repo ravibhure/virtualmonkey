@@ -90,7 +90,7 @@
   "RAX-US": 232
   "RAX-UK": 1868
   "RAX-MGC": 2034
-  "CS3_XEN-RS": 2111 
+  "CS3_XEN-RS": 2111
   "CS3_KVM-RS": 0
   "CS3_VMW-RS": 0
   "DP-NY": 1874
@@ -132,6 +132,26 @@
 # rightscale_account - Rightscale account number. Defaults to the Publish account 2901
 #
 :rightscale_account: 2901
+
+
+#
+# cloud_shepherd_max_retries - Maximum number of retries the the cloud shepherd will use per job
+#
+:cloud_shepherd_max_retries: 10
+
+
+#
+# cloud_shepherd_sleep_before_retrying_job_in_seconds - Number of seconds the cloud shepherd will sleep between polling
+# the current job
+#
+:cloud_shepherd_sleep_before_retrying_job_in_seconds: 60
+
+
+#
+# cloud_shepherd_sleep_after_job_start_in_seconds - Number of seconds the cloud shepherd will sleep after starting a
+# test
+#
+:cloud_shepherd_sleep_after_job_start_in_seconds: 300
 
 
 #

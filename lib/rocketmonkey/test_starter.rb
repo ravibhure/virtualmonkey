@@ -28,7 +28,7 @@ class TestStarter < RocketMonkeyBase
   # instance method: initialize
   ######################################################################################################################
   def initialize(version, csv_input_filename)
-    super(version, false, csv_input_filename, 0, false, nil)
+    super(version, false, csv_input_filename, 0, false, nil, nil)
   end
 
 
@@ -39,8 +39,7 @@ class TestStarter < RocketMonkeyBase
   # Based on the supplied inputs this function will kick off all the job columns
   ######################################################################################################################
   def start_column_header_jobs
-    puts "Please wait while Jenkins is getting ready to work..."
-    STDOUT.flush
+    @logger.info("Please wait while Jenkins is getting ready to work...")
 
     # Sleep for a while to allow Jenkins to respond to http requests. This is needed because after a service start,
     # it take Jenkins a little while before it is available to respond to the http requests we will be making below.
@@ -94,34 +93,8 @@ class TestStarter < RocketMonkeyBase
           suite_name = suite_prefix + "_#{cloud_name}" + "_" + image_name
           deployment_name = suite_name + "_#{job_number}" + "_" + troop_name
 
-          # Launch the top job
-          puts "Launching #{deployment_name}..."
-          max_reties = 21
-          sleep_between_http_retries_in_seconds = 10
-          for http_retry_counter in 1..max_reties
-            if http_retry_counter == max_reties
-              raise "Jenkins failed to respond even after #{max_reties - 1} attempts to start #{deployment_name}"
-            end
-            response = nil
-            Net::HTTP.start("#{@jenkins_ip_address}", 8080) { |http|
-              request = Net::HTTP::Get.new("/job/#{deployment_name}/build?delay=0sec")
-              request.basic_auth @jenkins_user, @jenkins_password
-              response = http.request(request)
-            }
-
-            # Test to see if Jenkins is still waking up
-            if response.body =~ /Please wait while Jenkins is getting ready to work/
-              # Display the response body
-              # puts response.body
-              puts "Jenkins is still getting ready, sleeping for #{sleep_between_http_retries_in_seconds} seconds then retrying..."
-              STDOUT.flush
-              sleep(sleep_between_http_retries_in_seconds)
-            else
-              puts "OK"
-              STDOUT.flush
-              break
-            end
-          end
+          # Launch the job
+          start_jenkins_job(@logger, deployment_name, 21, 10)
 
           # Flag that we have started this column
           column_started[j] = true
