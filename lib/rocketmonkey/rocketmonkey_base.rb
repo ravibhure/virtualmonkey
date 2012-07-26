@@ -39,6 +39,8 @@ class RocketMonkeyBase
     @logger = Logger.new(STDOUT)
     @logger.level = Logger::INFO
     @logger.progname = "Rocket Monkey"
+    # Force flushing stdout on every call to the logger
+    $stdout.sync = true
 
     @version = version
     @suppress_variable_data = suppress_variable_data
