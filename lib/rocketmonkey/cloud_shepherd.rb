@@ -163,10 +163,6 @@ class CloudShepherd < RocketMonkeyBase
         if last_line == "Finished: SUCCESS"
           @logger.info("Skipping #{deployment_name} [SUCCEEDED]...")
         else
-          #
-          # If this isn't active job, start it
-          #
-
           @logger.info("Searching for #{deployment_name} in current deployments...")
 
           # Go get all the deployments
@@ -182,33 +178,36 @@ class CloudShepherd < RocketMonkeyBase
           end
 
           if deployment_exists
-            @logger.info("#{deployment_name} active, sleeping for #{@cloud_shepherd_sleep_before_retrying_job_in_seconds} seconds and retrying...")
+            @logger.info("#{deployment_name} active, sleeping for #{@cloud_shepherd_sleep_before_retrying_job_in_seconds} seconds and retrying (#{try_count})...")
             sleep(@cloud_shepherd_sleep_before_retrying_job_in_seconds)
-            try_count += 1
-            if try_count > @cloud_shepherd_max_retries
-              @logger.info("Skipping #{deployment_name} [TIMED OUT] Maximum number of attempts exceeded...")
-              try_count = 1
-              next
-            end
-            redo
-          else
-            # The deployment wasn't found so kick off the test
-            @logger.info("Deployment #{deployment_name} not active, starting via Jenkins then sleeping for #{@cloud_shepherd_sleep_after_job_start_in_seconds} seconds...")
-
-            begin
-              start_jenkins_job(@logger, deployment_name, 3, 10)
-              job_run_count += 1
-              # Now sleep to wait for the deployment to be created
-              sleep(@cloud_shepherd_sleep_after_job_start_in_seconds)
-            rescue Exception => e
-              @logger.warn("Caught exception \"#{e.message}\" trying to start #{deployment_name}, moving on...")
-              try_count = 1
-              next
-            end
-
-            try_count = 1
             redo
           end
+
+          # The deployment wasn't found so kick off the test
+          @logger.info("Deployment not active, starting #{deployment_name} via Jenkins...")
+
+          begin
+            if try_count > @cloud_shepherd_max_retries
+              @logger.info("Skipping #{deployment_name} [TIMED OUT] Maximum number of start attempts (#{@cloud_shepherd_max_retries}) exceeded...")
+              try_count = 1
+              next
+            end
+
+            start_jenkins_job(@logger, deployment_name, 3, 10)
+
+            # Bump counters if no exception thrown
+            job_run_count += 1
+            try_count += 1
+
+            # Now sleep to wait for the deployment to be created
+            @logger.info("Sleeping for #{@cloud_shepherd_sleep_after_job_start_in_seconds} seconds waiting to for #{deployment_name} to be created...")
+            sleep(@cloud_shepherd_sleep_after_job_start_in_seconds)
+          rescue Exception => e
+            @logger.warn("Caught exception \"#{e.message}\", skipping...")
+            try_count = 1
+            next
+          end
+          redo
         end
 
       elsif is_not_supported_element?(element)
