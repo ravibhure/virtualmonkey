@@ -420,7 +420,7 @@ class RocketMonkeyBase
         logger.info("Error starting job, sleeping for #{sleep_between_http_retries_in_seconds} seconds then retrying...")
         sleep(sleep_between_http_retries_in_seconds)
       else
-        logger.info("OK")
+        logger.info("Jenkins reported start was successful.")
         break
       end
     end

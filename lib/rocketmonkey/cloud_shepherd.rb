@@ -99,7 +99,8 @@ class CloudShepherd < RocketMonkeyBase
     # Get the suite prefix from the first element
     suite_prefix = @parsed_job_definition[@cloud_row][@server_template_column].strip
 
-    # Now that we have the first (possible) job to start, process the the vertical
+    # Now that we have the first (possible) job to start, process the vertical
+    try_count = 1
     for i in i..@parsed_job_definition.length - 1
       # Compute a unique job number
       job_number = get_job_order_number_as_string(i)
@@ -134,6 +135,7 @@ class CloudShepherd < RocketMonkeyBase
 
         # Validate the Jenkins job for this element
         if !validate_jenkins_folder(input_folder_path)
+          try_count = 1
           next
         end
 
@@ -182,15 +184,29 @@ class CloudShepherd < RocketMonkeyBase
           if deployment_exists
             @logger.info("#{deployment_name} active, sleeping for #{@cloud_shepherd_sleep_before_retrying_job_in_seconds} seconds and retrying...")
             sleep(@cloud_shepherd_sleep_before_retrying_job_in_seconds)
+            try_count += 1
+            if try_count > @cloud_shepherd_max_retries
+              @logger.info("Skipping #{deployment_name} [TIMED OUT] Maximum number of attempts exceeded...")
+              try_count = 1
+              next
+            end
             redo
           else
             # The deployment wasn't found so kick off the test
             @logger.info("Deployment #{deployment_name} not active, starting via Jenkins then sleeping for #{@cloud_shepherd_sleep_after_job_start_in_seconds} seconds...")
-            job_run_count += 1
-            start_jenkins_job(@logger, deployment_name, 3, 10)
 
-            # Now sleep to wait for the deployment to be created
-            sleep(@cloud_shepherd_sleep_after_job_start_in_seconds)
+            begin
+              start_jenkins_job(@logger, deployment_name, 3, 10)
+              job_run_count += 1
+              # Now sleep to wait for the deployment to be created
+              sleep(@cloud_shepherd_sleep_after_job_start_in_seconds)
+            rescue Exception => e
+              @logger.warn("Caught exception \"#{e.message}\" trying to start #{deployment_name}, moving on...")
+              try_count = 1
+              next
+            end
+
+            try_count = 1
             redo
           end
         end
@@ -204,13 +220,14 @@ class CloudShepherd < RocketMonkeyBase
       else
         raise_invalid_element_exception(element, i, j)
       end
+      try_count = 1
     end
 
     if job_run_count > 0
       @logger.info("#{job_run_count} jobs run.")
     else
       # Warning user if no jobs to run found
-      @logger.info("No jobs found to run!")
+      @logger.info("No jobs successfully run.")
     end
 
     @logger.info("Cloud Shepherd run completed.")
