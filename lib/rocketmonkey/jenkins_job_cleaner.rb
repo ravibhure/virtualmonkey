@@ -103,7 +103,7 @@ class JenkinsJobCleaner < RocketMonkeyBase
       # Traverse rows
       for i in @start_row..@parsed_job_definition.length - 1
 
-        # The row "j" header has the troop name so get that
+        # The row "i" header has the troop name so get that
         troop_name = @parsed_job_definition[i][@troop_column]
 
         # Traverse columns

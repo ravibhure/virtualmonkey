@@ -51,7 +51,7 @@ class CloudShepherd < RocketMonkeyBase
 
     @logger.info("[CONFIG] Cloud filter = '#{cloud_filter}'")
     @logger.info("[CONFIG] Start job = #{start_job}")
-    @logger.info("[CONFIG] Max retries = #{@cloud_shepherd_max_retries}")
+    @logger.info("[CONFIG] Max deployment start try count = #{@cloud_shepherd_max_retries}")
     @logger.info("[CONFIG] Sleep before retrying job in seconds = #{@cloud_shepherd_sleep_before_retrying_job_in_seconds}")
     @logger.info("[CONFIG] Sleep after job start in seconds = #{@cloud_shepherd_sleep_after_job_start_in_seconds}")
 
@@ -80,7 +80,8 @@ class CloudShepherd < RocketMonkeyBase
     # Make the matching cloud is enabled
     raise "Cloud #{cloud_lookup_name} is disabled" if cloud_state == :disabled
 
-    job_run_count = 0
+    # Initialize the deployment start counter
+    deployment_start_count = 0
 
     # Find the first job that matches start_job
     job_number_found = false
@@ -100,7 +101,7 @@ class CloudShepherd < RocketMonkeyBase
     suite_prefix = @parsed_job_definition[@cloud_row][@server_template_column].strip
 
     # Now that we have the first (possible) job to start, process the vertical
-    try_count = 1
+    deployment_start_try_count = 1
     for i in i..@parsed_job_definition.length - 1
       # Compute a unique job number
       job_number = get_job_order_number_as_string(i)
@@ -120,7 +121,7 @@ class CloudShepherd < RocketMonkeyBase
       # Get cloud ID from the lookup name
       cloud_id = get_cloud_id(cloud_lookup_name)
 
-      # The row "j" header has the troop name so get that
+      # The row "i" header has the troop name so get that
       troop_name = @parsed_job_definition[i][@troop_column]
 
       # Assemble the input folder name
@@ -132,15 +133,16 @@ class CloudShepherd < RocketMonkeyBase
       if is_job_element?(element)
         @logger.info("Processing deployment #{deployment_name}...")
 
-
         # Validate the Jenkins job for this element
         if !validate_jenkins_folder(input_folder_path)
-          try_count = 1
+          # Invalid element so reset the counter
+          deployment_start_try_count = 1
+
+          # Move on to the next deployment
           next
         end
 
-        # If the nextBuildNumber file is missing then this job has not yet been built, so this means
-        # this cell's job has not yet run and we generate a white empty cell
+        # Process the build log file if it exists
         next_build_number_file = input_folder_path + "/" + "nextBuildNumber"
         current_build_log = ""
         if FileTest.exists? next_build_number_file
@@ -159,11 +161,18 @@ class CloudShepherd < RocketMonkeyBase
                                                                          path_to_current_jenkins_job,
                                                                          currentBuildNumber)
 
-        # If the current test is in the "PASSED" state skip it
         if last_line == "Finished: SUCCESS"
+          # If the current test is in the "PASSED" state just skip past it
           @logger.info("Skipping #{deployment_name} [SUCCEEDED]...")
         else
-          @logger.info("Searching for #{deployment_name} in current deployments...")
+          #
+          # Handle all non-"PASSED" cases
+          #
+
+          #
+          # Search for this deployment in the list of live deployments
+          #
+          @logger.info("Searching for #{deployment_name} in live deployments...")
 
           # Go get all the deployments
           deployment_array = Deployment.find_all
@@ -177,36 +186,59 @@ class CloudShepherd < RocketMonkeyBase
             end
           end
 
+          # If the deployment exists in the live deployments, log that we found it, sleep and then loop again but stay
+          # on this deployment
           if deployment_exists
-            @logger.info("#{deployment_name} active, sleeping for #{@cloud_shepherd_sleep_before_retrying_job_in_seconds} seconds and retrying (#{try_count})...")
+            @logger.info("#{deployment_name} active, sleeping for #{@cloud_shepherd_sleep_before_retrying_job_in_seconds} seconds and retrying (#{deployment_start_try_count})...")
+
+            # Sleep before trying again
             sleep(@cloud_shepherd_sleep_before_retrying_job_in_seconds)
+
+            # Loop again BUT STAY ON THE SAME DEPLOYMENT
             redo
           end
 
-          # The deployment wasn't found so kick off the test
+          #
+          # The deployment wasn't found in the live deployments so kick off the test
+          #
           @logger.info("Deployment not active, starting #{deployment_name} via Jenkins...")
 
+          # This block is used to handle any exceptions thrown from start_jenkins_job
           begin
-            if try_count > @cloud_shepherd_max_retries
+            # If we have exceeded the maximum number of start invocations, log that and move on to the next deployment.
+            if deployment_start_try_count > @cloud_shepherd_max_retries
               @logger.info("Skipping #{deployment_name} [TIMED OUT] Maximum number of start attempts (#{@cloud_shepherd_max_retries}) exceeded...")
-              try_count = 1
+
+              # Reset the counter
+              deployment_start_try_count = 1
+
+              # Move on to the next deployment
               next
             end
 
             start_jenkins_job(@logger, deployment_name, 3, 10)
 
-            # Bump counters if no exception thrown
-            job_run_count += 1
-            try_count += 1
+            # Bump counters since no exception was thrown
+            deployment_start_count += 1
+            deployment_start_try_count += 1
+
+            # Log that we are sleeping to wait for newly started deployment to start
+            @logger.info("Sleeping for #{@cloud_shepherd_sleep_after_job_start_in_seconds} seconds waiting for #{deployment_name} to be created...")
 
             # Now sleep to wait for the deployment to be created
-            @logger.info("Sleeping for #{@cloud_shepherd_sleep_after_job_start_in_seconds} seconds waiting to for #{deployment_name} to be created...")
             sleep(@cloud_shepherd_sleep_after_job_start_in_seconds)
+
           rescue Exception => e
             @logger.warn("Caught exception \"#{e.message}\", skipping...")
-            try_count = 1
+
+            # Reset the counter
+            deployment_start_try_count = 1
+
+            # Move on to the next deployment
             next
           end
+
+          # Loop again but stay on the same deployment
           redo
         end
 
@@ -219,16 +251,26 @@ class CloudShepherd < RocketMonkeyBase
       else
         raise_invalid_element_exception(element, i, j)
       end
-      try_count = 1
+
+      # Fell through so Reset the counter
+      deployment_start_try_count = 1
+
+      # Move on to the next deployment (implicit next)
     end
 
-    if job_run_count > 0
-      @logger.info("#{job_run_count} jobs run.")
+    #
+    # All done so wrap it up
+    #
+
+    # Log deployment start count
+    if deployment_start_count > 0
+      @logger.info("There were #{deployment_start_count} deployment job starts.")
     else
       # Warning user if no jobs to run found
       @logger.info("No jobs successfully run.")
     end
 
+    # Adios...
     @logger.info("Cloud Shepherd run completed.")
   end
 end

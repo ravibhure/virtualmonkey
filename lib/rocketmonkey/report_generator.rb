@@ -361,7 +361,7 @@ class ReportGenerator < ReportGeneratorBase
             next
           end
 
-          # The row "j" header has the troop name so get that
+          # The row "i" header has the troop name so get that
           troop_name = @parsed_job_definition[i][@troop_column]
 
           # Assemble the input folder name
@@ -376,8 +376,7 @@ class ReportGenerator < ReportGeneratorBase
             next
           end
 
-          # If the nextBuildNumber file is missing then this job has not yet been built, so this means
-          # this cell's job has not yet run and we generate a white empty cell
+          # Process the build log file if it exists
           next_build_number_file = input_folder_path + "/" + "nextBuildNumber"
           current_build_log = ""
           if FileTest.exists? next_build_number_file
