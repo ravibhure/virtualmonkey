@@ -41,7 +41,7 @@ require 'cloud_shepherd'
 ########################################################################################################################
 
 # Rocket Monkey version string
-version = "Version 1.0.32"
+version = "Version 1.0.33"
 
 #
 # Display Version/Copyright banner

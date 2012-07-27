@@ -50,6 +50,10 @@ class RocketMonkeyBase
     @failure_report_run_time = failure_report_run_time
     @show_wip_statistics_table = true # CURRENTLY, may only reset from within the CSV file
 
+    # Used for suppressing things like dates, times, computer names, etc. that vary from run-to-run and would break
+    # the automated tests.
+    @variable_data_suppressed = "[variable data suppressed]"
+
     # Initialize CSV in memory array fixed row and column variables
     @report_title_prefix_row = 0
     @key_value_pairs_row = 0
@@ -446,13 +450,14 @@ class RocketMonkeyBase
   # or and empty string if it doesn't. It also returns a link to that same log and the log as a string if it exists
   # or nil if it doesn't.
   ######################################################################################################################
-  def get_log_file_information(current_build_log, jenkins_job_href, currentBuildNumber)
+  def get_log_file_information(jenkins_build_log_file_name, jenkins_job_href, currentBuildNumber)
     last_line = ""
     link_to_log = nil
     log_as_string = nil
-    if FileTest.exists? current_build_log
+    log_date_time_stamp = ""
+    if FileTest.exists?(jenkins_build_log_file_name)
       # Attempt to load the the virtual monkey report url as will can use it in all 4 cases below
-      log_as_string = File.open(current_build_log, 'rb') { |file| file.read }
+      log_as_string = File.open(jenkins_build_log_file_name, 'rb') { |file| file.read }
       monkey_results = log_as_string.scan(/http:\/\/s3.amazonaws.*?html/)
 
       # if we have some results from the monkey use those as the link, otherwise provide a URL to
@@ -464,13 +469,17 @@ class RocketMonkeyBase
       end
 
       # Get the last line of the build file
-      Elif.open(current_build_log, "r").each_line { |s|
+      Elif.open(jenkins_build_log_file_name, "r").each_line { |s|
         # Need to chomp off the newline
         last_line = s.chomp
         break
       }
+
+      log_date_time_stamp = @suppress_variable_data ? @variable_data_suppressed : File.ctime(jenkins_build_log_file_name).to_s
+    else
+      log_date_time_stamp = "No Date Available"
     end
-    return last_line, link_to_log, log_as_string
+    return last_line, link_to_log, log_as_string, log_date_time_stamp
   end
 
 

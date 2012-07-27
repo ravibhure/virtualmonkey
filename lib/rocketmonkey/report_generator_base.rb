@@ -54,10 +54,6 @@ class ReportGeneratorBase < RocketMonkeyBase
 
     @generate_actions = generate_actions
 
-    # Used for suppressing things like dates, times, computer names, etc. that vary from run-to-run and would break
-    # the automated tests.
-    @variable_data_suppressed = "[variable data suppressed]"
-
     # Set table cell font size
     @td_font_size = 2
 

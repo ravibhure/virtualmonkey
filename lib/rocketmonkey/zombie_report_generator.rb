@@ -157,9 +157,9 @@ class ZombieReportGenerator < ReportGeneratorBase
             current_jenkins_job_href = get_jenkins_job_href(deployment_name)
 
             # Parse the log file if it exists to save off the information
-            last_line, link_to_log, log_as_string = get_log_file_information(current_build_log,
-                                                                             current_jenkins_job_href,
-                                                                             currentBuildNumber)
+            last_line, link_to_log, log_as_string, log_date_time_stamp = get_log_file_information(current_build_log,
+                                                                                                  current_jenkins_job_href,
+                                                                                                  currentBuildNumber)
             # Now work through the known build scenarios
             if last_line == ""
               return @test_has_not_run_yet_image, nil, "", "", job_number

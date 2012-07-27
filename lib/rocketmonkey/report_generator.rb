@@ -92,7 +92,7 @@ class ReportGenerator < ReportGeneratorBase
   def generate_statistics_table_row(fileHtml, image_name, title, count, percentage)
     fileHtml.puts "<tr>"
     if image_name != nil
-      generate_table_cell_image fileHtml, image_name, "", "", nil, nil, @generate_actions
+      generate_table_cell_image(fileHtml, image_name, "", "", nil, nil, @generate_actions)
     else
       fileHtml.puts "<td>&nbsp;</td>"
     end
@@ -345,7 +345,7 @@ class ReportGenerator < ReportGeneratorBase
         # Check to see if the column has been completely disabled
         if cloud_in_filter?(cloud_lookup_name) && !is_cloud_column_enabled?(split_cloud_region_image_array)
           # Show cell for "Not Supported" and skip the rest of the processing for this element
-          generate_table_cell_image fileHtml, @test_disabled_image, "", "", nil, nil, @generate_actions
+          generate_table_cell_image(fileHtml, @test_disabled_image, "", "", nil, nil, @generate_actions)
           disabled_count += 1
           next
         end
@@ -371,7 +371,7 @@ class ReportGenerator < ReportGeneratorBase
 
           # Validate the Jenkins job for this element
           if !validate_jenkins_folder(input_folder_path)
-            generate_table_cell_image fileHtml, @test_question_image, "", "", nil, nil, false
+            generate_table_cell_image(fileHtml, @test_question_image, "", "", nil, nil, false)
             question_count += 1
             next
           end
@@ -391,9 +391,9 @@ class ReportGenerator < ReportGeneratorBase
           current_jenkins_job_href = get_jenkins_job_href(deployment_name)
 
           # Parse the log file if it exists to save off the information
-          last_line, link_to_log, log_as_string = get_log_file_information(current_build_log,
-                                                                           current_jenkins_job_href,
-                                                                           currentBuildNumber)
+          last_line, link_to_log, log_as_string, log_date_time_stamp = get_log_file_information(current_build_log,
+                                                                                                current_jenkins_job_href,
+                                                                                                currentBuildNumber)
 
           # Save off the deployment and error report link to be used later to generate the
           # failure summary report.
@@ -410,13 +410,13 @@ class ReportGenerator < ReportGeneratorBase
 
           # Now work through the known build scenarios and if we don't find any of those in the log file we are "running"
           if last_line == ""
-            generate_table_cell_image fileHtml, @test_has_not_run_yet_image, "", "", @test_action_start_job_image,
-                                      action_start_job_href, @generate_actions
+            generate_table_cell_image(fileHtml, @test_has_not_run_yet_image, "", "", @test_action_start_job_image,
+                                      action_start_job_href, @generate_actions)
             has_not_run_count += 1
 
           elsif last_line == "Finished: SUCCESS"
-            generate_table_cell_image fileHtml, @test_passed_image, link_to_log, "", @test_action_start_job_image,
-                                      action_start_job_href, @generate_actions
+            generate_table_cell_image(fileHtml, @test_passed_image, link_to_log, "", @test_action_start_job_image,
+                                      action_start_job_href, @generate_actions)
             success_count += 1
 
           elsif last_line == "Finished: FAILURE"
@@ -428,15 +428,20 @@ class ReportGenerator < ReportGeneratorBase
             failure_match, failure_results, description, reference_href, server_template_error =
                 look_for_first_regular_expression_match(deployment_name, log_as_string, failure_report_array)
 
+            formatted_log_date_time_stamp = "[#{log_date_time_stamp}] "
+
             if !failure_match
-              failure_report_array.push [deployment_name, [@no_match_string], description, reference_href,
-                                         server_template_error]
+              failure_report_array.push([deployment_name, [formatted_log_date_time_stamp + @no_match_string], description, reference_href,
+                                         server_template_error])
             end
 
-            generate_table_cell_image fileHtml, server_template_error ? @server_template_test_failed_image : @other_test_failed_image,
-                                      link_to_log,
-                                      (failure_match ? (description.length > 0 ? description : failure_results[0]) : @no_match_string),
-                                      @test_action_start_job_image, action_start_job_href, @generate_actions
+            cell_title = (failure_match ? (description.length > 0 ? description : failure_results[0]) : @no_match_string)
+            cell_title = formatted_log_date_time_stamp + cell_title
+
+            generate_table_cell_image(fileHtml, server_template_error ? @server_template_test_failed_image : @other_test_failed_image,
+                                      link_to_log, cell_title, @test_action_start_job_image, action_start_job_href,
+                                      @generate_actions)
+
             if server_template_error
               server_template_failure_count += 1
             else
@@ -444,15 +449,15 @@ class ReportGenerator < ReportGeneratorBase
             end
 
           elsif last_line == "Finished: ABORTED"
-            generate_table_cell_image fileHtml, @test_aborted_image, link_to_log, "", @test_action_start_job_image,
-                                      action_start_job_href, @generate_actions
+            generate_table_cell_image(fileHtml, @test_aborted_image, link_to_log, "", @test_action_start_job_image,
+                                      action_start_job_href, @generate_actions)
             monkey_mood_image = @pissed_off_monkey_image
             aborted_count += 1
 
           else
             # "Running"
-            generate_table_cell_image fileHtml, @test_running_image, link_to_log, "", @test_action_stop_job_image,
-                                      action_stop_job_href, @generate_actions
+            generate_table_cell_image(fileHtml, @test_running_image, link_to_log, "", @test_action_stop_job_image,
+                                      action_stop_job_href, @generate_actions)
             running_count += 1
           end
 
@@ -460,7 +465,7 @@ class ReportGenerator < ReportGeneratorBase
           # Only include this element if this cloud/region is not filtered
           if cloud_in_filter?(cloud_lookup_name)
             # Show cell for "Not Supported"
-            generate_table_cell_image fileHtml, @test_not_supported_image, "", "", nil, nil, @generate_actions
+            generate_table_cell_image(fileHtml, @test_not_supported_image, "", "", nil, nil, @generate_actions)
             not_supported_count += 1
           end
 
@@ -468,7 +473,7 @@ class ReportGenerator < ReportGeneratorBase
           # Only include this element if this cloud/region is not filtered
           if cloud_in_filter?(cloud_lookup_name)
             # Show cell for "Not Supported"
-            generate_table_cell_image fileHtml, @test_not_supported_yet_image, "", "", nil, nil, @generate_actions
+            generate_table_cell_image(fileHtml, @test_not_supported_yet_image, "", "", nil, nil, @generate_actions)
             not_supported_yet_count += 1
           end
 
@@ -476,7 +481,7 @@ class ReportGenerator < ReportGeneratorBase
           # Only include this element if this cloud/region is not filtered
           if cloud_in_filter?(cloud_lookup_name)
             # Show cell for "Not Supported"
-            generate_table_cell_image fileHtml, @test_disabled_image, "", "", nil, nil, @generate_actions
+            generate_table_cell_image(fileHtml, @test_disabled_image, "", "", nil, nil, @generate_actions)
             disabled_count += 1
           end
 
