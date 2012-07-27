@@ -343,7 +343,7 @@ class ReportGenerator < ReportGeneratorBase
           = get_cloud_variables(j)
 
         # Check to see if the column has been completely disabled
-        if !is_cloud_column_enabled?(split_cloud_region_image_array)
+        if cloud_in_filter?(cloud_lookup_name) && !is_cloud_column_enabled?(split_cloud_region_image_array)
           # Show cell for "Not Supported" and skip the rest of the processing for this element
           generate_table_cell_image fileHtml, @test_disabled_image, "", "", nil, nil, @generate_actions
           disabled_count += 1

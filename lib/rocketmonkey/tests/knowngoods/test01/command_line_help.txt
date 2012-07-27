@@ -1,7 +1,7 @@
 Rocket Monkey Automated Test Framework
 Powered by Virtual Monkey and Jenkins
 Copyright (c) 2010-2012 RightScale Inc
-Version 1.0.30
+Version 1.0.31
 Usage:
 rocketmonkey [options]
  where [options] are:
@@ -29,9 +29,10 @@ rocketmonkey [options]
        --suppress-variable-data, -v:   Suppress variable data (used for
                                        testing)
                    --destroyers, -d:   Generate the destroyers job report
-             --cloud-filter, -o <s>:   Filter report by cloud-region(s)
-                                       <cloud-region> or <"<cloud1-region1>
-                                       <cloud2-region1>..."
+             --cloud-filter, -o <s>:   Filter report by cloud-region-image(s)
+                                       <cloud-region-image> or
+                                       "<cloud1-region1-image1>
+                                       <cloud2-region2-image2>..."
              --generate-actions, -a:   Generate actions in the report (WIP
                                        only)
           --mail-failure-report, -m:   Mail the failure summary report

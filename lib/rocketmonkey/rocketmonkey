@@ -41,7 +41,7 @@ require 'cloud_shepherd'
 ########################################################################################################################
 
 # Rocket Monkey version string
-version = "Version 1.0.30"
+version = "Version 1.0.31"
 
 #
 # Display Version/Copyright banner
@@ -52,7 +52,7 @@ puts "Copyright (c) 2010-2012 RightScale Inc"
 puts version
 
 cloud_filter_command_description =
-    "Filter report by cloud-region(s) <cloud-region> or <\"<cloud1-region1> <cloud2-region1>...\""
+    "Filter report by cloud-region-image(s) <cloud-region-image> or \"<cloud1-region1-image1> <cloud2-region2-image2>...\""
 
 #
 # Parse and validate command line arguments

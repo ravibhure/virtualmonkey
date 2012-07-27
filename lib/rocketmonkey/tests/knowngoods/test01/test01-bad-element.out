@@ -1,1 +1,1 @@
-/Users/jonmarinello/mrsc/development/rightscale/repos/virtualmonkey/lib/rocketmonkey/rocketmonkey_base.rb:244:in `raise_invalid_element_exception': Invalid value "BAD_ELEMENT" found at row: 3, column: 3 in tests/test01-bad-element.csv (RuntimeError)
+/Users/jonmarinello/mrsc/development/rightscale/repos/virtualmonkey/lib/rocketmonkey/rocketmonkey_base.rb:287:in `raise_invalid_element_exception': Invalid value "BAD_ELEMENT" found at row: 3, column: 3 in tests/test01-bad-element.csv (RuntimeError)

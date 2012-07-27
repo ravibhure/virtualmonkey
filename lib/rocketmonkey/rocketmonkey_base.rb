@@ -118,7 +118,8 @@ class RocketMonkeyBase
     cloud_filter ||= ""
     @cloud_filter = cloud_filter.split(/ /)
     @cloud_filter.each { |element|
-      raise "Cloud-Region #{element} not found in cloud_ids map in yaml file." if !@cloud_ids[element]
+      # Calling get_cloud_id will validate the cloud-region for us
+      get_cloud_id(element)
     }
 
     # Clean up the input path and make sure it has the trailing '/'
@@ -191,12 +192,54 @@ class RocketMonkeyBase
   ######################################################################################################################
   def get_cloud_variables(column)
     split_cloud_region_image_array = @parsed_job_definition[@cloud_row][column].split(/\n/)
-    raw_cloud_name = cloud_lookup = cloud_name = split_cloud_region_image_array[0]
+    raw_cloud_name = cloud_lookup_name = cloud_name = split_cloud_region_image_array[0]
     region_name = split_cloud_region_image_array[1]
     cloud_name += "_" + region_name if region_name != ""
     image_name = split_cloud_region_image_array[2]
-    cloud_lookup += "-" + region_name if region_name != ""
-    return split_cloud_region_image_array, raw_cloud_name, cloud_lookup, cloud_name, region_name, image_name
+    cloud_lookup_name += "-"
+    cloud_lookup_name += region_name if region_name != ""
+    cloud_lookup_name += "-"
+    cloud_lookup_name += image_name if image_name != ""
+    return split_cloud_region_image_array, raw_cloud_name, cloud_lookup_name, cloud_name, region_name, image_name
+  end
+
+
+
+  ######################################################################################################################
+  # instance method: get_cloud_id
+  #
+  # Returns the cloud ID based on the cloud lookup name.
+  #
+  # If no mapping exists, an exception is raised
+  ######################################################################################################################
+  def get_cloud_id(cloud_lookup_name)
+    # Remove image from the cloud-region-image for looking up the cloud-region in the yaml file
+    element_array = cloud_lookup_name.split(/-/)
+    cloud_region = element_array[0]
+    cloud_region += "-" + element_array[1] if element_array[1] != ""
+
+    # Get cloud ID from the lookup name
+    cloud_id = @cloud_ids[cloud_region]
+
+    # If the cloud we find isn't defined in the yaml config file raise an error
+    raise "Cloud-Region #{cloud_region} not found in cloud_ids map in yaml file." if cloud_id == nil
+
+    return cloud_id
+  end
+
+
+
+  ######################################################################################################################
+  # instance method: cloud_in_filter?
+  #
+  # Based on the supplied inputs this function will return true if the given cloud_lookup_name is in
+  # the cloud filter or if the filter is empty (i.e., all clouds included), otherwise false.
+  ######################################################################################################################
+  def cloud_in_filter?(cloud_lookup_name)
+    if @cloud_filter.length > 0
+      return @cloud_filter.include?(cloud_lookup_name)
+    end
+    return true
   end
 
 
@@ -242,25 +285,6 @@ class RocketMonkeyBase
   ######################################################################################################################
   def raise_invalid_element_exception(element, row, column)
     raise "Invalid value \"#{element}\" found at row: #{row + 1}, column: #{column + 1} in #{@csv_input_filename}"
-  end
-
-
-
-  ######################################################################################################################
-  # instance method: get_cloud_id
-  #
-  # Returns the cloud ID based on the cloud lookup name.
-  #
-  # If no mapping exists, an exception is raised
-  ######################################################################################################################
-  def get_cloud_id(cloud_lookup_name)
-    # Get cloud ID from the lookup name
-    cloud_id = @cloud_ids[cloud_lookup_name]
-
-    # If the cloud we find isn't defined in the yaml config file raise an error
-    raise "Missing cloud definition in yaml file for #{cloud_lookup_name}" if cloud_id == nil
-
-    return cloud_id
   end
 
 
@@ -356,21 +380,6 @@ class RocketMonkeyBase
   ######################################################################################################################
   def get_job_order_number_as_string(column)
     return sprintf('%03d', column)
-  end
-
-
-
-  ######################################################################################################################
-  # instance method: cloud_in_filter?
-  #
-  # Based on the supplied inputs this function will return true if the given cloud_lookup_name is in
-  # the cloud filter or if the filter is empty (i.e., all clouds included), otherwise false.
-  ######################################################################################################################
-  def cloud_in_filter?(cloud_lookup_name)
-    if @cloud_filter.length > 0
-      return @cloud_filter.include?(cloud_lookup_name)
-    end
-    return true
   end
 
 
