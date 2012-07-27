@@ -1,7 +1,7 @@
 Rocket Monkey Automated Test Framework
 Powered by Virtual Monkey and Jenkins
 Copyright (c) 2010-2012 RightScale Inc
-Version 1.0.31
+Version 1.0.32
 Usage:
 rocketmonkey [options]
  where [options] are:
@@ -39,6 +39,8 @@ rocketmonkey [options]
   --failure-report-run-time, -p <s>:   The time to run the mail failure report
                                        Jenkins job
                --nuclear-option, -N:   Remove all Jenkins job folders and files
+                       --aborts, -b:   Clean aborted Jenkins jobs
+                     --failures, -x:   Clean failed Jenkins jobs
                           --yes, -y:   Automatically answer yes to all
                                        questions
                            --no, -n:   Automatically answer no to all questions

@@ -387,12 +387,12 @@ class ReportGenerator < ReportGeneratorBase
             current_build_log = input_folder_path + "/" + "builds/" + "#{currentBuildNumber}/log"
           end
 
-          # Save path to current Jenkins job
-          path_to_current_jenkins_job = "http://#{@jenkins_ip_address}:8080/job/#{deployment_name}"
+          # Save href to current Jenkins job
+          current_jenkins_job_href = get_jenkins_job_href(deployment_name)
 
           # Parse the log file if it exists to save off the information
           last_line, link_to_log, log_as_string = get_log_file_information(current_build_log,
-                                                                           path_to_current_jenkins_job,
+                                                                           current_jenkins_job_href,
                                                                            currentBuildNumber)
 
           # Save off the deployment and error report link to be used later to generate the
@@ -401,8 +401,8 @@ class ReportGenerator < ReportGeneratorBase
 
           # if generate we need to actions, then build the action hrefs
           if @generate_actions
-            action_start_job_href = "#{path_to_current_jenkins_job}/build?delay=0sec"
-            action_stop_job_href = "#{path_to_current_jenkins_job}/#{currentBuildNumber}/stop"
+            action_start_job_href = "#{current_jenkins_job_href}/build?delay=0sec"
+            action_stop_job_href = "#{current_jenkins_job_href}/#{currentBuildNumber}/stop"
           else
             action_start_job_href = nil
             action_stop_job_href = nil

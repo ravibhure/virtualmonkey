@@ -126,7 +126,7 @@ class CloudShepherd < RocketMonkeyBase
 
       # Assemble the input folder name
       suite_name = @suite_prefix + "_#{cloud_name}" + "_" + image_name
-      deployment_name = "#{@destroyers ? "Z_" : ""}" + suite_name + "_#{job_number}" + "_" + troop_name
+      deployment_name = suite_name + "_#{job_number}" + "_" + troop_name
       input_folder_path = @edited_input_file_path + deployment_name
 
       # Only clean the Jenkins job if this is a normal job element
@@ -153,12 +153,12 @@ class CloudShepherd < RocketMonkeyBase
           current_build_log = input_folder_path + "/" + "builds/" + "#{currentBuildNumber}/log"
         end
 
-        # Save path to current Jenkins job
-        path_to_current_jenkins_job = "http://#{@jenkins_ip_address}:8080/job/#{deployment_name}"
+        # Save href to current Jenkins job
+        current_jenkins_job_href = get_jenkins_job_href(deployment_name)
 
         # Parse the log file if it exists to save off the information
         last_line, link_to_log, log_as_string = get_log_file_information(current_build_log,
-                                                                         path_to_current_jenkins_job,
+                                                                         current_jenkins_job_href,
                                                                          currentBuildNumber)
 
         if last_line == "Finished: SUCCESS"

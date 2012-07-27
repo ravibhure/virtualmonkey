@@ -446,7 +446,7 @@ class RocketMonkeyBase
   # or and empty string if it doesn't. It also returns a link to that same log and the log as a string if it exists
   # or nil if it doesn't.
   ######################################################################################################################
-  def get_log_file_information(current_build_log, path_to_current_jenkins_job, currentBuildNumber)
+  def get_log_file_information(current_build_log, jenkins_job_href, currentBuildNumber)
     last_line = ""
     link_to_log = nil
     log_as_string = nil
@@ -460,7 +460,7 @@ class RocketMonkeyBase
       if monkey_results.length > 0
         link_to_log = monkey_results[0]
       else
-        link_to_log = "#{path_to_current_jenkins_job}/#{currentBuildNumber}/console"
+        link_to_log = "#{jenkins_job_href}/#{currentBuildNumber}/console"
       end
 
       # Get the last line of the build file
@@ -473,4 +473,25 @@ class RocketMonkeyBase
     return last_line, link_to_log, log_as_string
   end
 
+
+
+  ######################################################################################################################
+  # instance method: get_jenkins_root_href
+  #
+  # Based on the supplied inputs this function will return Jenkins root href.
+  ######################################################################################################################
+  def get_jenkins_root_href()
+    return "http://#{@jenkins_ip_address}:8080"
+  end
+
+
+
+  ######################################################################################################################
+  # instance method: get_jenkins_job_href
+  #
+  # Based on the supplied inputs this function will return a valid Jenkins job href.
+  ######################################################################################################################
+  def get_jenkins_job_href(deployment_name)
+    return "#{get_jenkins_root_href()}/job/#{deployment_name}"
+  end
 end

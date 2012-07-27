@@ -153,12 +153,12 @@ class ZombieReportGenerator < ReportGeneratorBase
               current_build_log = input_folder_path + "/" + "builds/" + "#{currentBuildNumber}/log"
             end
 
-            # Save path to current Jenkins job
-            path_to_current_jenkins_job = "http://#{@jenkins_ip_address}:8080/job/#{deployment_name}"
+            # Save href to current Jenkins job
+            current_jenkins_job_href = get_jenkins_job_href(deployment_name)
 
             # Parse the log file if it exists to save off the information
             last_line, link_to_log, log_as_string = get_log_file_information(current_build_log,
-                                                                             path_to_current_jenkins_job,
+                                                                             current_jenkins_job_href,
                                                                              currentBuildNumber)
             # Now work through the known build scenarios
             if last_line == ""
@@ -251,7 +251,7 @@ class ZombieReportGenerator < ReportGeneratorBase
     monkey_mood_image = @pissed_off_monkey_image
 
     # Generate Report Body
-    jenkinsFullURL = "http://#{@jenkins_ip_address}:8080/" + "view/All/job/Z_"
+    jenkins_partial_url = "#{get_jenkins_root_href()}" + "/view/All/job/Z_"
 
     # Go get all the deployments
     deployment_job_array = []
@@ -261,7 +261,7 @@ class ZombieReportGenerator < ReportGeneratorBase
     deployment_array.each do |d|
       if d.nickname.to_s =~ /^#{@suite_prefix}.*/
         job_name = d.nickname.split(/-/)
-        deployment_job_array << [job_name[0], jenkinsFullURL + job_name[0] + "/build?delay=0sec"]
+        deployment_job_array << [job_name[0], jenkins_partial_url + job_name[0] + "/build?delay=0sec"]
       end
     end
 

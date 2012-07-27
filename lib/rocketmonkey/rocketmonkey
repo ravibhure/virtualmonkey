@@ -41,7 +41,7 @@ require 'cloud_shepherd'
 ########################################################################################################################
 
 # Rocket Monkey version string
-version = "Version 1.0.31"
+version = "Version 1.0.32"
 
 #
 # Display Version/Copyright banner
@@ -95,6 +95,8 @@ EOS
 
   # Clean & clean_generate_and_start specific flags
   opt :nuclear_option,          "Remove all Jenkins job folders and files",                 :short => "-N", :default => false
+  opt :aborts,                  "Clean aborted Jenkins jobs",                               :short => "-b", :default => false
+  opt :failures,                "Clean failed Jenkins jobs",                                :short => "-x", :default => false
   opt :yes,                     "Automatically answer yes to all questions",                :short => "-y", :default => false
   opt :no,                      "Automatically answer no to all questions",                 :short => "-n", :default => false
 
@@ -124,7 +126,7 @@ if opts[:clean_generate_and_start_given]
   stop_jenkins_service()
 
   # Remove all previous job state
-  JenkinsJobCleaner.cleanup_old_jenkins_jobs(opts, version, opts[:nuclear_option])
+  JenkinsJobCleaner.cleanup_old_jenkins_jobs(opts, version, false, false, opts[:nuclear_option])
 
   # Generate all the Jenkins jobs
   jenkins_job_generator = JenkinsJobGenerator.new(version, opts[:input], opts[:refresh_rate], opts[:force],
@@ -168,7 +170,7 @@ else
     stop_jenkins_service()
 
     # Remove all previous job state
-    JenkinsJobCleaner.cleanup_old_jenkins_jobs(opts, version, opts[:nuclear_option])
+    JenkinsJobCleaner.cleanup_old_jenkins_jobs(opts, version, opts[:aborts], opts[:failures], opts[:nuclear_option])
 
     # Restart Jenkins
     start_jenkins_service()
