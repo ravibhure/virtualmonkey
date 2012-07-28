@@ -103,11 +103,11 @@
   "EUC3-RS": 2073
   "SLYR-DAL": 1869
   "HP": 1695
-  "TATA-IND": 2086
-  "TATA-SNG": 2086
+  "TATA-IND": 2192
+  "TATA-SNG": 2192
   "Google-Silicon": 2175
-  "Azure-EastUS": 2192
-  "Azure-WestUS": 2192
+  "Azure-EastUS": 2179
+  "Azure-WestUS": 2178
 #
 # chain - How to chain the generated Jenkins jobs
 #   Allowed values:
