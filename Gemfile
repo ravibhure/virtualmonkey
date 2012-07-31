@@ -30,3 +30,4 @@ gem "tzinfo"
 gem "google_drive"
 gem "system_timer"
 gem "mail"
+gem 'lockfile'

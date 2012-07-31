@@ -15,6 +15,7 @@
 require 'rubygems'
 require 'fileutils'
 require 'logger'
+require 'lockfile'
 
 # RocketMonkey requires
 require 'rocketmonkey_base'
@@ -30,6 +31,31 @@ class CloudShepherd < RocketMonkeyBase
   ######################################################################################################################
   def initialize(version, csv_input_filename, cloud_filter)
     super(version, false, csv_input_filename, 0, false, nil, cloud_filter)
+
+    @pid = Process.pid()
+    @pid_job_file_name = File.dirname($0) + "/.cloudshepherd.yaml"
+    @pid_job_lock_file_name = File.dirname($0) + "/.cloudshepherd.lock"
+    @pid_job_hash = {}
+  end
+
+
+
+  ######################################################################################################################
+  # instance method: load_pid_job_file
+  ######################################################################################################################
+  def load_pid_job_file()
+    if File.exists?(@pid_job_file_name)
+      @pid_job_hash = YAML::load(File.open(@pid_job_file_name))
+    end
+  end
+
+
+
+  ######################################################################################################################
+  # instance method: save_pid_job_file
+  ######################################################################################################################
+  def save_pid_job_file()
+    File.open(@pid_job_file_name, 'w+') {|f| f.write(@pid_job_hash.to_yaml) }
   end
 
 
@@ -37,7 +63,7 @@ class CloudShepherd < RocketMonkeyBase
   ######################################################################################################################
   # instance method: start
   #
-  # Based on the supplied inputs this function will clean the specified Jenkins job folder
+  # Based on the supplied inputs this function will start the cloud shepherd at the correct job number
   ######################################################################################################################
   def start(start_job)
 
@@ -49,6 +75,7 @@ class CloudShepherd < RocketMonkeyBase
 
     cloud_filter = @cloud_filter.first
 
+    @logger.info("Process ID = '#{@pid}'")
     @logger.info("[CONFIG] Cloud filter = '#{cloud_filter}'")
     @logger.info("[CONFIG] Start job = #{start_job}")
     @logger.info("[CONFIG] Max deployment start try count = #{@cloud_shepherd_max_retries}")
@@ -129,7 +156,7 @@ class CloudShepherd < RocketMonkeyBase
       deployment_name = suite_name + "_#{job_number}" + "_" + troop_name
       input_folder_path = @edited_input_file_path + deployment_name
 
-      # Only clean the Jenkins job if this is a normal job element
+      # Only process the Jenkins job if this is a normal job element
       if is_job_element?(element)
         @logger.info("Processing deployment #{deployment_name}...")
 
@@ -189,7 +216,26 @@ class CloudShepherd < RocketMonkeyBase
           # If the deployment exists in the live deployments, log that we found it, sleep and then loop again but stay
           # on this deployment
           if deployment_exists
-            @logger.info("#{deployment_name} active, sleeping for #{@cloud_shepherd_sleep_before_retrying_job_in_seconds} seconds and retrying (#{deployment_start_try_count})...")
+            # Check to see if another instance of the cloud shepherd is processing this job
+            Lockfile.new(@pid_job_lock_file_name) do
+              load_pid_job_file()
+
+              # Find the process ID of the cloud shepherd instance that is processing this deployment
+              deployment_cloud_shepherd_pid = @pid_job_hash.index(deployment_name)
+
+              if deployment_cloud_shepherd_pid == nil
+                # This deployment wasn't started by a cloud shepherd, so log that fact and skip to the next one
+                @logger.info("#{deployment_name} active but wasn't started by a cloud shepherd, skipping to next deployment...")
+                next
+              elsif deployment_cloud_shepherd_pid != pid
+                # Another cloud shepherd instance is working on this deployment so log that fact and skip to the next one
+                @logger.info("#{deployment_name} active but already begin processed by cloud shepherd with process id #{deployment_cloud_shepherd_pid}, skipping to next deployment...")
+                next
+              end
+            end
+
+            # If we get there then it is this cloud shepherd instance that is working on this deployment so log that
+            @logger.info("#{deployment_name} active and being processed by this cloud shepherd, sleeping for #{@cloud_shepherd_sleep_before_retrying_job_in_seconds} seconds and retrying (#{deployment_start_try_count})...")
 
             # Sleep before trying again
             sleep(@cloud_shepherd_sleep_before_retrying_job_in_seconds)
@@ -217,6 +263,13 @@ class CloudShepherd < RocketMonkeyBase
             end
 
             start_jenkins_job(@logger, deployment_name, 3, 10)
+
+            # Record that this cloud shepherd is processing this deployment
+            Lockfile.new(@pid_job_lock_file_name) do
+              load_pid_job_file()
+              @pid_job_hash[@pid] = deployment_name
+              save_pid_job_file()
+            end
 
             # Bump counters since no exception was thrown
             deployment_start_count += 1
@@ -268,6 +321,13 @@ class CloudShepherd < RocketMonkeyBase
     else
       # Warning user if no jobs to run found
       @logger.info("No jobs successfully run.")
+    end
+
+    # Remove our pid from the pid job file
+    Lockfile.new(@pid_job_lock_file_name) do
+      load_pid_job_file()
+      @pid_job_hash.reject!{ |key| key == @pid }
+      save_pid_job_file()
     end
 
     # Adios...

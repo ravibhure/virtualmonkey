@@ -34,6 +34,7 @@ begin
     gem.add_dependency "google_drive"
     gem.add_dependency "system_timer"
     gem.add_dependency "mail"
+    gem.add_dependency "lockfile"
     # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
   end
   Jeweler::GemcutterTasks.new
