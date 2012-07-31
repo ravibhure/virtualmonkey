@@ -217,6 +217,7 @@ class CloudShepherd < RocketMonkeyBase
           # on this deployment
           if deployment_exists
             # Check to see if another instance of the cloud shepherd is processing this job
+            skip_to_next = false
             Lockfile.new(@pid_job_lock_file_name) do
               load_pid_job_file()
 
@@ -226,13 +227,14 @@ class CloudShepherd < RocketMonkeyBase
               if deployment_cloud_shepherd_pid == nil
                 # This deployment wasn't started by a cloud shepherd, so log that fact and skip to the next one
                 @logger.info("#{deployment_name} active but wasn't started by a cloud shepherd, skipping to next deployment...")
-                next
-              elsif deployment_cloud_shepherd_pid != pid
+                skip_to_next = true
+              elsif deployment_cloud_shepherd_pid != @pid
                 # Another cloud shepherd instance is working on this deployment so log that fact and skip to the next one
                 @logger.info("#{deployment_name} active but already begin processed by cloud shepherd with process id #{deployment_cloud_shepherd_pid}, skipping to next deployment...")
-                next
+                skip_to_next = true
               end
             end
+            next if skip_to_next
 
             # If we get there then it is this cloud shepherd instance that is working on this deployment so log that
             @logger.info("#{deployment_name} active and being processed by this cloud shepherd, sleeping for #{@cloud_shepherd_sleep_before_retrying_job_in_seconds} seconds and retrying (#{deployment_start_try_count})...")
