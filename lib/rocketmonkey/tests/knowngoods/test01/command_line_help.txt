@@ -1,49 +1,51 @@
 Rocket Monkey Automated Test Framework
 Powered by Virtual Monkey and Jenkins
 Copyright (c) 2010-2012 RightScale Inc
-Version 1.0.34
+Version 1.0.35
 Usage:
 rocketmonkey [options]
  where [options] are:
-       --generate-jenkins-files, -g:   Generate Jenkins XML job files
+       --generate-jenkins-files, -g:   Generate Jenkins meta data folders and
+                                       files
              --generate-reports, -e:   Generate a report set WIP (default),
                                        Snapshot or Zombie
-                        --clean, -c:   Clean current Jenkins job folders
+                        --clean, -c:   Clean Jenkins job folders
      --clean-generate-and-start, -C:   Clean, generate and start all job
-                                       columns
+                                       verticals
                          --view, -w:   View CSV file
                --cloud-shepherd, -q:   Run in Cloud Shepherd mode
                     --input, -i <s>:   Path to the input file in CSV format
-             --refresh-rate, -r <i>:   Page refresh rate in seconds (default:
-                                       60)
+             --refresh-rate, -r <i>:   WIP Page refresh rate in seconds
+                                       (default: 60)
           --truncate-troops, -u <i>:   Truncate troops names to <n> characters
                                        (default: 10240)
-                        --force, -f:   Pass --force flag to the monkey on all
-                                       destroy calls
-                         --tabs, -t:   Generate "RS-<cloud>-<image>" column
-                                       tabs in Jenkins
-                     --snapshot, -s:   Generate a snapshot report set
-                       --zombie, -z:   Generate a zombie deployment report set
-                        --leave, -l:   Leave the generated HTML file on the
-                                       local drive
-       --suppress-variable-data, -v:   Suppress variable data (used for
-                                       testing)
-                   --destroyers, -d:   Generate the destroyers job report
-             --cloud-filter, -o <s>:   Filter report by cloud-region-image(s)
-                                       <cloud-region-image> or
-                                       "<cloud1-region1-image1>
-                                       <cloud2-region2-image2>..."
-             --generate-actions, -a:   Generate actions in the report (WIP
-                                       only)
-          --mail-failure-report, -m:   Mail the failure summary report
+                        --force, -f:   Pass --force flag to Virtual Monkey on
+                                       all destroy calls
+                         --tabs, -t:   Generate Jenkins views (tabs)
   --failure-report-run-time, -p <s>:   The time to run the mail failure report
                                        Jenkins job
+                     --snapshot, -s:   Generate a snapshot report set
+                       --zombie, -z:   Generate a zombie deployment report set
+                   --destroyers, -d:   Generate the destroyers job report
+                        --leave, -l:   Leave the generated HTML files (used for
+                                       testing)
+       --suppress-variable-data, -v:   Suppress variable data (used for
+                                       testing)
+             --generate-actions, -a:   Generate actions icons in the report
+                                       (WIP only)
+          --mail-failure-report, -m:   Mail the failure summary report
                --nuclear-option, -N:   Remove all Jenkins job folders and files
                        --aborts, -b:   Clean aborted Jenkins jobs
                      --failures, -x:   Clean failed Jenkins jobs
                           --yes, -y:   Automatically answer yes to all
                                        questions
                            --no, -n:   Automatically answer no to all questions
+             --cloud-filter, -o <s>:   Filter by cloud-region-image(s)
+                                       <cloud-region-image> or
+                                       "<cloud1-region1-image1>
+                                       <cloud2-region2-image2>..." (note that
+                                       only a single cloud-region-image is
+                                       allowed for the cloud shepherd feature)
                 --start-job, -j <i>:   Cloud shepherd starting job number
                                        (default: 2)
                          --help, -h:   Show this message

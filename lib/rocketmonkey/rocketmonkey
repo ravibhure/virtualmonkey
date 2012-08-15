@@ -41,7 +41,7 @@ require 'cloud_shepherd'
 ########################################################################################################################
 
 # Rocket Monkey version string
-version = "Version 1.0.34"
+version = "Version 1.0.35"
 
 #
 # Display Version/Copyright banner
@@ -52,7 +52,7 @@ puts "Copyright (c) 2010-2012 RightScale Inc"
 puts version
 
 cloud_filter_command_description =
-    "Filter report by cloud-region-image(s) <cloud-region-image> or \"<cloud1-region1-image1> <cloud2-region2-image2>...\""
+    "Filter by cloud-region-image(s) <cloud-region-image> or \"<cloud1-region1-image1> <cloud2-region2-image2>...\" (note that only a single cloud-region-image is allowed for the cloud shepherd feature)"
 
 #
 # Parse and validate command line arguments
@@ -65,33 +65,34 @@ Usage:
 EOS
 
   # Master flags
-  opt :generate_jenkins_files,  "Generate Jenkins XML job files",                           :short => "-g", :default => false
+  opt :generate_jenkins_files,  "Generate Jenkins meta data folders and files",             :short => "-g", :default => false
   opt :generate_reports,        "Generate a report set WIP (default), Snapshot or Zombie",  :short => "-e", :default => false
-  opt :clean,                   "Clean current Jenkins job folders",                        :short => "-c", :default => false
-  opt :clean_generate_and_start,"Clean, generate and start all job columns",                :short => "-C", :default => false
+  opt :clean,                   "Clean Jenkins job folders",                                :short => "-c", :default => false
+  opt :clean_generate_and_start,"Clean, generate and start all job verticals",              :short => "-C", :default => false
   opt :view,                    "View CSV file",                                            :short => "-w", :default => false
   opt :cloud_shepherd,          "Run in Cloud Shepherd mode",                               :short => "-q", :default => false
 
   # Common flags
   opt :input,                   "Path to the input file in CSV format",                     :short => "-i", :type => String, :required => true
-  opt :refresh_rate,            "Page refresh rate in seconds",                             :short => "-r", :default => 60
+
+  # Less common flags
+  opt :refresh_rate,            "WIP Page refresh rate in seconds",                         :short => "-r", :default => 60
   # Default truncate_troops to 10240 which is longer than any real-world troop name (simplifies code generation)
   opt :truncate_troops,         "Truncate troops names to <n> characters",                  :short => "-u", :default => $truncate_troops_default
 
   # Generate Jenkins files specific flags
-  opt :force,                   "Pass --force flag to the monkey on all destroy calls",     :short => "-f", :default => false
-  opt :tabs,                    "Generate \"RS-<cloud>-<image>\" column tabs in Jenkins",   :short => "-t", :default => false
+  opt :force,                   "Pass --force flag to Virtual Monkey on all destroy calls", :short => "-f", :default => false
+  opt :tabs,                    "Generate Jenkins views (tabs)",                            :short => "-t", :default => false
+  opt :failure_report_run_time, "The time to run the mail failure report Jenkins job",      :short => "-p", :type =>String
 
-  # Generate report specific flags
+  # Generate Report specific flags
   opt :snapshot,                "Generate a snapshot report set",					                  :short => "-s", :default => false
   opt :zombie,                  "Generate a zombie deployment report set",                 	:short => "-z", :default => false
-  opt :leave,                   "Leave the generated HTML file on the local drive",         :short => "-l", :default => false
-  opt :suppress_variable_data,  "Suppress variable data (used for testing)",                :short => "-v", :default => false
   opt :destroyers,              "Generate the destroyers job report",                       :short => "-d", :default => false
-  opt :cloud_filter,            cloud_filter_command_description,                           :short => "-o", :type => String
-  opt :generate_actions,        "Generate actions in the report (WIP only)",                :short => "-a", :default => false
+  opt :leave,                   "Leave the generated HTML files (used for testing)",        :short => "-l", :default => false
+  opt :suppress_variable_data,  "Suppress variable data (used for testing)",                :short => "-v", :default => false
+  opt :generate_actions,        "Generate actions icons in the report (WIP only)",          :short => "-a", :default => false
   opt :mail_failure_report,     "Mail the failure summary report",                          :short => "-m", :default => false
-  opt :failure_report_run_time, "The time to run the mail failure report Jenkins job",      :short => "-p", :type =>String
 
   # Clean & clean_generate_and_start specific flags
   opt :nuclear_option,          "Remove all Jenkins job folders and files",                 :short => "-N", :default => false
@@ -99,6 +100,9 @@ EOS
   opt :failures,                "Clean failed Jenkins jobs",                                :short => "-x", :default => false
   opt :yes,                     "Automatically answer yes to all questions",                :short => "-y", :default => false
   opt :no,                      "Automatically answer no to all questions",                 :short => "-n", :default => false
+
+  # Generate Report & Cloud Shepherd specific flags
+  opt :cloud_filter,            cloud_filter_command_description,                           :short => "-o", :type => String
 
   # cloud_shepherd specific flags
   opt :start_job,               "Cloud shepherd starting job number",                       :short => "-j", :default => 2
