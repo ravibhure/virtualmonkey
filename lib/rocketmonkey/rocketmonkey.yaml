@@ -106,8 +106,13 @@
   "TATA-IND": 2192
   "TATA-SNG": 2192
   "Google-Silicon": 2175
-  "Azure-EastUS": 2179
   "Azure-WestUS": 2178
+  "Azure-WestEU": 2183
+  "Azure-EastUS": 2179
+  "Azure-EastAsia": 2180
+  "Azure-NorthEU": 2182
+  "Azure-SoutheastAsia": 2181
+
 #
 # chain - How to chain the generated Jenkins jobs
 #   Allowed values:
