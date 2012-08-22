@@ -62,6 +62,32 @@ class CloudShepherd < RocketMonkeyBase
 
 
   ######################################################################################################################
+  # instance method: check_pid_job_file_for_this_deployment
+  ######################################################################################################################
+  def check_pid_job_file_for_this_deployment(deployment_name)
+    Lockfile.new(@pid_job_lock_file_name) do
+      # Load the pid job file
+      load_pid_job_file()
+
+      # Find the process ID of the cloud shepherd instance that is processing this deployment
+      deployment_cloud_shepherd_pid = @pid_job_hash.index(deployment_name)
+
+      if deployment_cloud_shepherd_pid == nil
+        # This deployment wasn't started by a cloud shepherd, so log that fact and skip to the next one
+        @logger.info("#{deployment_name} active but no assigned cloud shepherd found, skipping to next deployment...")
+        return true
+      elsif deployment_cloud_shepherd_pid != @pid
+        # Another cloud shepherd instance is working on this deployment so log that fact and skip to the next one
+        @logger.info("#{deployment_name} active but already begin processed by cloud shepherd with process id #{deployment_cloud_shepherd_pid}, skipping to next deployment...")
+        return true
+      end
+    end
+    return false
+  end
+
+
+
+  ######################################################################################################################
   # instance method: start
   #
   # Based on the supplied inputs this function will start the cloud shepherd at the correct job number
@@ -198,11 +224,11 @@ class CloudShepherd < RocketMonkeyBase
             #
 
             #
-            # Search for this deployment in the list of live deployments
+            # Search for this deployment in the list of live deployments via rest_connection
             #
             @logger.info("Searching for #{deployment_name} in live deployments...")
 
-            # Go get all the deployments
+            # Go get all the deployments from rest_connection
             deployment_array = Deployment.find_all
 
             # Now look for our deployment treating it as a prefix
@@ -218,24 +244,7 @@ class CloudShepherd < RocketMonkeyBase
             # on this deployment
             if deployment_exists
               # Check to see if another instance of the cloud shepherd is processing this job
-              skip_to_next = false
-              Lockfile.new(@pid_job_lock_file_name) do
-                load_pid_job_file()
-
-                # Find the process ID of the cloud shepherd instance that is processing this deployment
-                deployment_cloud_shepherd_pid = @pid_job_hash.index(deployment_name)
-
-                if deployment_cloud_shepherd_pid == nil
-                  # This deployment wasn't started by a cloud shepherd, so log that fact and skip to the next one
-                  @logger.info("#{deployment_name} active but wasn't started by a cloud shepherd, skipping to next deployment...")
-                  skip_to_next = true
-                elsif deployment_cloud_shepherd_pid != @pid
-                  # Another cloud shepherd instance is working on this deployment so log that fact and skip to the next one
-                  @logger.info("#{deployment_name} active but already begin processed by cloud shepherd with process id #{deployment_cloud_shepherd_pid}, skipping to next deployment...")
-                  skip_to_next = true
-                end
-              end
-              next if skip_to_next
+              next if check_pid_job_file_for_this_deployment(deployment_name)
 
               # If we get there then it is this cloud shepherd instance that is working on this deployment so log that
               @logger.info("#{deployment_name} active and being processed by this cloud shepherd, sleeping for #{@cloud_shepherd_sleep_before_retrying_job_in_seconds} seconds and retrying (#{deployment_start_try_count})...")
@@ -246,11 +255,6 @@ class CloudShepherd < RocketMonkeyBase
               # Loop again BUT STAY ON THE SAME DEPLOYMENT
               redo
             end
-
-            #
-            # The deployment wasn't found in the live deployments so kick off the test
-            #
-            @logger.info("Deployment not active, starting #{deployment_name} via Jenkins...")
 
             # This block is used to handle any exceptions thrown from start_jenkins_job
             begin
@@ -265,18 +269,38 @@ class CloudShepherd < RocketMonkeyBase
                 next
               end
 
-              start_jenkins_job(@logger, deployment_name, 3, 10)
-
-              # Record that this cloud shepherd is processing this deployment
+              # Record that this cloud shepherd is processing this deployment.
+              # Note: that this is done before the call to start_jenkins_job() to minimize the inherent
+              #  race condition between Cloud Shepherd processes.
+              # Also Note: That we check the pid job file one more time here to also minimize the inherent
+              #  race condition between Cloud Shepherd processes.
               Lockfile.new(@pid_job_lock_file_name) do
-                load_pid_job_file()
-                @pid_job_hash[@pid] = deployment_name
-                save_pid_job_file()
+                skip_to_next = check_pid_job_file_for_this_deployment(deployment_name)
+                if !skip_to_next
+                  # Save off our pid, deployment_name tuple to the hash to record
+                  @pid_job_hash[@pid] = deployment_name
+
+                  #
+                  # The deployment wasn't found in the live deployments so kick off the test
+                  #
+                  @logger.info("Deployment not active, starting #{deployment_name} via Jenkins...")
+                  start_jenkins_job(@logger, deployment_name, 3, 10)
+
+                  # Bump counters since no exception was thrown
+                  deployment_start_count += 1
+                  deployment_start_try_count += 1
+
+                  save_pid_job_file()
+                end
               end
 
-              # Bump counters since no exception was thrown
-              deployment_start_count += 1
-              deployment_start_try_count += 1
+              if skip_to_next
+                # Reset the counter
+                deployment_start_try_count = 1
+
+                # Move on to the next deployment
+                next
+              end
 
               # Log that we are sleeping to wait for newly started deployment to start
               @logger.info("Sleeping for #{@cloud_shepherd_sleep_after_job_start_in_seconds} seconds waiting for #{deployment_name} to be created...")
