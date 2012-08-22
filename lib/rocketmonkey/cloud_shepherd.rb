@@ -46,6 +46,7 @@ class CloudShepherd < RocketMonkeyBase
   def load_pid_job_file()
     if File.exists?(@pid_job_file_name)
       @pid_job_hash = YAML::load(File.open(@pid_job_file_name))
+      raise TypeError, "#{@pid_job_file_name} corrupted - doesn't contain a Hash" unless @pid_job_hash.is_a? Hash
     end
   end
 
@@ -283,7 +284,7 @@ class CloudShepherd < RocketMonkeyBase
               # Now sleep to wait for the deployment to be created
               sleep(@cloud_shepherd_sleep_after_job_start_in_seconds)
 
-            rescue Exception => e
+            rescue StartJenkinsJobFailed => e
               @logger.warn("Caught exception \"#{e.message}\", skipping...")
 
               # Reset the counter

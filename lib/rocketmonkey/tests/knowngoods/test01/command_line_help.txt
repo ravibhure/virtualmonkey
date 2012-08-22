@@ -1,7 +1,7 @@
 Rocket Monkey Automated Test Framework
 Powered by Virtual Monkey and Jenkins
 Copyright (c) 2010-2012 RightScale Inc
-Version 1.0.35
+Version 1.0.36
 Usage:
 rocketmonkey [options]
  where [options] are:

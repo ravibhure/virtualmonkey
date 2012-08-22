@@ -24,6 +24,19 @@ require 'patches'
 $truncate_troops_default = 10240
 
 
+
+######################################################################################################################
+# StartJenkinsJobFailed "exception" class
+#
+# This exception class is raised when we are unable to start a Jenkins job.
+######################################################################################################################
+class StartJenkinsJobFailed < StandardError
+  def initialize(max_tries, deployment_name)
+    super("Can't start Jenkins job #{deployment_name} even after #{max_tries - 1} attempts to start it")
+  end
+end
+
+
 ########################################################################################################################
 # RocketMonkeyBase "abstract" class
 ########################################################################################################################
@@ -418,7 +431,7 @@ class RocketMonkeyBase
 
     for http_retry_counter in 1..max_tries
       if http_retry_counter == max_tries
-        raise "Jenkins failed after #{max_tries - 1} attempts to start #{deployment_name}"
+        raise StartJenkinsJobFailed.new(max_tries, deployment_name)
       end
       response = nil
       Net::HTTP.start("#{@jenkins_ip_address}", 8080) { |http|
