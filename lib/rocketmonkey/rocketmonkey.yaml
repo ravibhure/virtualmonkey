@@ -179,6 +179,10 @@
     - ""
     - ""
     - true
+  "failed:\s*\S*":
+    - ""
+    - ""
+    - true
   "Connection timed out":
     - ""
     - ""
@@ -259,35 +263,11 @@
     - ""
     - ""
     - false
-  "failed: block_device::do_force_reset":
-    - ""
-    - ""
-    - true
-  "failed: db::do_primary_init_slave":
-    - ""
-    - ""
-    - true
-  "failed: block_device::do_primary_backup":
-    - ""
-    - ""
-    - true
-  "failed: db::do_init_and_become_master":
-    - ""
-    - ""
-    - true
   "The create_master_from_slave_backup_2 replication database is corrupted":
     - ""
     - ""
     - true
   "Logrotate did not work properly on rails appserver.*\(":
-    - ""
-    - ""
-    - true
-  "failed: block_device::do_secondary_backup":
-    - ""
-    - ""
-    - true
-  "FATAL error, failed: app::do_update_code":
     - ""
     - ""
     - true
