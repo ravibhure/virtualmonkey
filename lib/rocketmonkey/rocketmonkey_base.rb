@@ -101,8 +101,11 @@ class RocketMonkeyBase
     raise "failure_report_regular_expressions definition in yaml file is not a hash" \
       if !@config[:failure_report_regular_expressions].is_a?(Hash)
     raise "Missing cloud_shepherd_max_retries definition in yaml file" if @config[:cloud_shepherd_max_retries] == nil
-    raise "Missing cloud_shepherd_sleep_before_retrying_job_in_seconds definition in yaml file" if @config[:cloud_shepherd_sleep_before_retrying_job_in_seconds] == nil
-    raise "Missing cloud_shepherd_sleep_after_job_start_in_seconds definition in yaml file" if @config[:cloud_shepherd_sleep_after_job_start_in_seconds] == nil
+    raise "Missing cloud_shepherd_sleep_before_retrying_job_in_seconds definition in yaml file" \
+      if @config[:cloud_shepherd_sleep_before_retrying_job_in_seconds] == nil
+    raise "Missing cloud_shepherd_sleep_after_job_start_in_seconds definition in yaml file" \
+      if @config[:cloud_shepherd_sleep_after_job_start_in_seconds] == nil
+    raise "Missing third_level_domain_name definition in yaml file" if @config[:third_level_domain_name] == nil
 
     @resume = @config[:resume]
     @email_to = @config[:email_to]
@@ -120,6 +123,7 @@ class RocketMonkeyBase
     @cloud_shepherd_max_retries = @config[:cloud_shepherd_max_retries]
     @cloud_shepherd_sleep_before_retrying_job_in_seconds = @config[:cloud_shepherd_sleep_before_retrying_job_in_seconds]
     @cloud_shepherd_sleep_after_job_start_in_seconds = @config[:cloud_shepherd_sleep_after_job_start_in_seconds]
+    @third_level_domain_name = @config[:third_level_domain_name]
 
     # Get ip address of Jenkins host
     if @suppress_variable_data

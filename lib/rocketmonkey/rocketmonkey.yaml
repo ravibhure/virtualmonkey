@@ -160,6 +160,13 @@
 
 
 #
+# third_level_domain_name - The third level domain which will usually be "my" but may be "moo.test" or any valid third
+# level domain name (do not include the trailing dot)
+#
+:third_level_domain_name: "my"
+
+
+#
 # failure_report_regular_expressions - Error report regular expressions
 #
 :failure_report_regular_expressions:

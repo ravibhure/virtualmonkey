@@ -165,7 +165,7 @@ class JenkinsJobGenerator < RocketMonkeyBase
   # Based on the supplied inputs this function will return the correctly formatted MCI override href.
   ######################################################################################################################
   def format_mci_override(mci_override)
-    return "-m \"http://my.rightscale.com/api/acct/#{@rightscale_account}/multi_cloud_images/#{mci_override}\""
+    return "-m \"http://#{@third_level_domain_name}.rightscale.com/api/acct/#{@rightscale_account}/multi_cloud_images/#{mci_override}\""
   end
 
 
