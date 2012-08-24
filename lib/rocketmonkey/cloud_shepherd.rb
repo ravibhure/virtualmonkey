@@ -260,7 +260,7 @@ class CloudShepherd < RocketMonkeyBase
             begin
               # If we have exceeded the maximum number of start invocations, log that and move on to the next deployment.
               if deployment_start_try_count > @cloud_shepherd_max_retries
-                @logger.info("Skipping #{deployment_name} [TIMED OUT] Maximum number of start attempts (#{@cloud_shepherd_max_retries}) exceeded...")
+                @logger.info("Skipping #{deployment_name}, maximum number of start attempts (#{@cloud_shepherd_max_retries}) exceeded...")
 
                 # Reset the counter
                 deployment_start_try_count = 1
@@ -270,36 +270,23 @@ class CloudShepherd < RocketMonkeyBase
               end
 
               # Record that this cloud shepherd is processing this deployment.
-              # Note: that this is done before the call to start_jenkins_job() to minimize the inherent
-              #  race condition between Cloud Shepherd processes.
-              # Also Note: That we check the pid job file one more time here to also minimize the inherent
-              #  race condition between Cloud Shepherd processes.
               Lockfile.new(@pid_job_lock_file_name) do
-                skip_to_next = check_pid_job_file_for_this_deployment(deployment_name)
-                if !skip_to_next
-                  # Save off our pid, deployment_name tuple to the hash to record
-                  @pid_job_hash[@pid] = deployment_name
+                load_pid_job_file()
 
-                  #
-                  # The deployment wasn't found in the live deployments so kick off the test
-                  #
-                  @logger.info("Deployment not active, starting #{deployment_name} via Jenkins...")
-                  start_jenkins_job(@logger, deployment_name, 3, 10)
+                #
+                # The deployment wasn't found in the live deployments so kick off the test
+                #
+                @logger.info("Deployment not active, starting #{deployment_name} via Jenkins...")
+                start_jenkins_job(@logger, deployment_name, 3, 10)
 
-                  # Bump counters since no exception was thrown
-                  deployment_start_count += 1
-                  deployment_start_try_count += 1
+                # Bump counters since no exception was thrown
+                deployment_start_count += 1
+                deployment_start_try_count += 1
 
-                  save_pid_job_file()
-                end
-              end
+                # Save off our pid, deployment_name tuple to the hash to record
+                @pid_job_hash[@pid] = deployment_name
 
-              if skip_to_next
-                # Reset the counter
-                deployment_start_try_count = 1
-
-                # Move on to the next deployment
-                next
+                save_pid_job_file()
               end
 
               # Log that we are sleeping to wait for newly started deployment to start
