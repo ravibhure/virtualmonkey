@@ -1,0 +1,49 @@
+module VirtualMonkey
+  module Runner
+    class AppMediawiki
+      extend VirtualMonkey::RunnerCore::CommandHooks
+      include VirtualMonkey::RunnerCore::DeploymentBase
+      include VirtualMonkey::Mixin::ServerMetadata
+      include VirtualMonkey::Mixin::UnifiedApplication
+      include VirtualMonkey::Mixin::Chef
+      include VirtualMonkey::Mixin::ChefEBS
+      include VirtualMonkey::Mixin::ApplicationFrontend
+      include VirtualMonkey::Mixin::LampChef
+      include VirtualMonkey::Mixin::LampThreeTier
+
+      description "Runner for app mediawiki server chef."
+
+      before_destroy do
+        set_force_reset_inputs("off")
+        release_container
+        set_variation_lineage
+      end
+
+      def mediaw_chef_fe_lookup_scripts
+        recipes = [
+          [ 'attach_all', 'lb::do_attach_all' ],
+          [ 'do_reconverge_list_disable', 'sys::do_reconverge_list_disable' ],
+          [ 'do_reconverge_list_enable', 'sys::do_reconverge_list_enable' ]
+        ]
+        fe_st = match_st_by_server(fe_servers.first)
+        load_script_table(fe_st,recipes,fe_st)
+      end
+
+      def mediaw_chef_app_lookup_scripts
+        recipes = [
+          [ 'update_code', 'app::do_update_code'],
+          [ 'attach', 'lb::do_attach_request'],
+          [ 'detach', 'lb::do_detach_request']
+        ]
+        app_st = match_st_by_server(app_servers.first)
+        load_script_table(app_st,recipes,app_st)
+      end
+
+      def check_app_monitoring
+        puts "  Monitoring for mediwiki application servers is not implemented yet"
+        true
+      end
+
+    end
+  end
+end
